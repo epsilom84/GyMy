@@ -543,14 +543,19 @@ input:focus,select:focus{border-color:var(--accent);}
       </div>
 
       <div class="card" style="padding:14px 16px;margin-bottom:8px">
-        <div class="card-title">Plantillas de ejercicio</div>
+        <div class="card-title">Ejercicios del catálogo</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Ejercicios guardados en la base de datos, disponibles para todos los usuarios.</div>
+        <div id="catalogo-list" style="margin-top:4px">
+          <div style="font-size:12px;color:var(--text2);text-align:center;padding:10px">Cargando catálogo...</div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:14px 16px;margin-bottom:8px">
+        <div class="card-title">Mis ejercicios personalizados</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Solo visibles para ti. Se añaden al catálogo base.</div>
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
-          <label style="padding:10px 14px;background:var(--bg3);border:1px dashed var(--border);border-radius:10px;cursor:pointer;font-size:13px;color:var(--text2);text-align:center">
-            📁 Importar desde CSV
-            <input type="file" id="csv-import" accept=".csv" style="display:none" onchange="importCSV(event)"/>
-          </label>
-          <button class="btn btn-secondary" style="font-size:13px" onclick="openModal('modal-add-plantilla')">➕ Añadir ejercicio manual</button>
-          <button class="btn btn-danger" style="font-size:13px" onclick="confirmEliminarPlantillas()">🗑 Eliminar todas las plantillas</button>
+          <button class="btn btn-secondary" style="font-size:13px" onclick="openModal('modal-add-plantilla')">➕ Añadir ejercicio personal</button>
+          <button class="btn btn-danger" style="font-size:13px" onclick="confirmEliminarPlantillas()">🗑 Eliminar mis personalizados</button>
         </div>
         <div id="plantillas-list" style="margin-top:12px"></div>
       </div>
@@ -735,13 +740,8 @@ input:focus,select:focus{border-color:var(--accent);}
       <button class="close-btn" onclick="wkCloseTipoSafe()"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
     </div>
     <div class="wk-sub">¿Qué vas a trabajar?</div>
-    <div class="tipo-grid">
-      <div class="tipo-card" onclick="wkPickTipo('Pecho')"><span style="font-size:26px">🏋️</span>Pecho</div>
-      <div class="tipo-card" onclick="wkPickTipo('Espalda')"><span style="font-size:26px">🦾</span>Espalda</div>
-      <div class="tipo-card" onclick="wkPickTipo('Piernas')"><span style="font-size:26px">🦵</span>Piernas</div>
-      <div class="tipo-card" onclick="wkPickTipo('Hombros')"><span style="font-size:26px">🔝</span>Hombros</div>
-      <div class="tipo-card" onclick="wkPickTipo('Brazos')"><span style="font-size:26px">💪</span>Brazos</div>
-      <div class="tipo-card" onclick="wkPickTipo('Cardio')"><span style="font-size:26px">🏃</span>Cardio</div>
+    <div class="tipo-grid" id="wk-tipo-grid">
+      <div style="text-align:center;color:var(--text2);font-size:13px;grid-column:1/-1;padding:20px 0">Cargando...</div>
     </div>
   </div>
 </div>
@@ -891,6 +891,8 @@ function initApp(){
   applySettingsUI();
   // Cargar historial desde Postgres para precarga
   cargarHistorialLocal();
+  // Precargar catálogo de ejercicios desde BD
+  loadCatalogo().then(()=>console.log('[Catálogo] Cargado:',Object.keys(_catalogoCache||{}).length,'grupos'));
   // Restore workout tab if active
   const wtab = document.getElementById('tab-workout');
   if(wtab) wtab.style.display = wkIsActive() ? 'flex' : 'none';
@@ -991,7 +993,7 @@ function goTab(name,btn){
   if(wkStarted)setTimeout(()=>wkAdjustLayout(),50);
   if(name==='historial'){currentPage=1;loadHistorial();}
   if(name==='stats')initStatsView();
-  if(name==='perfil'){renderPlantillasList();loadProfileData();}
+  if(name==='perfil'){renderPlantillasList();renderCatalogoList();loadProfileData();}
   if(name==='workout')wkInit();
 }
 
@@ -1318,6 +1320,33 @@ function setPreload(mode){
 }
 
 // ── PLANTILLAS ──
+async function renderCatalogoList(){
+  const el=document.getElementById('catalogo-list');
+  if(!el)return;
+  const db=await wkGetDBAsync();
+  const grupos=Object.keys(db);
+  if(!grupos.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--text2);text-align:center;padding:10px">No hay ejercicios en el catálogo</div>';
+    return;
+  }
+  const custom=JSON.parse(localStorage.getItem('gymy_plantillas')||'{}');
+  el.innerHTML=grupos.map(grupo=>{
+    const ejs=(_catalogoCache||{})[grupo]||[];
+    if(!ejs.length)return'';
+    // Agrupar por subgrupo (m)
+    const porSubgrupo={};
+    ejs.forEach(e=>{const sg=e.m||grupo.toUpperCase();if(!porSubgrupo[sg])porSubgrupo[sg]=[];porSubgrupo[sg].push(e);});
+    const subgruposHTML=Object.entries(porSubgrupo).map(([sg,list])=>
+      `<div style="font-size:10px;color:var(--accent);font-weight:700;letter-spacing:.5px;margin:8px 0 4px;padding:0 2px">${sg}</div>`+
+      list.map(e=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bg3);border-radius:7px;margin-bottom:4px;font-size:13px">`+
+        `<span>${e.em}</span><span>${e.n}</span></div>`).join('')
+    ).join('');
+    return `<details style="margin-bottom:8px"><summary style="cursor:pointer;font-size:13px;font-weight:600;padding:8px 10px;background:var(--bg3);border-radius:8px;list-style:none;display:flex;justify-content:space-between;align-items:center">`+
+      `<span>${grupoEmoji(grupo)} ${grupo}</span><span style="font-size:11px;color:var(--text2)">${ejs.length} ejercicios</span></summary>`+
+      `<div style="padding:4px 4px 0">${subgruposHTML}</div></details>`;
+  }).join('');
+}
+
 function renderPlantillasList(){
   const plantillas=JSON.parse(localStorage.getItem('gymy_plantillas')||'{}');
   const el=document.getElementById('plantillas-list');
@@ -1757,61 +1786,61 @@ async function cargarHistorialLocal(){
 
 // WORKOUT ENGINE
 // ══════════════════════════════════════════════
-const BASE_DB={
-  Hombros:[
-    {em:'🏋️',n:'Press Hombros Mancuernas',m:'DELTOIDES ANT'},
-    {em:'↗️',n:'Elevaciones Laterales Mancuernas',m:'DELTOIDES LAT'},
-    {em:'🔁',n:'Elevaciones Laterales Máquina',m:'DELTOIDES LAT'},
-    {em:'🔄',n:'Face Pull',m:'DELTOIDES POST'},
-    {em:'🔗',n:'Elevación Lateral Cable Unilateral',m:'DELTOIDES LAT'},
-    {em:'🏋️',n:'Press Hombros Barra',m:'DELTOIDES ANT'},
-    {em:'🤖',n:'Press Hombros Máquina',m:'DELTOIDES ANT'},
-    {em:'🚣',n:'Remo Máquina Unilateral',m:'TRAPECIO'},
-  ],
-  Espalda:[
-    {em:'🚣',n:'Jalón Agarre Cerrado Cable',m:'DORSAL'},
-    {em:'🔙',n:'Remo Cable Sentado',m:'ESPALDA MEDIA'},
-    {em:'🤖',n:'Remo Máquina Unilateral',m:'DORSAL'},
-    {em:'⬇️',n:'Jalón Agarre Amplio Cable',m:'DORSAL'},
-    {em:'🏋️',n:'Remo Barra Agarre Bajo',m:'ESPALDA MEDIA'},
-    {em:'🔗',n:'Remo Polea Unilateral',m:'DORSAL'},
-    {em:'📉',n:'Pull Down Máquina',m:'DORSAL'},
-  ],
-  Piernas:[
-    {em:'🦵',n:'Extensión Piernas Máquina',m:'CUADRICEPS'},
-    {em:'🏋️',n:'Prensa Inclinada',m:'CUADRICEPS'},
-    {em:'➡️',n:'Press Piernas Horizontal',m:'CUADRICEPS'},
-    {em:'🔄',n:'Curl Femoral Máquina',m:'ISQUIOS'},
-    {em:'🏋️',n:'Peso Muerto',m:'ISQUIOS/GLÚTEOS'},
-    {em:'🦵',n:'Sentadilla Barra',m:'CUADRICEPS'},
-    {em:'↔️',n:'Abducción Máquina',m:'ABDUCTORES'},
-    {em:'↔️',n:'Aducción Máquina',m:'ADUCTORES'},
-    {em:'🦶',n:'Gemelos Máquina Sentado',m:'GEMELOS'},
-  ],
-  Pecho:[
-    {em:'🏋️',n:'Press Pecho Máquina Frontal',m:'PECTORAL'},
-    {em:'🔼',n:'Press Pecho Máquina Inclinado',m:'PECTORAL SUP'},
-    {em:'🔁',n:'Aperturas Máquina',m:'PECTORAL'},
-  ],
-  Brazos:[
-    {em:'⬇️',n:'Press Tríceps Cuerda Cable',m:'TRICEPS'},
-    {em:'💪',n:'Curl Bíceps Mancuernas Alterno',m:'BICEPS'},
-    {em:'🤖',n:'Curl Bíceps Máquina Scott',m:'BICEPS'},
-    {em:'🔄',n:'Curl Bíceps Martillo Alterno',m:'BICEPS'},
-    {em:'💪',n:'Curl Bíceps Mancuerna',m:'BICEPS'},
-  ],
-  Cardio:[
-    {em:'🏃',n:'Cinta',m:'CARDIO'},
-    {em:'🚴',n:'Bicicleta',m:'CARDIO'},
-    {em:'⛹️',n:'Elíptica',m:'CARDIO'},
-  ],
+
+// Emojis por equipamiento
+const EQUIPO_EM={
+  'mancuernas':'💪','mancuerna':'💪',
+  'barra':'🏋️',
+  'máquina':'🤖','maquina':'🤖',
+  'cable':'🔗',
+  'peso_corporal':'🧍',
+  'cardio':'🏃',
 };
+function ejEmoji(equipo){return EQUIPO_EM[equipo]||'💪';}
+
+// Caché en memoria del catálogo (se carga una vez por sesión)
+let _catalogoCache=null;
+let _catalogoLoading=null;
+
+async function loadCatalogo(){
+  if(_catalogoCache)return _catalogoCache;
+  if(_catalogoLoading)return _catalogoLoading;
+  _catalogoLoading=(async()=>{
+    try{
+      const r=await apiFetch('/api/catalogo');
+      if(r.ok&&r.grupos){
+        const db={};
+        Object.entries(r.grupos).forEach(([grupo,ejs])=>{
+          db[grupo]=ejs.map(e=>({
+            em:ejEmoji(e.equipo),
+            n:e.nombre,
+            m:(e.subgrupo||grupo).toUpperCase(),
+            id:e.id
+          }));
+        });
+        _catalogoCache=db;
+        return db;
+      }
+    }catch(err){console.warn('[Catálogo] Error cargando desde API:',err.message);}
+    return {};
+  })();
+  return _catalogoLoading;
+}
+
+// Versión síncrona (usa caché si ya está cargada)
 function wkGetDB(){
   const c=JSON.parse(localStorage.getItem('gymy_plantillas')||'{}');
+  const base=_catalogoCache||{};
   const m={};
-  Object.keys(BASE_DB).forEach(k=>{m[k]=[...BASE_DB[k],...(c[k]||[])];});
+  Object.keys(base).forEach(k=>{m[k]=[...base[k],...(c[k]||[])];});
   Object.keys(c).forEach(k=>{if(!m[k])m[k]=c[k];});
   return m;
+}
+
+// Versión async: asegura que el catálogo está cargado antes de devolver
+async function wkGetDBAsync(){
+  await loadCatalogo();
+  return wkGetDB();
 }
 function wkGetPreloadMode(){return localStorage.getItem('gymy_preload')||'ultimo';}
 function wkGetPreload(nombre){
@@ -1976,7 +2005,28 @@ function wkHide(id){
   if(el._wkClose){el.removeEventListener('click',el._wkClose);delete el._wkClose;}
 }
 
-function wkOpenTipo(){wkShow('wk-ov-tipo');}
+// Emojis por grupo para el selector
+const GRUPO_EM={
+  'Pecho':'🏋️','Espalda':'🦾','Piernas':'🦵','Hombros':'🔝',
+  'Brazos':'💪','Core':'🧘','Cardio':'🏃',
+};
+function grupoEmoji(g){return GRUPO_EM[g]||'🏃';}
+
+async function wkRenderTipoGrid(){
+  const db=await wkGetDBAsync();
+  const grid=document.getElementById('wk-tipo-grid');
+  if(!grid)return;
+  const grupos=Object.keys(db);
+  if(!grupos.length){
+    grid.innerHTML='<div style="text-align:center;color:var(--text2);font-size:13px;grid-column:1/-1;padding:20px 0">Sin ejercicios disponibles</div>';
+    return;
+  }
+  grid.innerHTML=grupos.map(g=>
+    `<div class="tipo-card" onclick="wkPickTipo('${g}')"><span style="font-size:26px">${grupoEmoji(g)}</span>${g}</div>`
+  ).join('');
+}
+
+function wkOpenTipo(){wkRenderTipoGrid();wkShow('wk-ov-tipo');}
 
 // Cerrar selector tipo: si no hay ejercicios y workout fue recién iniciado → abortar
 function wkCloseTipoSafe(){
@@ -1996,7 +2046,7 @@ function wkCloseEjSafe(){
 // Volver al selector de tipo desde ej
 function wkCloseEjBack(){
   wkHide('wk-ov-ej');
-  setTimeout(()=>wkShow('wk-ov-tipo'),150);
+  setTimeout(()=>{wkRenderTipoGrid();wkShow('wk-ov-tipo');},150);
 }
 function wkPickTipo(tipo){
   if(!wkCurTipo)wkCurTipo=tipo;
@@ -2259,7 +2309,7 @@ function wkStartWorkout(){
   btn.style.display='flex';
   goTab('workout',btn);
   wkActivate();
-  setTimeout(()=>wkShow('wk-ov-tipo'),200);
+  setTimeout(()=>{wkRenderTipoGrid();wkShow('wk-ov-tipo');},200);
 }
 function wkCancelStart(){
   wkHide('wk-ov-start');
