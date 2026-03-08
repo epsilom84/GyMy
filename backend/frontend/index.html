@@ -21,7 +21,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--font-b);background:var(--bg);color:var(--text);min-height:100vh;}
 
-/* ── AUTH ── */
+/* ââ AUTH ââ */
 #auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:var(--bg);background-image:radial-gradient(ellipse at 15% 60%,rgba(232,255,71,.06),transparent 55%),radial-gradient(ellipse at 85% 20%,rgba(255,71,71,.05),transparent 50%);}
 .auth-card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:48px 36px;width:100%;max-width:420px;animation:slideUp .4s ease;}
 .auth-logo{font-family:var(--font-d);font-size:54px;color:var(--accent);letter-spacing:3px;}
@@ -47,7 +47,7 @@ input:focus,select:focus{border-color:var(--accent);}
 .auth-link{font-size:13px;color:var(--text2);text-align:center;margin-top:14px;}
 .auth-link a{color:var(--accent);cursor:pointer;}
 
-/* ── APP ── */
+/* ââ APP ââ */
 #app-screen{display:none;flex-direction:column;min-height:100vh;}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
 .topbar-logo{font-family:var(--font-d);font-size:26px;color:var(--accent);letter-spacing:2px;}
@@ -61,7 +61,7 @@ input:focus,select:focus{border-color:var(--accent);}
 .offline-badge.offline{background:rgba(255,71,71,.12);border:1px solid rgba(255,71,71,.25);color:var(--accent2);}
 .offline-badge.online{background:rgba(71,255,178,.1);border:1px solid rgba(71,255,178,.25);color:var(--accent3);}
 
-/* ── TABBAR ── */
+/* ââ TABBAR ââ */
 .tabbar{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);display:flex;flex-direction:column;z-index:100;}.tabbar-btns{display:flex;width:100%;padding:6px 0 max(6px,env(safe-area-inset-bottom));}
 .tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border:none;background:transparent;color:var(--text2);font-family:var(--font-b);font-size:10px;font-weight:500;cursor:pointer;transition:.2s;}.tabbar-btns .tab-btn{flex:1;}
 .tab-btn.active{color:var(--accent);}
@@ -69,19 +69,19 @@ input:focus,select:focus{border-color:var(--accent);}
 .tab-btn.active .tab-icon{background:rgba(232,255,71,.1);}
 .fab{position:fixed;right:18px;bottom:var(--fab-bottom,86px);width:52px;height:52px;background:var(--accent);border:none;border-radius:14px;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(232,255,71,.3);z-index:200;color:#000;}
 
-/* ── PAGES ── */
+/* ââ PAGES ââ */
 .page{display:none;animation:fadeIn .22s ease;}
 .page.active{display:block;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
 @keyframes slideUp{from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:none;}}
 
-/* ── CARDS ── */
+/* ââ CARDS ââ */
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px;}
 .card-title{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);font-weight:600;margin-bottom:10px;}
 .section-title{font-family:var(--font-d);font-size:30px;margin-bottom:2px;}
 .section-sub{color:var(--text2);font-size:13px;margin-bottom:18px;}
 
-/* ── STAT CARDS ── */
+/* ââ STAT CARDS ââ */
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
 .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:16px;position:relative;overflow:hidden;}
 .stat-card::after{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);}
@@ -89,13 +89,13 @@ input:focus,select:focus{border-color:var(--accent);}
 .stat-label{font-size:11px;color:var(--text2);margin-top:3px;}
 .streak-card{background:linear-gradient(135deg,rgba(232,255,71,.08),rgba(232,255,71,.02));border:1px solid rgba(232,255,71,.2);}
 
-/* ── PROG CHART ── */
+/* ââ PROG CHART ââ */
 .prog-chart{display:flex;align-items:flex-end;gap:5px;height:80px;margin-top:8px;}
 .prog-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
 .prog-bar{width:100%;background:var(--accent);border-radius:4px 4px 0 0;min-height:3px;opacity:.7;}
 .prog-label{font-size:9px;color:var(--text2);text-align:center;}
 
-/* ── SESSIONS ── */
+/* ââ SESSIONS ââ */
 .session-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg3);border-radius:12px;margin-bottom:7px;cursor:pointer;border:1px solid transparent;transition:.2s;}
 .session-item:hover{border-color:var(--border);background:var(--bg2);}
 .session-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
@@ -109,18 +109,18 @@ input:focus,select:focus{border-color:var(--accent);}
 .tipo-Yoga{background:rgba(71,255,178,.1);}
 .tipo-Otro,.tipo-Pecho,.tipo-Espalda,.tipo-Piernas,.tipo-Hombros,.tipo-Brazos{background:rgba(108,71,255,.1);}
 
-/* ── FILTERS ── */
+/* ââ FILTERS ââ */
 .filters{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
 .filter-chip{padding:6px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer;color:var(--text2);transition:.2s;}
 .filter-chip.active{background:var(--accent);color:#000;border-color:var(--accent);}
 
-/* ── PROGRESS BARS ── */
+/* ââ PROGRESS BARS ââ */
 .progress-row{margin-bottom:12px;}
 .progress-row-head{display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px;}
 .progress-track{height:6px;background:var(--bg3);border-radius:3px;}
 .progress-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .6s ease;}
 
-/* ── EXERCISES FORM ── */
+/* ââ EXERCISES FORM ââ */
 .ej-head{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:7px;padding:0 3px;margin-bottom:6px;}
 .ej-head span{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;}
 .ej-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:7px;margin-bottom:6px;align-items:center;}
@@ -128,19 +128,19 @@ input:focus,select:focus{border-color:var(--accent);}
 .btn-remove{background:transparent;border:1px solid var(--border);border-radius:8px;width:30px;height:34px;cursor:pointer;color:var(--text2);font-size:14px;}
 .btn-remove:hover{border-color:var(--accent2);color:var(--accent2);}
 
-/* ── PAGINATION ── */
+/* ââ PAGINATION ââ */
 .pagination{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:14px;}
 .page-btn{padding:8px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;cursor:pointer;font-family:var(--font-b);font-size:13px;color:var(--text);}
 .page-btn:disabled{opacity:.4;cursor:not-allowed;}
 .page-info{font-size:13px;color:var(--text2);}
 
-/* ── DETAIL GRID ── */
+/* ââ DETAIL GRID ââ */
 .detail-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px;}
 .detail-cell{background:var(--bg3);border-radius:11px;padding:13px;}
 .detail-cell-label{font-size:10px;color:var(--text2);text-transform:uppercase;margin-bottom:3px;}
 .detail-cell-val{font-weight:600;font-size:15px;}
 
-/* ── STATS SCREEN ── */
+/* ââ STATS SCREEN ââ */
 .stats-selector{display:flex;gap:8px;margin-bottom:16px;}
 .stats-type-btn{flex:1;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;color:var(--text2);font-family:var(--font-b);font-size:13px;font-weight:600;cursor:pointer;transition:.2s;}
 .stats-type-btn.active{background:var(--purple);border-color:var(--purple);color:#fff;}
@@ -158,7 +158,7 @@ input:focus,select:focus{border-color:var(--accent);}
 .day-chip{padding:7px 13px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer;color:var(--text2);transition:.2s;}
 .day-chip.active{background:var(--accent);color:#000;border-color:var(--accent);}
 
-/* ── PROFILE SCREEN ── */
+/* ââ PROFILE SCREEN ââ */
 .profile-section-title{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);font-weight:600;margin:18px 0 8px;}
 .profile-row{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;background:var(--bg3);border-radius:12px;margin-bottom:6px;cursor:pointer;transition:.2s;border:1px solid transparent;}
 .profile-row:hover{border-color:var(--border);}
@@ -174,7 +174,7 @@ input:focus,select:focus{border-color:var(--accent);}
 .hist-btn{padding:8px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;font-size:12px;cursor:pointer;color:var(--text2);font-family:var(--font-b);transition:.2s;display:inline-flex;align-items:center;gap:5px;}
 .hist-btn:hover{border-color:var(--accent);color:var(--accent);}
 
-/* ── MODAL ── */
+/* ââ MODAL ââ */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(5px);display:none;z-index:500;}
 .modal-overlay.open{display:flex;animation:fadeIn .2s ease;}
 .modal-overlay.bottom{align-items:flex-end;justify-content:center;}
@@ -193,7 +193,7 @@ input:focus,select:focus{border-color:var(--accent);}
 .c-btn-cancel{flex:1;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:11px;color:var(--text);font-family:var(--font-b);font-size:14px;cursor:pointer;}
 .c-btn-primary{flex:1;padding:12px;background:var(--accent);border:none;border-radius:11px;color:#000;font-family:var(--font-b);font-size:14px;font-weight:700;cursor:pointer;}
 
-/* ── SIDE PANEL ── */
+/* ââ SIDE PANEL ââ */
 .side-panel{position:fixed;top:0;right:-340px;width:310px;height:100vh;background:var(--bg2);border-left:1px solid var(--border);padding:22px 18px;z-index:400;transition:right .3s ease;overflow-y:auto;}
 .side-panel.open{right:0;}
 .panel-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:399;display:none;}
@@ -210,7 +210,7 @@ input:focus,select:focus{border-color:var(--accent);}
 .stat-mini-label{font-size:13px;color:var(--text2);}
 .stat-mini-val{font-family:var(--font-d);font-size:22px;color:var(--accent);}
 
-/* ── TOAST ── */
+/* ââ TOAST ââ */
 .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:11px 18px;font-size:13px;font-weight:500;z-index:600;opacity:0;transition:.28s;pointer-events:none;white-space:nowrap;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .toast.success{border-color:var(--accent3);color:var(--accent3);}
@@ -219,7 +219,7 @@ input:focus,select:focus{border-color:var(--accent);}
 
 @media(min-width:600px){.stats-grid{grid-template-columns:repeat(4,1fr);}}
 
-/* ── WORKOUT PAGE ── */
+/* ââ WORKOUT PAGE ââ */
 .wk-topbar-extra{display:flex;align-items:center;gap:8px;}
 .rest-timer{display:none;align-items:center;gap:6px;background:var(--accent);color:#000;font-family:var(--font-d,"Bebas Neue",sans-serif);font-size:17px;letter-spacing:2px;padding:5px 13px;border-radius:30px;cursor:pointer;user-select:none;}
 .rest-timer.active{display:flex;}
@@ -270,12 +270,12 @@ input:focus,select:focus{border-color:var(--accent);}
 .del-btn:hover{opacity:1;color:var(--accent2);}
 .add-serie-btn{width:100%;padding:12px;background:transparent;border:none;border-top:1.5px dashed var(--border);color:var(--purple,#6c47ff);font-family:var(--font-b);font-size:14px;font-weight:600;cursor:pointer;}
 .add-ex-btn-wk{width:100%;padding:15px;background:var(--bg2);border:1.5px solid var(--border);border-radius:16px;color:var(--purple,#6c47ff);font-family:var(--font-b);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:20px;}
-/* Workout stats bar — inside the page, not fixed */
+/* Workout stats bar â inside the page, not fixed */
 .wk-stats-bar{display:flex;align-items:center;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:14px;margin-bottom:12px;}
 .wk-stat-col{flex:1;text-align:center;}
 .wk-stat-val{font-family:var(--font-d,"Bebas Neue",sans-serif);font-size:20px;color:var(--text);line-height:1;}
 .wk-stat-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-top:1px;}
-/* Workout FABs — fixed bottom-left, visible on all tabs when workout active */
+/* Workout FABs â fixed bottom-left, visible on all tabs when workout active */
 .wk-fabs{position:fixed;left:14px;bottom:var(--fab-bottom,86px);display:none;gap:10px;z-index:150;}
 .wk-fabs.visible{display:flex;}
 /* Workout mini-bar: sits above the tab buttons inside .tabbar */
@@ -322,39 +322,39 @@ input:focus,select:focus{border-color:var(--accent);}
 </head>
 <body>
 
-<!-- ══ AUTH ══ -->
+<!-- ââ AUTH ââ -->
 <div id="auth-screen">
   <div class="auth-card">
     <div class="auth-logo">GYMY</div>
-    <div class="auth-tagline">Registra · Analiza · Supérate</div>
+    <div class="auth-tagline">Registra Â· Analiza Â· SupÃ©rate</div>
     <div class="auth-tabs" id="auth-tabs-bar">
       <button class="auth-tab active" onclick="switchAuthTab('login')">Entrar</button>
       <button class="auth-tab" onclick="switchAuthTab('register')">Registro</button>
     </div>
     <div id="login-form">
       <div class="form-group"><label>Email</label><input type="email" id="li-email" placeholder="tu@email.com"/></div>
-      <div class="form-group"><label>Contraseña</label><input type="password" id="li-pass" placeholder="••••••••"/></div>
+      <div class="form-group"><label>ContraseÃ±a</label><input type="password" id="li-pass" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢"/></div>
       <div class="remember-row"><input type="checkbox" id="remember-me" checked/><label for="remember-me">Recordarme</label></div>
       <button class="btn btn-primary" id="btn-login" onclick="handleLogin()">Entrar</button>
-      <div class="auth-link"><a onclick="switchAuthTab('forgot')">¿Olvidaste la contraseña?</a></div>
+      <div class="auth-link"><a onclick="switchAuthTab('forgot')">Â¿Olvidaste la contraseÃ±a?</a></div>
     </div>
     <div id="register-form" style="display:none">
       <div class="form-group"><label>Usuario</label><input type="text" id="re-user" placeholder="tunombre"/><div class="field-error" id="err-user"></div></div>
       <div class="form-group"><label>Email</label><input type="email" id="re-email" placeholder="tu@email.com"/><div class="field-error" id="err-email"></div></div>
-      <div class="form-group"><label>Contraseña</label><input type="password" id="re-pass" placeholder="Mínimo 6 caracteres"/><div class="field-error" id="err-pass"></div></div>
+      <div class="form-group"><label>ContraseÃ±a</label><input type="password" id="re-pass" placeholder="MÃ­nimo 6 caracteres"/><div class="field-error" id="err-pass"></div></div>
       <button class="btn btn-primary" id="btn-register" onclick="handleRegister()">Crear cuenta</button>
     </div>
     <div id="forgot-form" style="display:none">
-      <p style="color:var(--text2);font-size:13px;margin-bottom:14px">Te enviaremos un enlace para resetear la contraseña.</p>
+      <p style="color:var(--text2);font-size:13px;margin-bottom:14px">Te enviaremos un enlace para resetear la contraseÃ±a.</p>
       <div class="form-group"><label>Email</label><input type="email" id="fp-email" placeholder="tu@email.com"/></div>
       <button class="btn btn-primary" id="btn-forgot" onclick="handleForgot()">Enviar enlace</button>
-      <div class="auth-link"><a onclick="switchAuthTab('login')">← Volver al login</a></div>
+      <div class="auth-link"><a onclick="switchAuthTab('login')">â Volver al login</a></div>
     </div>
     <div class="auth-error" id="auth-error"></div>
   </div>
 </div>
 
-<!-- ══ APP ══ -->
+<!-- ââ APP ââ -->
 <div id="app-screen">
   <div class="topbar">
     <div class="topbar-logo">GYMY</div>
@@ -375,17 +375,17 @@ input:focus,select:focus{border-color:var(--accent);}
       <div class="section-title">Dashboard</div>
       <div class="section-sub" id="dash-greeting">Tu progreso</div>
       <div class="stats-grid">
-        <div class="stat-card"><div class="stat-number" id="s-total">—</div><div class="stat-label">Sesiones</div></div>
-        <div class="stat-card streak-card"><div class="stat-number" id="s-racha">—</div><div class="stat-label">🔥 Racha días</div></div>
-        <div class="stat-card"><div class="stat-number" id="s-horas">—</div><div class="stat-label">Horas entreno</div></div>
-        <div class="stat-card"><div class="stat-number" id="s-semana">—</div><div class="stat-label">Esta semana</div></div>
+        <div class="stat-card"><div class="stat-number" id="s-total">â</div><div class="stat-label">Sesiones</div></div>
+        <div class="stat-card streak-card"><div class="stat-number" id="s-racha">â</div><div class="stat-label">ð¥ Racha dÃ­as</div></div>
+        <div class="stat-card"><div class="stat-number" id="s-horas">â</div><div class="stat-label">Horas entreno</div></div>
+        <div class="stat-card"><div class="stat-number" id="s-semana">â</div><div class="stat-label">Esta semana</div></div>
       </div>
       <div class="card">
-        <div class="card-title">Progreso últimas 8 semanas</div>
+        <div class="card-title">Progreso Ãºltimas 8 semanas</div>
         <div class="prog-chart" id="chart-progreso"></div>
       </div>
       <div class="card">
-        <div class="card-title">Últimas sesiones</div>
+        <div class="card-title">Ãltimas sesiones</div>
         <div id="dash-recientes"></div>
       </div>
     </div>
@@ -395,18 +395,18 @@ input:focus,select:focus{border-color:var(--accent);}
       <div class="section-title">Historial</div>
       <div class="section-sub">Todas tus sesiones</div>
       <div style="display:flex;gap:8px;margin-bottom:10px">
-        <button class="hist-btn" onclick="exportHistorialCSV()">📤 Exportar CSV</button>
+        <button class="hist-btn" onclick="exportHistorialCSV()">ð¤ Exportar CSV</button>
         <label class="hist-btn" style="cursor:pointer;flex:1;justify-content:center">
-          📥 Importar CSV
+          ð¥ Importar CSV
           <input type="file" id="hist-csv-import" accept=".csv" style="display:none" onchange="importHistorialCSV(event)"/>
         </label>
       </div>
-      <input type="search" id="search-q" placeholder="🔍  Buscar..." style="margin-bottom:10px" oninput="loadHistorial()"/>
+      <input type="search" id="search-q" placeholder="ð  Buscar..." style="margin-bottom:10px" oninput="loadHistorial()"/>
       <div class="filters" id="tipo-filters">
         <div class="filter-chip active" onclick="setTipoFilter('',this)">Todos</div>
-        <div class="filter-chip" onclick="setTipoFilter('Fuerza',this)">💪 Fuerza</div>
-        <div class="filter-chip" onclick="setTipoFilter('Cardio',this)">🏃 Cardio</div>
-        <div class="filter-chip" onclick="setTipoFilter('HIIT',this)">🔥 HIIT</div>
+        <div class="filter-chip" onclick="setTipoFilter('Fuerza',this)">ðª Fuerza</div>
+        <div class="filter-chip" onclick="setTipoFilter('Cardio',this)">ð Cardio</div>
+        <div class="filter-chip" onclick="setTipoFilter('HIIT',this)">ð¥ HIIT</div>
       </div>
       <div id="historial-lista"></div>
       <div class="pagination" id="pagination"></div>
@@ -414,11 +414,11 @@ input:focus,select:focus{border-color:var(--accent);}
 
     <!-- STATS -->
     <div class="page" id="page-stats">
-      <div class="section-title">Estadísticas</div>
+      <div class="section-title">EstadÃ­sticas</div>
       <div class="section-sub">Analiza tu progreso</div>
       <div class="stats-selector">
         <button class="stats-type-btn active" id="stype-ej" onclick="setStatsType('ejercicio')">Por ejercicio</button>
-        <button class="stats-type-btn" id="stype-dias" onclick="setStatsType('dias')">Por días</button>
+        <button class="stats-type-btn" id="stype-dias" onclick="setStatsType('dias')">Por dÃ­as</button>
       </div>
       <!-- Ejercicio view -->
       <div id="stats-ejercicio-view">
@@ -426,18 +426,18 @@ input:focus,select:focus{border-color:var(--accent);}
           <div style="display:flex;align-items:center;justify-content:space-between">
             <div>
               <div class="card-title" style="margin-bottom:2px">Selecciona ejercicio</div>
-              <div id="stats-ej-selected-label" style="font-size:13px;color:var(--text2)">Pulsa para elegir →</div>
+              <div id="stats-ej-selected-label" style="font-size:13px;color:var(--text2)">Pulsa para elegir â</div>
             </div>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--accent)"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
           </div>
         </div>
         <div id="stats-ej-detail" style="display:none">
           <div class="stat-highlight">
-            <div class="stat-hl"><div class="stat-hl-val" id="ej-max-kg">—</div><div class="stat-hl-lbl">Peso máximo</div></div>
-            <div class="stat-hl"><div class="stat-hl-val" id="ej-max-vol">—</div><div class="stat-hl-lbl">Volumen máximo</div></div>
+            <div class="stat-hl"><div class="stat-hl-val" id="ej-max-kg">â</div><div class="stat-hl-lbl">Peso mÃ¡ximo</div></div>
+            <div class="stat-hl"><div class="stat-hl-val" id="ej-max-vol">â</div><div class="stat-hl-lbl">Volumen mÃ¡ximo</div></div>
           </div>
           <div class="card">
-            <div class="card-title" id="ej-chart-title">Peso máximo a lo largo del tiempo</div>
+            <div class="card-title" id="ej-chart-title">Peso mÃ¡ximo a lo largo del tiempo</div>
             <div class="chart-container"><canvas id="chart-ej-peso"></canvas></div>
           </div>
           <div class="card">
@@ -446,14 +446,14 @@ input:focus,select:focus{border-color:var(--accent);}
           </div>
         </div>
       </div>
-      <!-- Días view -->
+      <!-- DÃ­as view -->
       <div id="stats-dias-view" style="display:none">
         <div class="card">
-          <div class="card-title">Filtrar por días</div>
+          <div class="card-title">Filtrar por dÃ­as</div>
           <div class="days-grid" id="days-filter"></div>
         </div>
         <div class="card">
-          <div class="card-title">Sesiones por día de la semana</div>
+          <div class="card-title">Sesiones por dÃ­a de la semana</div>
           <div class="chart-container"><canvas id="chart-dias"></canvas></div>
         </div>
         <div id="dias-sesiones"></div>
@@ -466,8 +466,8 @@ input:focus,select:focus{border-color:var(--accent);}
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding:16px;background:var(--bg2);border-radius:16px;border:1px solid var(--border)">
         <div class="avatar lg" id="perfil-avatar">?</div>
         <div>
-          <div style="font-size:18px;font-weight:700" id="perfil-name">—</div>
-          <div style="font-size:13px;color:var(--text2)" id="perfil-email">—</div>
+          <div style="font-size:18px;font-weight:700" id="perfil-name">â</div>
+          <div style="font-size:13px;color:var(--text2)" id="perfil-email">â</div>
         </div>
       </div>
 
@@ -479,7 +479,7 @@ input:focus,select:focus{border-color:var(--accent);}
             <input type="number" id="p-edad" placeholder="25" min="10" max="99" oninput="saveProfileData()"/>
           </div>
           <div class="form-group" style="margin:0">
-            <label>Género</label>
+            <label>GÃ©nero</label>
             <select id="p-genero" onchange="saveProfileData()">
               <option value="">Seleccionar</option>
               <option value="hombre">Hombre</option>
@@ -501,9 +501,9 @@ input:focus,select:focus{border-color:var(--accent);}
           <select id="p-actividad" onchange="saveProfileData()">
             <option value="">Seleccionar</option>
             <option value="sedentario">Sedentario</option>
-            <option value="ligero">Ligero (1-2 días/sem)</option>
-            <option value="moderado">Moderado (3-4 días/sem)</option>
-            <option value="activo">Activo (5-6 días/sem)</option>
+            <option value="ligero">Ligero (1-2 dÃ­as/sem)</option>
+            <option value="moderado">Moderado (3-4 dÃ­as/sem)</option>
+            <option value="activo">Activo (5-6 dÃ­as/sem)</option>
             <option value="muy-activo">Muy activo (diario)</option>
           </select>
         </div>
@@ -511,9 +511,9 @@ input:focus,select:focus{border-color:var(--accent);}
           <label>Objetivo</label>
           <select id="p-objetivo" onchange="saveProfileData()">
             <option value="">Seleccionar</option>
-            <option value="volumen">Ganar músculo</option>
-            <option value="definicion">Definición</option>
-            <option value="fuerza">Fuerza máxima</option>
+            <option value="volumen">Ganar mÃºsculo</option>
+            <option value="definicion">DefiniciÃ³n</option>
+            <option value="fuerza">Fuerza mÃ¡xima</option>
             <option value="resistencia">Resistencia</option>
             <option value="salud">Salud general</option>
           </select>
@@ -521,55 +521,55 @@ input:focus,select:focus{border-color:var(--accent);}
         <p style="font-size:11px;color:var(--text2);margin-top:10px">Los datos se guardan localmente en este dispositivo.</p>
       </div>
 
-      <div class="profile-section-title">Configuración</div>
+      <div class="profile-section-title">ConfiguraciÃ³n</div>
 
       <div class="card" style="padding:14px 16px;margin-bottom:8px">
         <div class="card-title">Estilo visual</div>
         <div class="setting-options" id="theme-opts">
-          <div class="setting-opt" id="opt-dark" onclick="setTheme('dark')">🌑 Oscuro</div>
-          <div class="setting-opt" id="opt-light" onclick="setTheme('light')">☀ Claro</div>
-          <div class="setting-opt" id="opt-choni" onclick="setTheme('choni')">💅 Choni-cani</div>
-          <div class="setting-opt" id="opt-material-dark" onclick="setTheme('material-dark')">◐ Material Dark</div>
-          <div class="setting-opt" id="opt-material-light" onclick="setTheme('material-light')">○ Material Light</div>
+          <div class="setting-opt" id="opt-dark" onclick="setTheme('dark')">ð Oscuro</div>
+          <div class="setting-opt" id="opt-light" onclick="setTheme('light')">â Claro</div>
+          <div class="setting-opt" id="opt-choni" onclick="setTheme('choni')">ð Choni-cani</div>
+          <div class="setting-opt" id="opt-material-dark" onclick="setTheme('material-dark')">â Material Dark</div>
+          <div class="setting-opt" id="opt-material-light" onclick="setTheme('material-light')">â Material Light</div>
         </div>
       </div>
 
       <div class="card" style="padding:14px 16px;margin-bottom:8px">
         <div class="card-title">Modo precarga de series</div>
         <div class="setting-options">
-          <div class="setting-opt active" id="opt-ultimo" onclick="setPreload('ultimo')">🕐 Último realizado</div>
-          <div class="setting-opt" id="opt-maximo" onclick="setPreload('maximo')">🏆 Máximo peso</div>
+          <div class="setting-opt active" id="opt-ultimo" onclick="setPreload('ultimo')">ð Ãltimo realizado</div>
+          <div class="setting-opt" id="opt-maximo" onclick="setPreload('maximo')">ð MÃ¡ximo peso</div>
         </div>
       </div>
 
       <div class="card" style="padding:14px 16px;margin-bottom:8px">
-        <div class="card-title">Ejercicios del catálogo</div>
+        <div class="card-title">Ejercicios del catÃ¡logo</div>
         <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Ejercicios guardados en la base de datos, disponibles para todos los usuarios.</div>
         <div id="catalogo-list" style="margin-top:4px">
-          <div style="font-size:12px;color:var(--text2);text-align:center;padding:10px">Cargando catálogo...</div>
+          <div style="font-size:12px;color:var(--text2);text-align:center;padding:10px">Cargando catÃ¡logo...</div>
         </div>
       </div>
 
       <div class="card" style="padding:14px 16px;margin-bottom:8px">
         <div class="card-title">Mis ejercicios personalizados</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Solo visibles para ti. Se añaden al catálogo base.</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Solo visibles para ti. Se aÃ±aden al catÃ¡logo base.</div>
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
-          <button class="btn btn-secondary" style="font-size:13px" onclick="openModal('modal-add-plantilla')">➕ Añadir ejercicio personal</button>
-          <button class="btn btn-danger" style="font-size:13px" onclick="confirmEliminarPlantillas()">🗑 Eliminar mis personalizados</button>
+          <button class="btn btn-secondary" style="font-size:13px" onclick="openModal('modal-add-plantilla')">â AÃ±adir ejercicio personal</button>
+          <button class="btn btn-danger" style="font-size:13px" onclick="confirmEliminarPlantillas()">ð Eliminar mis personalizados</button>
         </div>
         <div id="plantillas-list" style="margin-top:12px"></div>
       </div>
 
       <div class="card" style="padding:14px 16px;margin-bottom:8px">
-        <div class="card-title">Sincronización</div>
+        <div class="card-title">SincronizaciÃ³n</div>
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
-          <button class="btn btn-secondary" style="font-size:13px" onclick="syncOffline()">🔄 Sincronizar datos offline</button>
+          <button class="btn btn-secondary" style="font-size:13px" onclick="syncOffline()">ð Sincronizar datos offline</button>
           <div id="sync-status" style="font-size:12px;color:var(--text2);text-align:center"></div>
         </div>
       </div>
 
       <div class="profile-row danger" style="margin-top:12px" onclick="confirmLogout()">
-        <div class="profile-row-left"><span class="profile-row-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg></span><span class="profile-row-label">Cerrar sesión</span></div>
+        <div class="profile-row-left"><span class="profile-row-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg></span><span class="profile-row-label">Cerrar sesiÃ³n</span></div>
         <span class="profile-row-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></span>
       </div>
     </div>
@@ -584,12 +584,12 @@ input:focus,select:focus{border-color:var(--accent);}
             <span class="rt-label">DESCANSO</span>
             <span id="rt-display">00:00</span>
           </div>
-          <span class="session-timer" id="wk-session-secs">⏱ 00:00</span>
+          <span class="session-timer" id="wk-session-secs">â± 00:00</span>
         </div>
       </div>
 
       <div id="wk-ex-container"></div>
-      <button class="add-ex-btn-wk" id="wk-add-ex-btn" style="display:none" onclick="wkOpenTipo()">＋ Añadir Ejercicio</button>
+      <button class="add-ex-btn-wk" id="wk-add-ex-btn" style="display:none" onclick="wkOpenTipo()">ï¼ AÃ±adir Ejercicio</button>
       <div style="height:60px"></div><!-- spacer for fabs -->
     </div>
   </div><!-- end app-body -->
@@ -614,13 +614,13 @@ input:focus,select:focus{border-color:var(--accent);}
   <button class="fab" id="fab-iniciar" onclick="iniciarWorkout()" title="Iniciar workout"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></button>
 </div>
 
-<!-- ══ MODALS ══ -->
+<!-- ââ MODALS ââ -->
 
 <!-- Confirm generic -->
 <div class="modal-overlay center" id="modal-confirm">
   <div class="modal center-dialog">
-    <div class="modal-header"><div class="c-title" id="confirm-title">¿Confirmar?</div><button class="close-btn" onclick="closeModal('modal-confirm')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button></div>
-    <div class="c-msg" id="confirm-msg">Esta acción no se puede deshacer.</div>
+    <div class="modal-header"><div class="c-title" id="confirm-title">Â¿Confirmar?</div><button class="close-btn" onclick="closeModal('modal-confirm')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button></div>
+    <div class="c-msg" id="confirm-msg">Esta acciÃ³n no se puede deshacer.</div>
     <div class="c-btns">
       <button class="c-btn-cancel" onclick="closeModal('modal-confirm')">Cancelar</button>
       <button class="c-btn-ok" id="confirm-ok-btn" onclick="">Confirmar</button>
@@ -628,11 +628,11 @@ input:focus,select:focus{border-color:var(--accent);}
   </div>
 </div>
 
-<!-- Detalle sesión -->
+<!-- Detalle sesiÃ³n -->
 <div class="modal-overlay bottom" id="modal-detalle">
   <div class="modal bottom-sheet">
     <div class="modal-header">
-      <div class="modal-title" id="md-tipo">Sesión</div>
+      <div class="modal-title" id="md-tipo">SesiÃ³n</div>
       <button class="close-btn" onclick="closeModal('modal-detalle')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
     </div>
     <div id="md-content"></div>
@@ -647,15 +647,15 @@ input:focus,select:focus{border-color:var(--accent);}
       <button class="close-btn" onclick="closeModal('modal-export')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
     </div>
     <p style="color:var(--text2);font-size:14px;margin-bottom:20px">Descarga todas tus sesiones en CSV (compatible con Excel y Google Sheets).</p>
-    <button class="btn btn-primary" onclick="doExport()">📥 Descargar CSV</button>
+    <button class="btn btn-primary" onclick="doExport()">ð¥ Descargar CSV</button>
   </div>
 </div>
 
-<!-- Añadir plantilla manual -->
+<!-- AÃ±adir plantilla manual -->
 <div class="modal-overlay center" id="modal-add-plantilla">
   <div class="modal center-dialog">
     <div class="modal-header">
-      <div class="modal-title">Añadir ejercicio</div>
+      <div class="modal-title">AÃ±adir ejercicio</div>
       <button class="close-btn" onclick="closeModal('modal-add-plantilla')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
     </div>
     <div class="form-group"><label>Grupo muscular</label>
@@ -665,10 +665,10 @@ input:focus,select:focus{border-color:var(--accent);}
         <option value="Brazos">Brazos</option><option value="Cardio">Cardio</option>
       </select>
     </div>
-    <div class="form-group"><label>Emoji</label><input type="text" id="new-ej-em" placeholder="💪" maxlength="2"/></div>
+    <div class="form-group"><label>Emoji</label><input type="text" id="new-ej-em" placeholder="ðª" maxlength="2"/></div>
     <div class="form-group"><label>Nombre del ejercicio</label><input type="text" id="new-ej-nombre" placeholder="Press Banca"/></div>
-    <div class="form-group"><label>Músculo</label><input type="text" id="new-ej-musculo" placeholder="PECHO"/></div>
-    <button class="btn btn-primary" onclick="addPlantillaManual()">Añadir</button>
+    <div class="form-group"><label>MÃºsculo</label><input type="text" id="new-ej-musculo" placeholder="PECHO"/></div>
+    <button class="btn btn-primary" onclick="addPlantillaManual()">AÃ±adir</button>
   </div>
 </div>
 
@@ -698,11 +698,11 @@ input:focus,select:focus{border-color:var(--accent);}
 <!-- WK: Confirm start -->
 <div class="wk-overlay center" id="wk-ov-start">
   <div class="wk-csheet">
-    <div class="wk-c-title">¿Iniciar Workout?</div>
-    <div class="wk-c-msg">El cronómetro se activará. ¿Listo para sufrir?</div>
+    <div class="wk-c-title">Â¿Iniciar Workout?</div>
+    <div class="wk-c-msg">El cronÃ³metro se activarÃ¡. Â¿Listo para sufrir?</div>
     <div class="wk-c-btns">
       <button class="wk-btn-cancel" onclick="wkCancelStart()">Cancelar</button>
-      <button class="wk-btn-start" onclick="wkStartWorkout()">🏋️ Empezar</button>
+      <button class="wk-btn-start" onclick="wkStartWorkout()">ðï¸ Empezar</button>
     </div>
   </div>
 </div>
@@ -710,8 +710,8 @@ input:focus,select:focus{border-color:var(--accent);}
 <!-- WK: Confirm discard -->
 <div class="wk-overlay center" id="wk-ov-discard">
   <div class="wk-csheet">
-    <div class="wk-c-title">¿Descartar sesión?</div>
-    <div class="wk-c-msg">Se perderán todos los datos. No hay vuelta atrás.</div>
+    <div class="wk-c-title">Â¿Descartar sesiÃ³n?</div>
+    <div class="wk-c-msg">Se perderÃ¡n todos los datos. No hay vuelta atrÃ¡s.</div>
     <div class="wk-c-btns">
       <button class="wk-btn-cancel" onclick="wkHide('wk-ov-discard')">Cancelar</button>
       <button class="wk-btn-ok" onclick="wkDoDiscard()">Descartar</button>
@@ -722,11 +722,11 @@ input:focus,select:focus{border-color:var(--accent);}
 <!-- WK: Confirm save -->
 <div class="wk-overlay center" id="wk-ov-save">
   <div class="wk-csheet">
-    <div class="wk-c-title">Guardar sesión</div>
-    <div class="wk-c-msg" id="wk-ov-save-msg">¿Guardar las series completadas?</div>
+    <div class="wk-c-title">Guardar sesiÃ³n</div>
+    <div class="wk-c-msg" id="wk-ov-save-msg">Â¿Guardar las series completadas?</div>
     <div class="wk-c-btns">
       <button class="wk-btn-cancel" onclick="wkHide('wk-ov-save')">Cancelar</button>
-      <button class="wk-btn-start" onclick="wkDoSave()">💾 Guardar</button>
+      <button class="wk-btn-start" onclick="wkDoSave()">ð¾ Guardar</button>
     </div>
   </div>
 </div>
@@ -739,7 +739,7 @@ input:focus,select:focus{border-color:var(--accent);}
       <div class="wk-title" style="margin:0">Grupo muscular</div>
       <button class="close-btn" onclick="wkCloseTipoSafe()"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
     </div>
-    <div class="wk-sub">¿Qué vas a trabajar?</div>
+    <div class="wk-sub">Â¿QuÃ© vas a trabajar?</div>
     <div class="tipo-grid" id="wk-tipo-grid">
       <div style="text-align:center;color:var(--text2);font-size:13px;grid-column:1/-1;padding:20px 0">Cargando...</div>
     </div>
@@ -758,7 +758,7 @@ input:focus,select:focus{border-color:var(--accent);}
       <button class="close-btn" onclick="wkCloseEjSafe()"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
     </div>
     <div class="wk-sub">Selecciona un ejercicio</div>
-    <input class="ej-search" type="search" placeholder="🔍  Buscar..." id="wk-ej-q" oninput="wkFilterEj()"/>
+    <input class="ej-search" type="search" placeholder="ð  Buscar..." id="wk-ej-q" oninput="wkFilterEj()"/>
     <div class="ej-scroll" id="wk-ej-scroll"></div>
   </div>
 </div>
@@ -772,21 +772,21 @@ input:focus,select:focus{border-color:var(--accent);}
   </div>
   <div style="text-align:center;margin-bottom:20px">
     <div class="avatar lg" style="margin:0 auto 10px" id="panel-avatar">?</div>
-    <div style="font-size:18px;font-weight:600" id="panel-name">—</div>
-    <div style="font-size:13px;color:var(--text2)" id="panel-email">—</div>
+    <div style="font-size:18px;font-weight:600" id="panel-name">â</div>
+    <div style="font-size:13px;color:var(--text2)" id="panel-email">â</div>
   </div>
   <div class="divider"></div>
   <div class="menu-item" onclick="syncOffline();closePanel()"><span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg></span>Sincronizar offline</div>
   <div class="divider"></div>
-  <div class="menu-item danger" onclick="confirmLogout();closePanel()"><span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg></span>Cerrar sesión</div>
+  <div class="menu-item danger" onclick="confirmLogout();closePanel()"><span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg></span>Cerrar sesiÃ³n</div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 // API
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 const API_URL=(location.hostname==='localhost'||location.hostname==='127.0.0.1')?'http://localhost:3000/api':'/api';
 function getAccessToken(){return localStorage.getItem('gymy_access');}
 function getRefreshToken(){return localStorage.getItem('gymy_refresh');}
@@ -846,9 +846,9 @@ async function sincronizarOffline(){
 }
 function getPendientesOffline(){return JSON.parse(localStorage.getItem('gymy_offline_queue')||'[]');}
 
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 // INIT
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 let currentPage=1,currentTipoFilter='',statsCache=null,ejCount=0;
 let currentStatsType='ejercicio',selectedStatsEj=null,chartEjPeso=null,chartEjVol=null,chartDias=null;
 
@@ -883,16 +883,16 @@ function initApp(){
     document.getElementById('perfil-name').textContent=u.username;
     document.getElementById('perfil-email').textContent=u.email;
     const h=new Date().getHours();
-    const g=h<13?'Buenos días':h<20?'Buenas tardes':'Buenas noches';
-    document.getElementById('dash-greeting').textContent=g+', '+u.username+' 👋';
+    const g=h<13?'Buenos dÃ­as':h<20?'Buenas tardes':'Buenas noches';
+    document.getElementById('dash-greeting').textContent=g+', '+u.username+' ð';
   }
   updateOfflineBadge();
   loadDashboard();
   applySettingsUI();
   // Cargar historial desde Postgres para precarga
   cargarHistorialLocal();
-  // Precargar catálogo de ejercicios desde BD
-  loadCatalogo().then(()=>console.log('[Catálogo] Cargado:',Object.keys(_catalogoCache||{}).length,'grupos'));
+  // Precargar catÃ¡logo de ejercicios desde BD
+  loadCatalogo().then(()=>console.log('[CatÃ¡logo] Cargado:',Object.keys(_catalogoCache||{}).length,'grupos'));
   // Restore workout tab if active
   const wtab = document.getElementById('tab-workout');
   if(wtab) wtab.style.display = wkIsActive() ? 'flex' : 'none';
@@ -904,9 +904,9 @@ function initApp(){
   }
 };
 
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 // AUTH
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 function switchAuthTab(tab){
   ['login','register','forgot'].forEach(t=>{document.getElementById(t+'-form').style.display=t===tab?'block':'none';});
   document.querySelectorAll('.auth-tab').forEach((el,i)=>el.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='register')));
@@ -939,9 +939,9 @@ async function handleRegister(){
   const email=document.getElementById('re-email').value.trim();
   const pass=document.getElementById('re-pass').value;
   let ok=true;
-  if(!user||user.length<3){showFieldError('err-user','Mínimo 3 caracteres');ok=false;}
-  if(!email||!email.includes('@')){showFieldError('err-email','Email no válido');ok=false;}
-  if(!pass||pass.length<6){showFieldError('err-pass','Mínimo 6 caracteres');ok=false;}
+  if(!user||user.length<3){showFieldError('err-user','MÃ­nimo 3 caracteres');ok=false;}
+  if(!email||!email.includes('@')){showFieldError('err-email','Email no vÃ¡lido');ok=false;}
+  if(!pass||pass.length<6){showFieldError('err-pass','MÃ­nimo 6 caracteres');ok=false;}
   if(!ok)return;
   setLoading('btn-register',true,'Creando...');
   const{data}=await register(user,email,pass);
@@ -954,23 +954,23 @@ async function handleForgot(){
   setLoading('btn-forgot',true,'Enviando...');
   const{data}=await forgotPassword(email);
   setLoading('btn-forgot',false,'Enviar enlace');
-  if(data.ok)setAuthError('✓ Si el email existe, recibirás un enlace');else setAuthError(data.error);
+  if(data.ok)setAuthError('â Si el email existe, recibirÃ¡s un enlace');else setAuthError(data.error);
 }
 function showResetForm(token){
   document.getElementById('auth-screen').style.display='flex';
   document.getElementById('login-form').innerHTML=[
-    '<p style="color:var(--text2);font-size:13px;margin-bottom:14px">Introduce tu nueva contraseña.</p>',
-    '<div class="form-group"><label>Nueva contraseña</label><input type="password" id="rp-pass" placeholder="Mínimo 6 caracteres"/></div>',
-    '<button class="btn btn-primary" id="btn-reset">Guardar contraseña</button>'
+    '<p style="color:var(--text2);font-size:13px;margin-bottom:14px">Introduce tu nueva contraseÃ±a.</p>',
+    '<div class="form-group"><label>Nueva contraseÃ±a</label><input type="password" id="rp-pass" placeholder="MÃ­nimo 6 caracteres"/></div>',
+    '<button class="btn btn-primary" id="btn-reset">Guardar contraseÃ±a</button>'
   ].join('');
   document.getElementById('btn-reset').addEventListener('click',()=>doReset(token));
   document.getElementById('auth-tabs-bar').style.display='none';
 }
 async function doReset(token){
   const pass=document.getElementById('rp-pass').value;
-  if(!pass||pass.length<6)return setAuthError('Mínimo 6 caracteres');
+  if(!pass||pass.length<6)return setAuthError('MÃ­nimo 6 caracteres');
   const{data}=await resetPassword(token,pass);
-  if(data.ok){setAuthError('✓ Contraseña actualizada');setTimeout(()=>{history.replaceState({},'','/');switchAuthTab('login');},2000);}
+  if(data.ok){setAuthError('â ContraseÃ±a actualizada');setTimeout(()=>{history.replaceState({},'','/');switchAuthTab('login');},2000);}
   else setAuthError(data.error);
 }
 function setAuthError(m){document.getElementById('auth-error').textContent=m;}
@@ -978,9 +978,9 @@ function showFieldError(id,m){const el=document.getElementById(id);if(el)el.text
 function clearFieldErrors(){document.querySelectorAll('.field-error').forEach(el=>el.textContent='');}
 function setLoading(id,loading,text){const b=document.getElementById(id);if(!b)return;b.disabled=loading;b.textContent=text;}
 
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 // NAVIGATION
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 function goTab(name,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -997,29 +997,29 @@ function goTab(name,btn){
   if(name==='workout')wkInit();
 }
 
-// ── WORKOUT BUTTON ──
+// ââ WORKOUT BUTTON ââ
 function iniciarWorkout(){
   const btn=document.getElementById('tab-workout');
   // Si ya hay workout activo, simplemente ir a la vista
   if(wkIsActive()){goTab('workout',btn);return;}
-  // Mostrar modal de confirmación SIN navegar todavía
+  // Mostrar modal de confirmaciÃ³n SIN navegar todavÃ­a
   wkShow('wk-ov-start');
 }
 
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 // OFFLINE BADGE
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 function updateOfflineBadge(){
   const bar=document.getElementById('offline-bar');
   const pending=getPendientesOffline().length;
-  if(!navigator.onLine){bar.style.display='flex';bar.className='offline-badge offline';bar.innerHTML='⚡ Sin conexión — datos guardados localmente';}
-  else if(pending>0){bar.style.display='flex';bar.className='offline-badge online';bar.innerHTML='🔄 '+pending+' sesión(es) pendientes <a href="#" onclick="syncOffline()" style="color:inherit;margin-left:6px">Sincronizar</a>';}
+  if(!navigator.onLine){bar.style.display='flex';bar.className='offline-badge offline';bar.innerHTML='â¡ Sin conexiÃ³n â datos guardados localmente';}
+  else if(pending>0){bar.style.display='flex';bar.className='offline-badge online';bar.innerHTML='ð '+pending+' sesiÃ³n(es) pendientes <a href="#" onclick="syncOffline()" style="color:inherit;margin-left:6px">Sincronizar</a>';}
   else{bar.style.display='none';}
 }
 
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 // DASHBOARD
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 async function loadDashboard(){
   const{data}=await getStats();if(!data.ok)return;
   statsCache=data.stats;const s=data.stats;
@@ -1036,7 +1036,7 @@ async function loadDashboard(){
 }
 function renderProgreso(semanas){
   const el=document.getElementById('chart-progreso');
-  if(!semanas||!semanas.length){el.innerHTML='<p style="color:var(--text2);font-size:13px">¡Registra tu primera sesión!</p>';return;}
+  if(!semanas||!semanas.length){el.innerHTML='<p style="color:var(--text2);font-size:13px">Â¡Registra tu primera sesiÃ³n!</p>';return;}
   const max=Math.max(...semanas.map(s=>s.sesiones),1);
   el.innerHTML=semanas.map(s=>{
     const h=Math.max(4,(s.sesiones/max)*72);
@@ -1046,13 +1046,13 @@ function renderProgreso(semanas){
 }
 function renderRecientes(sesiones){
   const el=document.getElementById('dash-recientes');
-  if(!sesiones||!sesiones.length){el.innerHTML='<p style="color:var(--text2);font-size:13px">Aún no hay sesiones.</p>';return;}
+  if(!sesiones||!sesiones.length){el.innerHTML='<p style="color:var(--text2);font-size:13px">AÃºn no hay sesiones.</p>';return;}
   el.innerHTML=sesiones.map(s=>sessionCard(s)).join('');
 }
 
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 // HISTORIAL
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 async function loadHistorial(){
   const q=document.getElementById('search-q')?.value||'';
   const params={page:currentPage,limit:15};
@@ -1073,17 +1073,22 @@ function setTipoFilter(tipo,el){
 function renderPagination(page,pages){
   const el=document.getElementById('pagination');
   if(pages<=1){el.innerHTML='';return;}
-  el.innerHTML='<button class="page-btn" onclick="changePage('+(page-1)+')" '+(page<=1?'disabled':'')+'>← Anterior</button>'+
+  el.innerHTML='<button class="page-btn" onclick="changePage('+(page-1)+')" '+(page<=1?'disabled':'')+'>â Anterior</button>'+
     '<span class="page-info">'+page+' / '+pages+'</span>'+
-    '<button class="page-btn" onclick="changePage('+(page+1)+')" '+(page>=pages?'disabled':'')+'>Siguiente →</button>';
+    '<button class="page-btn" onclick="changePage('+(page+1)+')" '+(page>=pages?'disabled':'')+'>Siguiente â</button>';
 }
 function changePage(p){currentPage=p;loadHistorial();window.scrollTo(0,0);}
 
-const TIPO_ICON={Fuerza:'💪',Cardio:'🏃',HIIT:'🔥',Yoga:'🧘',Pecho:'🏋️',Espalda:'🦾',Piernas:'🦵',Hombros:'🔝',Brazos:'💪',Otro:'⚡'};
-function tipoIcon(t){return TIPO_ICON[t]||'⚡';}
+const TIPO_ICON={Fuerza:'ðª',Cardio:'ð',HIIT:'ð¥',Yoga:'ð§',Pecho:'ðï¸',Espalda:'ð¦¾',Piernas:'ð¦µ',Hombros:'ð',Brazos:'ðª',Otro:'â¡'};
+function tipoIcon(t){return TIPO_ICON[t]||'â¡';}
 function sessionCard(s){
+<<<<<<< HEAD
   const stars=s.valoracion?'⭐'.repeat(s.valoracion):'';
   const meta=[formatFecha(s.fecha),s.duracion_min?s.duracion_min+'min':null,s.calorias?s.calorias+'kcal':null].filter(Boolean).join(' · ');
+=======
+  const stars=s.valoracion?'â­'.repeat(s.valoracion):'';
+  const meta=[s.fecha,s.duracion_min?s.duracion_min+'min':null,s.calorias?s.calorias+'kcal':null].filter(Boolean).join(' Â· ');
+>>>>>>> ea4471d49d62ef71108d92b81017ba317fbeeab8
   return '<div class="session-item" onclick="openDetalle('+s.id+')">'+
     '<div class="session-icon tipo-'+s.tipo+'">'+tipoIcon(s.tipo)+'</div>'+
     '<div class="session-info"><div class="session-tipo">'+s.tipo+'</div>'+
@@ -1092,23 +1097,27 @@ function sessionCard(s){
     '</div></div>';
 }
 
-// ══════════════════════════════════════════════
-// DETALLE SESIÓN
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
+// DETALLE SESIÃN
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 async function openDetalle(id){
   const{data}=await getSesion(id);if(!data.ok)return;
   const s=data.sesion;
   document.getElementById('md-tipo').textContent=tipoIcon(s.tipo)+' '+s.tipo;
+<<<<<<< HEAD
   const cells=[['Fecha',formatFecha(s.fecha)],['Duración',s.duracion_min?s.duracion_min+' min':'—'],['Calorías',s.calorias?s.calorias+' kcal':'—'],['Valoración',s.valoracion?'⭐'.repeat(s.valoracion):'—']];
+=======
+  const cells=[['Fecha',s.fecha],['DuraciÃ³n',s.duracion_min?s.duracion_min+' min':'â'],['CalorÃ­as',s.calorias?s.calorias+' kcal':'â'],['ValoraciÃ³n',s.valoracion?'â­'.repeat(s.valoracion):'â']];
+>>>>>>> ea4471d49d62ef71108d92b81017ba317fbeeab8
   let html='<div class="detail-grid">'+cells.map(([l,v])=>'<div class="detail-cell"><div class="detail-cell-label">'+l+'</div><div class="detail-cell-val">'+v+'</div></div>').join('')+'</div>';
   if(s.notas)html+='<div class="card" style="margin-bottom:14px"><div class="card-title">Notas</div><p style="font-size:14px;line-height:1.65">'+s.notas+'</p></div>';
   if(s.ejercicios?.length){
     html+='<div class="card-title" style="margin-bottom:8px">Ejercicios ('+s.ejercicios.length+')</div>';
-    html+=s.ejercicios.map(e=>'<div class="session-item" style="cursor:default"><div class="session-info"><div class="session-tipo">'+e.nombre+'</div><div class="session-meta">'+[e.series?e.series+' series':null,e.reps?e.reps+' reps':null,e.peso_kg?e.peso_kg+'kg':null].filter(Boolean).join(' · ')+'</div></div></div>').join('');
+    html+=s.ejercicios.map(e=>'<div class="session-item" style="cursor:default"><div class="session-info"><div class="session-tipo">'+e.nombre+'</div><div class="session-meta">'+[e.series?e.series+' series':null,e.reps?e.reps+' reps':null,e.peso_kg?e.peso_kg+'kg':null].filter(Boolean).join(' Â· ')+'</div></div></div>').join('');
   }
   html+='<div style="display:flex;gap:8px;margin-top:16px">'+
-    '<button class="btn btn-secondary" style="flex:1" onclick="borrarSesionConfirm('+s.id+')">🗑 Eliminar</button>'+
-    '<button class="btn btn-primary" style="flex:2" onclick="repetirWorkout('+s.id+')">🏋️ Repetir Workout</button>'+
+    '<button class="btn btn-secondary" style="flex:1" onclick="borrarSesionConfirm('+s.id+')">ð Eliminar</button>'+
+    '<button class="btn btn-primary" style="flex:2" onclick="repetirWorkout('+s.id+')">ðï¸ Repetir Workout</button>'+
     '</div>';
   document.getElementById('md-content').innerHTML=html;
   openModal('modal-detalle');
@@ -1117,18 +1126,18 @@ async function openDetalle(id){
 function repetirWorkout(id){
   closeModal('modal-detalle');
   showConfirm(
-    '¿Repetir este workout?',
-    'Se abrirá el workout precargado con los ejercicios y pesos de esta sesión.',
-    '🏋️ Cargar workout',
+    'Â¿Repetir este workout?',
+    'Se abrirÃ¡ el workout precargado con los ejercicios y pesos de esta sesiÃ³n.',
+    'ðï¸ Cargar workout',
     async () => {
       const {data} = await getSesion(id);
-      if(!data.ok){ showToast('Error al cargar sesión','error'); return; }
+      if(!data.ok){ showToast('Error al cargar sesiÃ³n','error'); return; }
       const s = data.sesion;
       // Guardar en sessionStorage para que actividad.html lo cargue
       const preload = {
         tipo: s.tipo,
         ejercicios: (s.ejercicios||[]).map(e => ({
-          em: '🏋️',
+          em: 'ðï¸',
           n: e.nombre,
           m: e.nombre.toUpperCase(),
           kg: e.peso_kg || 60,
@@ -1146,16 +1155,16 @@ function repetirWorkout(id){
 }
 function borrarSesionConfirm(id){
   closeModal('modal-detalle');
-  showConfirm('¿Eliminar sesión?','Esta acción no se puede deshacer.','Eliminar',async()=>{
+  showConfirm('Â¿Eliminar sesiÃ³n?','Esta acciÃ³n no se puede deshacer.','Eliminar',async()=>{
     const{data}=await eliminarSesion(id);
-    if(data.ok){showToast('Sesión eliminada','info');loadDashboard();loadHistorial();}
+    if(data.ok){showToast('SesiÃ³n eliminada','info');loadDashboard();loadHistorial();}
     else showToast(data.error,'error');
   });
 }
 
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 // STATS
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 function setStatsType(type){
   currentStatsType=type;
   document.getElementById('stype-ej').classList.toggle('active',type==='ejercicio');
@@ -1189,13 +1198,13 @@ async function loadStatsEjercicios(){
   renderStatsEjList(Object.values(ejMap));
 }
 
-// ── Stats ejercicio modal ──
+// ââ Stats ejercicio modal ââ
 const STATS_GRUPOS={
-  'Pecho':['press pecho','pecho máquina','pec','aperturas','fondos','crossover','push','flexion'],
-  'Espalda':['jalón','jalon','remo','pull','peso muerto','deadlift','espalda','dorsal'],
-  'Piernas':['sentadilla','squat','prensa','press piernas','extensión','curl femoral','leg','gemelo','abducción','aducción','peso muerto'],
-  'Hombros':['press hombros','press militar','elevacion','elevaciones','face pull','arnold','remo máquina'],
-  'Brazos':['curl','bicep','bíceps','tricep','tríceps','martillo','extension tricep','press frances'],
+  'Pecho':['press pecho','pecho mÃ¡quina','pec','aperturas','fondos','crossover','push','flexion'],
+  'Espalda':['jalÃ³n','jalon','remo','pull','peso muerto','deadlift','espalda','dorsal'],
+  'Piernas':['sentadilla','squat','prensa','press piernas','extensiÃ³n','curl femoral','leg','gemelo','abducciÃ³n','aducciÃ³n','peso muerto'],
+  'Hombros':['press hombros','press militar','elevacion','elevaciones','face pull','arnold','remo mÃ¡quina'],
+  'Brazos':['curl','bicep','bÃ­ceps','tricep','trÃ­ceps','martillo','extension tricep','press frances'],
   'Core':['abdominal','abs','crunch','plancha','plank','oblicuo'],
   'Cardio':['correr','carrera','bici','cicl','eliptica','cinta','treadmill','running','saltar'],
 };
@@ -1210,7 +1219,7 @@ function detectarGrupoStats(nombre){
 function openStatsEjModal(){
   const ejMap=window._statsEjMap||{};
   const all=Object.values(ejMap);
-  if(!all.length){showToast('Sin datos de ejercicios todavía','info');return;}
+  if(!all.length){showToast('Sin datos de ejercicios todavÃ­a','info');return;}
   // Agrupar por grupo muscular
   const grupos={};
   all.forEach(e=>{
@@ -1227,7 +1236,7 @@ function openStatsEjModal(){
       ${grupos[g].map(e=>`
         <div class="ex-selector-item" style="margin:2px 12px;border-radius:10px" onclick="selectStatsEjFromModal('${e.nombre.replace(/'/g,"\'")}')">
           <div class="ex-name">${e.nombre}</div>
-          <div class="ex-stats">Máx: ${e.maxKg}kg · Vol máx: ${e.maxVol}kg</div>
+          <div class="ex-stats">MÃ¡x: ${e.maxKg}kg Â· Vol mÃ¡x: ${e.maxVol}kg</div>
         </div>`).join('')}
     </div>`).join('');
   openModal('modal-stats-ej');
@@ -1244,7 +1253,7 @@ function renderStatsEjList(list){
   // No-op: lista ahora se muestra en modal
 }
 function filterStatsEjercicios(){
-  // No-op: búsqueda ahora en modal
+  // No-op: bÃºsqueda ahora en modal
 }
 
 function selectStatsEj(nombre){
@@ -1252,7 +1261,7 @@ function selectStatsEj(nombre){
   const ej=window._statsEjMap[nombre];if(!ej)return;
   document.getElementById('ej-max-kg').textContent=ej.maxKg+'kg';
   document.getElementById('ej-max-vol').textContent=ej.maxVol+'kg';
-  document.getElementById('ej-chart-title').textContent='Peso máximo: '+nombre;
+  document.getElementById('ej-chart-title').textContent='Peso mÃ¡ximo: '+nombre;
   document.getElementById('stats-ej-detail').style.display='block';
   // Sort entries by date
   const entries=ej.entries.sort((a,b)=>a.fecha.localeCompare(b.fecha));
@@ -1271,7 +1280,7 @@ async function loadStatssDias(){
   const{data}=await getSesiones({limit:500});
   if(!data.ok)return;
   const all=data.sesiones||[];
-  const dayNames=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const dayNames=['Dom','Lun','Mar','MiÃ©','Jue','Vie','SÃ¡b'];
   const counts=Array(7).fill(0);
   all.forEach(s=>{const d=new Date(s.fecha+'T12:00:00');counts[d.getDay()]++;});
   // Days filter chips
@@ -1292,9 +1301,9 @@ function toggleDayFilter(i){
   loadStatssDias();
 }
 
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 // PERFIL - SETTINGS
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 function applySettingsUI(){
   const t=localStorage.getItem('gymy_theme')||'dark';
   ['dark','light','choni','material-dark','material-light'].forEach(n=>{
@@ -1319,14 +1328,14 @@ function setPreload(mode){
   showToast('Modo precarga actualizado','success');
 }
 
-// ── PLANTILLAS ──
+// ââ PLANTILLAS ââ
 async function renderCatalogoList(){
   const el=document.getElementById('catalogo-list');
   if(!el)return;
   const db=await wkGetDBAsync();
   const grupos=Object.keys(db);
   if(!grupos.length){
-    el.innerHTML='<div style="font-size:12px;color:var(--text2);text-align:center;padding:10px">No hay ejercicios en el catálogo</div>';
+    el.innerHTML='<div style="font-size:12px;color:var(--text2);text-align:center;padding:10px">No hay ejercicios en el catÃ¡logo</div>';
     return;
   }
   const custom=JSON.parse(localStorage.getItem('gymy_plantillas')||'{}');
@@ -1355,13 +1364,13 @@ function renderPlantillasList(){
   el.innerHTML='<div style="font-size:11px;color:var(--text2);margin-bottom:6px">'+all.length+' ejercicio(s) personalizados</div>'+
     all.map(e=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--bg3);border-radius:8px;margin-bottom:5px;font-size:13px">'+
       '<span>'+e.em+' '+e.n+' <span style="color:var(--text2);font-size:11px">('+e.grupo+')</span></span>'+
-      '<button onclick="delPlantilla(\''+e.grupo+'\',\''+e.n+'\')" style="background:transparent;border:none;color:var(--accent2);cursor:pointer;font-size:14px">✕</button>'+
+      '<button onclick="delPlantilla(\''+e.grupo+'\',\''+e.n+'\')" style="background:transparent;border:none;color:var(--accent2);cursor:pointer;font-size:14px">â</button>'+
     '</div>').join('');
 }
 
 function addPlantillaManual(){
   const grupo=document.getElementById('new-ej-grupo').value;
-  const em=document.getElementById('new-ej-em').value||'💪';
+  const em=document.getElementById('new-ej-em').value||'ðª';
   const nombre=document.getElementById('new-ej-nombre').value.trim();
   const musculo=document.getElementById('new-ej-musculo').value.trim().toUpperCase();
   if(!nombre)return showToast('Introduce un nombre','error');
@@ -1371,7 +1380,7 @@ function addPlantillaManual(){
   localStorage.setItem('gymy_plantillas',JSON.stringify(p));
   closeModal('modal-add-plantilla');
   renderPlantillasList();
-  showToast('Ejercicio añadido','success');
+  showToast('Ejercicio aÃ±adido','success');
 }
 
 function delPlantilla(grupo,nombre){
@@ -1395,7 +1404,7 @@ function importCSV(event){
       if(parts.length>=3){
         const[grupo,em,nombre,musculo]=parts;
         if(!p[grupo])p[grupo]=[];
-        p[grupo].push({em:em||'💪',n:nombre,m:musculo||grupo.toUpperCase()});
+        p[grupo].push({em:em||'ðª',n:nombre,m:musculo||grupo.toUpperCase()});
         count++;
       }
     });
@@ -1408,16 +1417,16 @@ function importCSV(event){
 }
 
 function confirmEliminarPlantillas(){
-  showConfirm('¿Eliminar todas las plantillas?','Se eliminarán todos los ejercicios personalizados. Los ejercicios base no se ven afectados.','Eliminar todo',()=>{
+  showConfirm('Â¿Eliminar todas las plantillas?','Se eliminarÃ¡n todos los ejercicios personalizados. Los ejercicios base no se ven afectados.','Eliminar todo',()=>{
     localStorage.removeItem('gymy_plantillas');
     renderPlantillasList();
     showToast('Plantillas eliminadas','info');
   });
 }
 
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 // SYNC / EXPORT
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 async function syncOffline(){
   const statusEl=document.getElementById('sync-status');
   if(statusEl)statusEl.textContent='Sincronizando...';
@@ -1425,7 +1434,7 @@ async function syncOffline(){
   if(r.sincronizadas>0){
     showToast(r.sincronizadas+' sesiones sincronizadas','success');
     loadDashboard();statsCache=null;
-    if(statusEl)statusEl.textContent='✓ '+r.sincronizadas+' sesiones sincronizadas';
+    if(statusEl)statusEl.textContent='â '+r.sincronizadas+' sesiones sincronizadas';
   } else {
     showToast('No hay datos pendientes','info');
     if(statusEl)statusEl.textContent='Sin datos pendientes';
@@ -1435,9 +1444,9 @@ async function syncOffline(){
 }
 async function doExport(){showToast('Descargando CSV...','info');await exportarCSV();closeModal('modal-export');}
 
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 // CONFIRM MODAL
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 function showConfirm(title,msg,okLabel,onOk,style='danger'){
   document.getElementById('confirm-title').textContent=title;
   document.getElementById('confirm-msg').textContent=msg;
@@ -1449,12 +1458,12 @@ function showConfirm(title,msg,okLabel,onOk,style='danger'){
 }
 
 function confirmLogout(){
-  showConfirm('¿Cerrar sesión?','Tu token se eliminará de este dispositivo.','Cerrar sesión',()=>logout());
+  showConfirm('Â¿Cerrar sesiÃ³n?','Tu token se eliminarÃ¡ de este dispositivo.','Cerrar sesiÃ³n',()=>logout());
 }
 
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 // MODAL / PANEL
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 function openModal(id){
   const el=document.getElementById(id);
   el.classList.add('open');
@@ -1470,9 +1479,9 @@ function closeModal(id){
 function openPanel(){document.getElementById('side-panel').classList.add('open');document.getElementById('panel-bd').classList.add('open');}
 function closePanel(){document.getElementById('side-panel').classList.remove('open');document.getElementById('panel-bd').classList.remove('open');}
 
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 // THEME
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 function applyTheme(){
   const t=localStorage.getItem('gymy_theme')||'dark';
   document.documentElement.setAttribute('data-theme',t);
@@ -1493,9 +1502,9 @@ function toggleTheme(){
   setTheme(n);
 }
 
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 // PROFILE DATA
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 function saveProfileData(){
   const fields=['edad','genero','altura','peso','actividad','objetivo'];
   const data={};
@@ -1514,9 +1523,9 @@ function loadProfileData(){
   });
 }
 
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 // HISTORIAL CSV EXPORT / IMPORT
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 async function exportHistorialCSV(){
   showToast('Preparando CSV...','info');
   // Try API first, fallback to local
@@ -1544,16 +1553,16 @@ async function exportHistorialCSV(){
   showToast('CSV exportado','success');
 }
 
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 // IMPORTAR HISTORIAL CON IA
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 function importHistorialCSV(event){
   const file=event.target.files[0];if(!file)return;
   // Accept any text file or CSV
   const reader=new FileReader();
   reader.onload=async(e)=>{
     const rawText=e.target.result;
-    if(!rawText.trim()){showToast('Archivo vacío','error');return;}
+    if(!rawText.trim()){showToast('Archivo vacÃ­o','error');return;}
     // Show preview modal with AI analysis option
     openImportPreview(rawText,file.name);
   };
@@ -1567,20 +1576,20 @@ function openImportPreview(rawText,filename){
   const lines=rawText.split('\n').filter(l=>l.trim()).length;
   const modalHtml=
     '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">'+
-    '<strong style="color:var(--text)">'+filename+'</strong> · '+lines+' líneas</div>'+
+    '<strong style="color:var(--text)">'+filename+'</strong> Â· '+lines+' lÃ­neas</div>'+
     '<pre style="font-size:11px;color:var(--text2);background:var(--bg3);padding:12px;border-radius:10px;overflow:auto;max-height:140px;white-space:pre-wrap">'+
     preview.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre>'+
-    '<p style="font-size:13px;color:var(--text2);margin:14px 0 6px">La IA analizará el archivo e identificará:</p>'+
+    '<p style="font-size:13px;color:var(--text2);margin:14px 0 6px">La IA analizarÃ¡ el archivo e identificarÃ¡:</p>'+
     '<ul style="font-size:12px;color:var(--text2);padding-left:18px;line-height:1.8">'+
     '<li>Fechas de cada entrenamiento</li>'+
     '<li>Tipo de ejercicio (fuerza, cardio, etc.)</li>'+
     '<li>Ejercicios, series, reps y pesos</li>'+
-    '<li>Duración, calorías y notas</li>'+
+    '<li>DuraciÃ³n, calorÃ­as y notas</li>'+
     '</ul>'+
     '<div id="import-status" style="margin-top:12px;font-size:13px;min-height:20px;color:var(--accent3)"></div>'+
     '<div style="display:flex;gap:8px;margin-top:16px">'+
     '<button class="c-btn-cancel" onclick="closeModal(\'modal-import-preview\')">Cancelar</button>'+
-    '<button class="c-btn-primary" id="btn-run-import" onclick="runAIImport()">🤖 Analizar con IA</button>'+
+    '<button class="c-btn-primary" id="btn-run-import" onclick="runAIImport()">ð¤ Analizar con IA</button>'+
     '</div>';
   // Reuse confirm modal structure or create dedicated one
   document.getElementById('import-preview-body').innerHTML=modalHtml;
@@ -1595,14 +1604,14 @@ async function runAIImport(){
   const status=document.getElementById('import-status');
   btn.disabled=true;
   btn.textContent='Analizando...';
-  status.textContent='🤖 La IA está leyendo tu archivo...';
+  status.textContent='ð¤ La IA estÃ¡ leyendo tu archivo...';
 
   const DB_GRUPOS={
-    'Pecho':['press pecho','pecho máquina','pec deck','aperturas','fondos','crossover','push up','flexiones'],
-    'Espalda':['jalón','jalon','pulldown','pull','remo','espalda','peso muerto','deadlift'],
-    'Piernas':['sentadilla','squat','prensa','press piernas','extensión cuad','curl femoral','leg curl','leg press','gemelos','calf','abducción','aducción'],
-    'Hombros':['press hombros','press militar','elevaciones lat','elevacion frontal','face pull','arnold','remo máquina'],
-    'Brazos':['curl','biceps','bicep','tricep','tríceps','extensión tricep','fondos tricep','martillo'],
+    'Pecho':['press pecho','pecho mÃ¡quina','pec deck','aperturas','fondos','crossover','push up','flexiones'],
+    'Espalda':['jalÃ³n','jalon','pulldown','pull','remo','espalda','peso muerto','deadlift'],
+    'Piernas':['sentadilla','squat','prensa','press piernas','extensiÃ³n cuad','curl femoral','leg curl','leg press','gemelos','calf','abducciÃ³n','aducciÃ³n'],
+    'Hombros':['press hombros','press militar','elevaciones lat','elevacion frontal','face pull','arnold','remo mÃ¡quina'],
+    'Brazos':['curl','biceps','bicep','tricep','trÃ­ceps','extensiÃ³n tricep','fondos tricep','martillo'],
     'Core':['abdominales','abs','crunch','plancha','plank','oblicuos'],
     'Cardio':['correr','carrera','bici','ciclismo','remo cardio','eliptica','cinta','treadmill','running']
   };
@@ -1617,7 +1626,7 @@ async function runAIImport(){
   const prompt=`Analiza este archivo de entrenamiento y extrae TODOS los datos en formato JSON.
 El archivo puede tener cualquier formato: CSV, texto libre, notas, exportaciones de apps fitness, etc.
 
-Devuelve ÚNICAMENTE un objeto JSON válido, sin backticks, sin texto extra, con esta estructura:
+Devuelve ÃNICAMENTE un objeto JSON vÃ¡lido, sin backticks, sin texto extra, con esta estructura:
 {
   "sesiones": [
     {
@@ -1641,13 +1650,13 @@ Devuelve ÚNICAMENTE un objeto JSON válido, sin backticks, sin texto extra, con
 
 Reglas OBLIGATORIAS:
 - "notas" siempre debe ser exactamente: "Importado desde app externa"
-- Detecta "tipo" de sesión según los ejercicios predominantes (pecho/press→Pecho, dominadas/remo→Espalda, sentadilla/prensa→Piernas, press militar→Hombros, curl/tricep→Brazos, correr/bici→Cardio)
+- Detecta "tipo" de sesiÃ³n segÃºn los ejercicios predominantes (pecho/pressâPecho, dominadas/remoâEspalda, sentadilla/prensaâPiernas, press militarâHombros, curl/tricepâBrazos, correr/biciâCardio)
 - Para "grupo" de cada ejercicio: asigna el grupo muscular principal
-- Si hay múltiples series del mismo ejercicio, crea una entrada por cada set (no agrupes)
+- Si hay mÃºltiples series del mismo ejercicio, crea una entrada por cada set (no agrupes)
 - Si no hay fecha, usa: ${new Date().toISOString().split('T')[0]}
 - Si faltan series/reps/peso usa 0
-- Agrupa ejercicios del mismo día en la misma sesión
-- Estima duración si no está (30min por defecto), calorías si no están (0)
+- Agrupa ejercicios del mismo dÃ­a en la misma sesiÃ³n
+- Estima duraciÃ³n si no estÃ¡ (30min por defecto), calorÃ­as si no estÃ¡n (0)
 
 ARCHIVO:
 ${rawText.slice(0,6000)}`;
@@ -1660,22 +1669,22 @@ ${rawText.slice(0,6000)}`;
     });
     if(!resp.ok){
       const errData=await resp.json().catch(()=>({}));
-      throw new Error(errData.error||'Error del servidor ('+resp.status+'). ¿Está configurada ANTHROPIC_API_KEY en Railway?');
+      throw new Error(errData.error||'Error del servidor ('+resp.status+'). Â¿EstÃ¡ configurada ANTHROPIC_API_KEY en Railway?');
     }
     const data=await resp.json();
     const text=data.text||'';    // Extract JSON from response
     let jsonStr=text.trim();
     const jsonMatch=jsonStr.match(/\{[\s\S]*\}/);
-    if(!jsonMatch)throw new Error('No se encontró JSON en la respuesta');
+    if(!jsonMatch)throw new Error('No se encontrÃ³ JSON en la respuesta');
     const parsed=JSON.parse(jsonMatch[0]);
     const sesiones=parsed.sesiones||[];
     if(!sesiones.length)throw new Error('No se encontraron sesiones');
-    status.textContent='✓ Detectadas '+sesiones.length+' sesiones. Guardando...';
+    status.textContent='â Detectadas '+sesiones.length+' sesiones. Guardando...';
     await importSesiones(sesiones,status,btn);
   }catch(err){
     console.error(err);
     status.style.color='var(--accent2)';
-    status.textContent='Error: '+err.message+'. Intentando análisis básico...';
+    status.textContent='Error: '+err.message+'. Intentando anÃ¡lisis bÃ¡sico...';
     // Fallback: basic CSV parse
     await importSesionesBasico(rawText,status,btn);
   }
@@ -1689,7 +1698,7 @@ async function importSesiones(sesiones,status,btn){
     s.fecha=s.fecha.toString().slice(0,10);
     if(!/^\d{4}-\d{2}-\d{2}$/.test(s.fecha))continue;
     // Siempre marcar como importado
-    s.notas=((s.notas||'').replace('Importado desde app externa','').trim()+' · Importado desde app externa').replace(/^\s*·\s*/,'');
+    s.notas=((s.notas||'').replace('Importado desde app externa','').trim()+' Â· Importado desde app externa').replace(/^\s*Â·\s*/,'');
     // Normalizar ejercicios (quitar grupo_muscular que no acepta el backend)
     if(s.ejercicios)s.ejercicios=s.ejercicios.map(e=>({
       nombre:e.nombre||'Ejercicio',
@@ -1701,14 +1710,14 @@ async function importSesiones(sesiones,status,btn){
     else{
       const r=await crearSesion(s);
       if(r.data.ok)imported++;
-      else{errors++;console.warn('Error guardando sesión',s.fecha,r.data);}
+      else{errors++;console.warn('Error guardando sesiÃ³n',s.fecha,r.data);}
     }
     status.textContent='Guardando... '+imported+'/'+sesiones.length;
   }
   updateOfflineBadge();loadDashboard();
   closeModal('modal-import-preview');
   if(!navigator.onLine)showToast(imported+' sesiones guardadas offline','success');
-  else showToast(imported+' sesiones importadas'+(errors?' ('+errors+' errores)':'')+' ✓','success');
+  else showToast(imported+' sesiones importadas'+(errors?' ('+errors+' errores)':'')+' â','success');
 }
 
 async function importSesionesBasico(rawText,status,btn){
@@ -1730,9 +1739,9 @@ async function importSesionesBasico(rawText,status,btn){
   await importSesiones(Object.values(byFecha),status,btn);
 }
 
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 // TOAST
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 let toastTimer;
 function formatFecha(f){
   if(!f)return'';
@@ -1748,16 +1757,16 @@ function showToast(msg,type=''){
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.className='toast',3000);
 }
 
-// ══════════════════════════════════════════════
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 // HISTORIAL LOCAL (precarga workout desde Postgres)
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 async function cargarHistorialLocal(){
   try{
     const res=await apiCall('GET','/sesiones?limit=100&page=1');
     if(!res.data?.ok||!res.data.sesiones)return;
     const sesiones=res.data.sesiones;
-    // Agrupar ejercicios por nombre y sesión
+    // Agrupar ejercicios por nombre y sesiÃ³n
     const byNombreSession={};
     for(const sesion of sesiones){
       // Intentar usar ejercicios embebidos, o fetch individual como fallback
@@ -1793,20 +1802,20 @@ async function cargarHistorialLocal(){
 }
 
 // WORKOUT ENGINE
-// ══════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââ
 
 // Emojis por equipamiento
 const EQUIPO_EM={
-  'mancuernas':'💪','mancuerna':'💪',
-  'barra':'🏋️',
-  'máquina':'🤖','maquina':'🤖',
-  'cable':'🔗',
-  'peso_corporal':'🧍',
-  'cardio':'🏃',
+  'mancuernas':'ðª','mancuerna':'ðª',
+  'barra':'ðï¸',
+  'mÃ¡quina':'ð¤','maquina':'ð¤',
+  'cable':'ð',
+  'peso_corporal':'ð§',
+  'cardio':'ð',
 };
-function ejEmoji(equipo){return EQUIPO_EM[equipo]||'💪';}
+function ejEmoji(equipo){return EQUIPO_EM[equipo]||'ðª';}
 
-// Caché en memoria del catálogo (se carga una vez por sesión)
+// CachÃ© en memoria del catÃ¡logo (se carga una vez por sesiÃ³n)
 let _catalogoCache=null;
 let _catalogoLoading=null;
 
@@ -1830,13 +1839,13 @@ async function loadCatalogo(){
         _catalogoCache=db;
         return db;
       }
-    }catch(err){console.warn('[Catálogo] Error cargando desde API:',err.message);}
+    }catch(err){console.warn('[CatÃ¡logo] Error cargando desde API:',err.message);}
     return {};
   })();
   return _catalogoLoading;
 }
 
-// Versión síncrona (usa caché si ya está cargada)
+// VersiÃ³n sÃ­ncrona (usa cachÃ© si ya estÃ¡ cargada)
 function wkGetDB(){
   const c=JSON.parse(localStorage.getItem('gymy_plantillas')||'{}');
   const base=_catalogoCache||{};
@@ -1846,7 +1855,7 @@ function wkGetDB(){
   return m;
 }
 
-// Versión async: asegura que el catálogo está cargado antes de devolver
+// VersiÃ³n async: asegura que el catÃ¡logo estÃ¡ cargado antes de devolver
 async function wkGetDBAsync(){
   await loadCatalogo();
   return wkGetDB();
@@ -1857,7 +1866,7 @@ function wkGetPreload(nombre){
   const h=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]').filter(e=>e.nombre===nombre);
   if(!h.length)return null;
 
-  // Normalize entry → {sets:[{kg,reps}], vol}
+  // Normalize entry â {sets:[{kg,reps}], vol}
   // Soporta formato viejo {kg,reps,ts} y nuevo {sets:[],ts}
   function normalize(entry){
     if(entry.sets&&entry.sets.length){
@@ -1872,7 +1881,7 @@ function wkGetPreload(nombre){
   if(mode==='ultimo'){
     return{sets:normalize(h[h.length-1]).sets};
   }
-  // mode === 'maximo': sesión con MAYOR VOLUMEN TOTAL (suma kg*reps de todas las series)
+  // mode === 'maximo': sesiÃ³n con MAYOR VOLUMEN TOTAL (suma kg*reps de todas las series)
   let best=null, bestVol=-1;
   h.forEach(entry=>{
     const n=normalize(entry);
@@ -1892,7 +1901,7 @@ function wkSaveLocalHistorial(exs){
   localStorage.setItem('gymy_historial_local',JSON.stringify(h));
 }
 
-// ── State ──
+// ââ State ââ
 let wkExs=[],wkEid=0,wkSecs=0,wkRunning=false;
 let wkRestSecs=0,wkRestRunning=false,wkRestInterval=null;
 let wkCurTipo='',wkStarted=false,wkSecInterval=null,wkAutoSaveInterval=null;
@@ -1911,11 +1920,11 @@ function wkClearState(){
 }
 function wkIsActive(){return localStorage.getItem('gymy_workout_active')==='1';}
 
-// ── Init workout tab ──
+// ââ Init workout tab ââ
 function wkInit(){
   // Set date
   const d=new Date();
-  const dias=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const dias=['Dom','Lun','Mar','MiÃ©','Jue','Vie','SÃ¡b'];
   const mes=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   document.getElementById('wk-date-bar').textContent=dias[d.getDay()]+' '+d.getDate()+' de '+mes[d.getMonth()];
 
@@ -1928,12 +1937,12 @@ function wkInit(){
       wkCurTipo=pw.tipo||'Fuerza';
       pw.ejercicios.forEach(e=>{
         const id=wkEid++;
-        wkExs.push({id,em:e.em||'🏋️',n:e.n,m:e.m||e.n.toUpperCase(),
+        wkExs.push({id,em:e.em||'ðï¸',n:e.n,m:e.m||e.n.toUpperCase(),
           sets:[{kg:e.kg||60,reps:e.reps||10,done:false,pre:true}]});
       });
       wkActivate();
       wkRender();
-      showToast('Workout cargado desde historial ✓','success');
+      showToast('Workout cargado desde historial â','success');
       return;
     }catch(e){}
   }
@@ -1956,12 +1965,12 @@ function wkInit(){
     wkRender();
     return;
   }
-  // No active workout — show empty state (FAB initiates)
+  // No active workout â show empty state (FAB initiates)
   document.getElementById('wk-ex-container').innerHTML=
     '<div style="text-align:center;padding:60px 20px;color:var(--text2)">'
-    +'<div style="font-size:48px;margin-bottom:16px">🏋️</div>'
+    +'<div style="font-size:48px;margin-bottom:16px">ðï¸</div>'
     +'<div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px">Sin workout activo</div>'
-    +'<div style="font-size:14px">Pulsa el botón <strong style="color:var(--accent)">+</strong> para iniciar</div>'
+    +'<div style="font-size:14px">Pulsa el botÃ³n <strong style="color:var(--accent)">+</strong> para iniciar</div>'
     +'</div>';
 }
 
@@ -1990,7 +1999,7 @@ function wkActivate(){
       wkSecs++;
       const m=String(Math.floor(wkSecs/60)).padStart(2,'0');
       const s=String(wkSecs%60).padStart(2,'0');
-      document.getElementById('wk-session-secs').textContent='⏱ '+m+':'+s;
+      document.getElementById('wk-session-secs').textContent='â± '+m+':'+s;
       wkRefreshStats(); // wkRefreshStats updates wkb-dur and all banner stats
     },1000);
   }
@@ -2002,7 +2011,7 @@ function wkShow(id){
   const el=document.getElementById(id);
   el.classList.add('open');
   // Click-outside solo para overlays que NO son selectores de tipo/ej
-  // (esos tienen lógica de cierre seguro propia)
+  // (esos tienen lÃ³gica de cierre seguro propia)
   if(id!=='wk-ov-tipo'&&id!=='wk-ov-ej'){
     el._wkClose=function(e){if(e.target===el)wkHide(id);};
     el.addEventListener('click',el._wkClose);
@@ -2016,10 +2025,10 @@ function wkHide(id){
 
 // Emojis por grupo para el selector
 const GRUPO_EM={
-  'Pecho':'🏋️','Espalda':'🦾','Piernas':'🦵','Hombros':'🔝',
-  'Brazos':'💪','Core':'🧘','Cardio':'🏃',
+  'Pecho':'ðï¸','Espalda':'ð¦¾','Piernas':'ð¦µ','Hombros':'ð',
+  'Brazos':'ðª','Core':'ð§','Cardio':'ð',
 };
-function grupoEmoji(g){return GRUPO_EM[g]||'🏃';}
+function grupoEmoji(g){return GRUPO_EM[g]||'ð';}
 
 async function wkRenderTipoGrid(){
   const db=await wkGetDBAsync();
@@ -2037,15 +2046,15 @@ async function wkRenderTipoGrid(){
 
 function wkOpenTipo(){wkRenderTipoGrid();wkShow('wk-ov-tipo');}
 
-// Cerrar selector tipo: si no hay ejercicios y workout fue recién iniciado → abortar
+// Cerrar selector tipo: si no hay ejercicios y workout fue reciÃ©n iniciado â abortar
 function wkCloseTipoSafe(){
   wkHide('wk-ov-tipo');
   if(wkStarted && wkExs.length===0){
-    // Ningún ejercicio añadido aún — descartar el workout silenciosamente
+    // NingÃºn ejercicio aÃ±adido aÃºn â descartar el workout silenciosamente
     wkDoDiscard();
   }
 }
-// Cerrar selector ejercicio: si no hay ejercicios → abortar workout
+// Cerrar selector ejercicio: si no hay ejercicios â abortar workout
 function wkCloseEjSafe(){
   wkHide('wk-ov-ej');
   if(wkStarted && wkExs.length===0){
@@ -2104,7 +2113,7 @@ function wkAddEx(e){
   setTimeout(()=>document.getElementById('wk-ex-'+id)?.scrollIntoView({behavior:'smooth',block:'nearest'}),100);
 }
 
-// ── Render ──
+// ââ Render ââ
 function wkRender(){
   document.getElementById('wk-ex-container').innerHTML=wkExs.map(ex=>wkCardHTML(ex)).join('');
   wkRefreshStats();
@@ -2126,23 +2135,23 @@ function wkCardHTML(ex){
     return '<div class="set-row '+(s.done?'is-done':'')+'" id="wk-sr-'+ex.id+'-'+i+'">'
       +'<div class="set-num '+(s.done?'done':'')+'">'+( i+1)+'</div>'
       +'<div class="stepper '+(s.pre&&!s.done?'preloaded':'')+'">'
-        +'<button class="st-btn" onclick="wkStep('+ex.id+','+i+',\'kg\',-2.5)">−</button>'
+        +'<button class="st-btn" onclick="wkStep('+ex.id+','+i+',\'kg\',-2.5)">â</button>'
         +'<div class="st-val" id="wk-kg-'+ex.id+'-'+i+'">'+s.kg+'</div>'
         +'<button class="st-btn" onclick="wkStep('+ex.id+','+i+',\'kg\',2.5)">+</button>'
       +'</div>'
       +'<div class="stepper '+(s.pre&&!s.done?'preloaded':'')+'">'
-        +'<button class="st-btn" onclick="wkStep('+ex.id+','+i+',\'reps\',-1)">−</button>'
+        +'<button class="st-btn" onclick="wkStep('+ex.id+','+i+',\'reps\',-1)">â</button>'
         +'<div class="st-val" id="wk-rp-'+ex.id+'-'+i+'">'+s.reps+'</div>'
         +'<button class="st-btn" onclick="wkStep('+ex.id+','+i+',\'reps\',1)">+</button>'
       +'</div>'
       +'<div class="mid-icon">'
         +'<span class="mid-eq">'+(s.done?'=':'')+'</span>'
-        +'<span class="mid-star '+(isPR?'show':'')+'">★</span>'
+        +'<span class="mid-star '+(isPR?'show':'')+'">â</span>'
         +'<button class="check-circle '+(s.done?'done':'')+'" onclick="wkToggleDone('+ex.id+','+i+')">'
           +'<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'
         +'</button>'
       +'</div>'
-      +'<button class="del-btn" onclick="wkDelSet('+ex.id+','+i+')">✕</button>'
+      +'<button class="del-btn" onclick="wkDelSet('+ex.id+','+i+')">â</button>'
     +'</div>';
   }).join('');
   return '<div class="ex-card" id="wk-ex-'+ex.id+'">'
@@ -2151,17 +2160,17 @@ function wkCardHTML(ex){
       +'<div><div class="ex-name">'+ex.n+'</div><div class="ex-muscle">'+ex.m+'</div></div></div>'
       +'<div style="display:flex;align-items:center;gap:6px">'
         +(prKg?'<div class="pr-badge">PR '+prKg+'kg</div>':'')
-        +'<button class="ex-del-btn" onclick="wkDelExercise('+ex.id+')">🗑</button>'
+        +'<button class="ex-del-btn" onclick="wkDelExercise('+ex.id+')">ð</button>'
       +'</div>'
     +'</div>'
     +vsHtml
     +'<div class="col-heads"><span>SET</span><span>KG</span><span>REPS</span><span></span><span></span></div>'
     +setsHtml
-    +'<button class="add-serie-btn" onclick="wkAddSet('+ex.id+')">＋ Serie</button>'
+    +'<button class="add-serie-btn" onclick="wkAddSet('+ex.id+')">ï¼ Serie</button>'
   +'</div>';
 }
 
-// ── Set actions ──
+// ââ Set actions ââ
 function wkStep(exId,si,field,delta){
   const ex=wkExs.find(e=>e.id===exId);if(!ex)return;
   const s=ex.sets[si];s.pre=false;
@@ -2183,8 +2192,8 @@ function wkToggleDone(exId,si){
     const hist=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]').filter(h=>h.nombre===ex.n);
     const prKg=hist.length?Math.max(...hist.map(h=>h.kg)):0;
     const isPR=prKg>0&&ex.sets[si].kg>prKg;
-    if(isPR)showToast('🏆 Nuevo PR en '+ex.n+'!','success');
-    else showToast('Serie completada ✓');
+    if(isPR)showToast('ð Nuevo PR en '+ex.n+'!','success');
+    else showToast('Serie completada â');
   } else { wkSkipRest(); }
   wkReRenderCard(ex);wkRefreshStats();wkSaveState();
 }
@@ -2213,7 +2222,7 @@ function wkRefreshStats(){
   document.getElementById('wkb-kcal').textContent=kcal;
 }
 
-// ── Rest timer ──
+// ââ Rest timer ââ
 function wkStartRestTimer(){
   const def=parseInt(localStorage.getItem('gymy_rest_secs')||'90');
   wkRestSecs=def;wkRestRunning=true;
@@ -2225,7 +2234,7 @@ function wkStartRestTimer(){
     if(wkRestSecs<=0){
       clearInterval(wkRestInterval);wkRestRunning=false;
       document.getElementById('rest-timer').classList.remove('active');
-      showToast('¡Descanso terminado! 💪');return;
+      showToast('Â¡Descanso terminado! ðª');return;
     }
     const m=String(Math.floor(wkRestSecs/60)).padStart(2,'0');
     const s=String(wkRestSecs%60).padStart(2,'0');
@@ -2240,12 +2249,12 @@ function wkSkipRest(){
   // rest display removed
 }
 
-// ── Save / Discard ──
+// ââ Save / Discard ââ
 function wkSaveWorkout(){
   const done=wkExs.reduce((a,ex)=>a+ex.sets.filter(s=>s.done).length,0);
-  if(!wkExs.length){showToast('Añade al menos un ejercicio','error');return;}
+  if(!wkExs.length){showToast('AÃ±ade al menos un ejercicio','error');return;}
   if(!done){showToast('Completa al menos una serie','error');return;}
-  document.getElementById('wk-ov-save-msg').textContent='Se guardarán '+done+' serie'+(done>1?'s':'')+' de '+wkExs.length+' ejercicio'+(wkExs.length>1?'s':'');
+  document.getElementById('wk-ov-save-msg').textContent='Se guardarÃ¡n '+done+' serie'+(done>1?'s':'')+' de '+wkExs.length+' ejercicio'+(wkExs.length>1?'s':'');
   wkShow('wk-ov-save');
 }
 function wkConfirmDiscard(){wkShow('wk-ov-discard');}
@@ -2258,7 +2267,7 @@ function wkDeactivateBanner(){
   document.getElementById('wkb-vol').textContent='0';
   document.getElementById('wkb-ser').textContent='0';
   document.getElementById('wkb-kcal').textContent='0';
-  document.getElementById('wkb-dur').textContent='⏱ 00:00';
+  document.getElementById('wkb-dur').textContent='â± 00:00';
 }
 function wkDoDiscard(){
   wkHide('wk-ov-discard');
@@ -2270,7 +2279,7 @@ function wkDoDiscard(){
   document.getElementById('wk-fabs').classList.remove('visible');
   document.getElementById('wk-add-ex-btn').style.display='none';
   document.getElementById('wk-ex-container').innerHTML='';
-  document.getElementById('wk-session-secs').textContent='⏱ 00:00';
+  document.getElementById('wk-session-secs').textContent='â± 00:00';
   const tab=document.getElementById('tab-workout');if(tab)tab.style.display='none';
   wkDeactivateBanner();
   // Go to dashboard
@@ -2293,7 +2302,7 @@ async function wkDoSave(){
   if(!navigator.onLine){
     guardarOffline(sesion);
     fab.classList.remove('saving');
-    showToast('Sin conexión — guardado localmente');
+    showToast('Sin conexiÃ³n â guardado localmente');
     wkDoDiscard();
     return;
   }
@@ -2301,7 +2310,7 @@ async function wkDoSave(){
   fab.classList.remove('saving');
   fab.innerHTML='<svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
   if(data.ok){
-    showToast('Sesión guardada ✓','success');
+    showToast('SesiÃ³n guardada â','success');
     updateOfflineBadge();loadDashboard();
     setTimeout(()=>wkDoDiscard(),1200);
   }else{
@@ -2310,10 +2319,10 @@ async function wkDoSave(){
   }
 }
 
-// ── Start / Cancel ──
+// ââ Start / Cancel ââ
 function wkStartWorkout(){
   wkHide('wk-ov-start');
-  // Ahora sí: mostrar tab y navegar a workout
+  // Ahora sÃ­: mostrar tab y navegar a workout
   const btn=document.getElementById('tab-workout');
   btn.style.display='flex';
   goTab('workout',btn);
@@ -2322,7 +2331,7 @@ function wkStartWorkout(){
 }
 function wkCancelStart(){
   wkHide('wk-ov-start');
-  // Tab workout sigue oculto, no hacer nada más
+  // Tab workout sigue oculto, no hacer nada mÃ¡s
 }
 
 </script>
