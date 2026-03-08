@@ -1807,7 +1807,8 @@ async function loadCatalogo(){
   if(_catalogoLoading)return _catalogoLoading;
   _catalogoLoading=(async()=>{
     try{
-      const r=await apiFetch('/api/catalogo');
+      const resp=await apiCall('GET','/api/catalogo');
+      const r=resp.data||resp;
       if(r.ok&&r.grupos){
         const db={};
         Object.entries(r.grupos).forEach(([grupo,ejs])=>{

@@ -4,6 +4,64 @@ const { queryOne, queryAll, withTransaction } = require('../database/init');
 const verifyToken = require('../middleware/verifyToken');
 const router = express.Router();
 
+// ─── CATÁLOGO DE EJERCICIOS ────────────────────────────────────────────────
+
+// GET /api/catalogo - Todos los ejercicios del catálogo, agrupados por grupo muscular
+router.get('/catalogo', async (req, res) => {
+  try {
+    const { grupo, equipo, tipo, q } = req.query;
+    let sql = `SELECT id, nombre, grupo_muscular, subgrupo, equipo, tipo, descripcion
+               FROM ejercicios_catalogo WHERE activo = TRUE`;
+    const params = [];
+    if (grupo)  { params.push(grupo);  sql += ` AND grupo_muscular ILIKE $${params.length}`; }
+    if (equipo) { params.push(equipo); sql += ` AND equipo ILIKE $${params.length}`; }
+    if (tipo)   { params.push(tipo);   sql += ` AND tipo ILIKE $${params.length}`; }
+    if (q)      { params.push(`%${q}%`); sql += ` AND nombre ILIKE $${params.length}`; }
+    sql += ` ORDER BY grupo_muscular, subgrupo, nombre`;
+    const rows = await queryAll(sql, params);
+
+    // Agrupar por grupo_muscular
+    const agrupado = rows.reduce((acc, ej) => {
+      if (!acc[ej.grupo_muscular]) acc[ej.grupo_muscular] = [];
+      acc[ej.grupo_muscular].push(ej);
+      return acc;
+    }, {});
+
+    res.json({ ok: true, total: rows.length, grupos: agrupado });
+  } catch(e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// GET /api/catalogo/grupos - Lista de grupos musculares disponibles
+router.get('/catalogo/grupos', async (req, res) => {
+  try {
+    const rows = await queryAll(
+      `SELECT grupo_muscular, COUNT(*) as total
+       FROM ejercicios_catalogo WHERE activo = TRUE
+       GROUP BY grupo_muscular ORDER BY grupo_muscular`
+    );
+    res.json({ ok: true, grupos: rows });
+  } catch(e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// GET /api/catalogo/:id - Detalle de un ejercicio
+router.get('/catalogo/:id', async (req, res) => {
+  try {
+    const ej = await queryOne(
+      `SELECT * FROM ejercicios_catalogo WHERE id = $1 AND activo = TRUE`,
+      [req.params.id]
+    );
+    if (!ej) return res.status(404).json({ ok: false, error: 'Ejercicio no encontrado' });
+    res.json({ ok: true, ejercicio: ej });
+  } catch(e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+
 router.use(verifyToken);
 
 const validateSesion = [
@@ -281,63 +339,6 @@ router.post('/ai/import', async (req, res) => {
     const data = await response.json();
     const text = data.content?.[0]?.text || '';
     res.json({ ok: true, text });
-  } catch(e) {
-    res.status(500).json({ ok: false, error: e.message });
-  }
-});
-
-// ─── CATÁLOGO DE EJERCICIOS ────────────────────────────────────────────────
-
-// GET /api/catalogo - Todos los ejercicios del catálogo, agrupados por grupo muscular
-router.get('/catalogo', async (req, res) => {
-  try {
-    const { grupo, equipo, tipo, q } = req.query;
-    let sql = `SELECT id, nombre, grupo_muscular, subgrupo, equipo, tipo, descripcion
-               FROM ejercicios_catalogo WHERE activo = TRUE`;
-    const params = [];
-    if (grupo)  { params.push(grupo);  sql += ` AND grupo_muscular ILIKE $${params.length}`; }
-    if (equipo) { params.push(equipo); sql += ` AND equipo ILIKE $${params.length}`; }
-    if (tipo)   { params.push(tipo);   sql += ` AND tipo ILIKE $${params.length}`; }
-    if (q)      { params.push(`%${q}%`); sql += ` AND nombre ILIKE $${params.length}`; }
-    sql += ` ORDER BY grupo_muscular, subgrupo, nombre`;
-    const rows = await queryAll(sql, params);
-
-    // Agrupar por grupo_muscular
-    const agrupado = rows.reduce((acc, ej) => {
-      if (!acc[ej.grupo_muscular]) acc[ej.grupo_muscular] = [];
-      acc[ej.grupo_muscular].push(ej);
-      return acc;
-    }, {});
-
-    res.json({ ok: true, total: rows.length, grupos: agrupado });
-  } catch(e) {
-    res.status(500).json({ ok: false, error: e.message });
-  }
-});
-
-// GET /api/catalogo/grupos - Lista de grupos musculares disponibles
-router.get('/catalogo/grupos', async (req, res) => {
-  try {
-    const rows = await queryAll(
-      `SELECT grupo_muscular, COUNT(*) as total
-       FROM ejercicios_catalogo WHERE activo = TRUE
-       GROUP BY grupo_muscular ORDER BY grupo_muscular`
-    );
-    res.json({ ok: true, grupos: rows });
-  } catch(e) {
-    res.status(500).json({ ok: false, error: e.message });
-  }
-});
-
-// GET /api/catalogo/:id - Detalle de un ejercicio
-router.get('/catalogo/:id', async (req, res) => {
-  try {
-    const ej = await queryOne(
-      `SELECT * FROM ejercicios_catalogo WHERE id = $1 AND activo = TRUE`,
-      [req.params.id]
-    );
-    if (!ej) return res.status(404).json({ ok: false, error: 'Ejercicio no encontrado' });
-    res.json({ ok: true, ejercicio: ej });
   } catch(e) {
     res.status(500).json({ ok: false, error: e.message });
   }
