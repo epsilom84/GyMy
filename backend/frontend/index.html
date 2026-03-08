@@ -1868,8 +1868,10 @@ async function runImport(){
       status.textContent=`Guardando ${imported}/${sesiones.length}...`;
     }
 
-    updateOfflineBadge();loadDashboard();statsCache=null;
+    updateOfflineBadge();loadDashboard();statsCache=null;currentPage=1;loadHistorial();
     closeModal('modal-import-preview');
+    // Navegar al historial para que el usuario vea los datos importados
+    setTimeout(()=>goTab('historial',document.getElementById('tab-historial')),300);
 
     let msg=`${imported} sesión(es) importada(s)`;
     if(creados>0)msg+=` · ${creados} ejercicio(s) nuevo(s) en catálogo`;
