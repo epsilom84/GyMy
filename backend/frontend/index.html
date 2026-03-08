@@ -1709,7 +1709,8 @@ function parsearCSV(rawText){
     if(!fecha)fecha=new Date().toISOString().split('T')[0];
 
     // Hora (para info, la incluimos en notas)
-    const hora=iTime>=0?get(iTime):(iDate>=0&&get(iDate).includes(':'))?get(iDate).match(/\d{2}:\d{2}/)?.[0]||'':'':'';
+    const _timeRe=/\d\d:\d\d/;
+    const hora=iTime>=0?get(iTime):(iDate>=0&&get(iDate).includes(':'))?(_timeRe.exec(get(iDate))||[''])[0]:'';
 
     // Nombre ejercicio
     const nombre=iNombre>=0?get(iNombre):(!hasHeader?get(4):'');
