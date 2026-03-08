@@ -1,6 +1,6 @@
 # 🏋️ GyMy
 
-**App web personal de registro de entrenamientos.** Autenticación por usuario, historial completo, estadísticas de progreso, workout activo con timer y detector de PR, soporte offline y temas visuales.
+**App web personal de registro de entrenamientos.** Autenticación por usuario, historial completo, estadísticas de progreso, workout activo con timer y detector de PR, catálogo de ejercicios desde BD, soporte offline y temas visuales.
 
 🔗 **Producción**: https://gymy-production.up.railway.app/
 
@@ -18,13 +18,13 @@ gymy/
     ├── package.json
     ├── .env.example        ← Variables de entorno de ejemplo
     ├── database/
-    │   ├── init.js         ← Pool PostgreSQL + schema + seed catálogo
+    │   ├── init.js         ← Pool PostgreSQL + schema + seed catálogo (66 ejercicios)
     │   └── migrate_ejercicios_catalogo.js ← Script standalone catálogo
     ├── middleware/
     │   └── verifyToken.js
     ├── routes/
     │   ├── auth.routes.js  ← /api/auth/*
-    │   └── gym.routes.js   ← /api/* + /api/catalogo/* (JWT requerido)
+    │   └── gym.routes.js   ← /api/catalogo/* (público) + /api/* (JWT requerido)
     └── frontend/
         ├── index.html      ← SPA completa (toda la app en un archivo)
         ├── actividad.html  ← Vista workout activo
@@ -38,7 +38,7 @@ gymy/
 ```bash
 cd backend
 npm install
-cp ../env.example .env   # editar variables
+cp .env.example .env   # editar variables
 node server.js
 # → http://localhost:3000
 ```
@@ -75,9 +75,10 @@ node server.js
 ### 🏠 Dashboard
 - Estadísticas: sesiones totales, racha, horas, sesiones esta semana
 - Gráfica de progreso últimas 8 semanas + lista de sesiones recientes
+- Fechas en formato legible (ej: `07 mar 2026`)
 
 ### 🏋️ Workout activo
-- Selecciona grupo muscular → ejercicio → registra series
+- Selecciona grupo muscular → ejercicio del **catálogo desde BD** → registra series
 - **Preload de pesos**: carga el último peso usado o el de máximo volumen
 - **Timer de descanso**: se activa automáticamente al marcar ✓ en una serie
 - **Detector de PR** en tiempo real
@@ -100,6 +101,8 @@ node server.js
 
 ### 👤 Perfil
 - Datos personales: edad, género, altura, peso, nivel de actividad, objetivo
+- **Catálogo completo**: 66 ejercicios de BD agrupados por músculo (acordeones)
+- Mis ejercicios personalizados (localStorage)
 - Configuración: tema visual, preload automático, plantillas, sync offline
 - Cerrar sesión
 
@@ -117,16 +120,20 @@ node server.js
 
 ---
 
-## 💪 Ejercicios por grupo (plantilla por defecto)
+## 💪 Catálogo de ejercicios (66 ejercicios en BD)
 
-| Grupo | Ejercicios |
-|---|---|
-| Hombros | Press Mancuernas, Elevaciones Laterales (Mancuernas/Máquina/Cable), Face Pull, Press Barra, Press Máquina, Remo Máquina |
-| Espalda | Jalón Cerrado/Amplio Cable, Remo Cable Sentado, Remo Máquina, Remo Barra, Remo Polea Unilateral, Pull Down Máquina |
-| Piernas | Extensión Máquina, Prensa Inclinada, Press Horizontal, Curl Femoral, Peso Muerto, Sentadilla, Abducción, Aducción, Gemelos |
-| Pecho | Press Máquina Frontal, Press Máquina Inclinado, Aperturas Máquina |
-| Brazos | Press Tríceps Cuerda, Curl Bíceps (Mancuernas, Scott, Martillo, Alterno) |
-| Cardio | Cinta, Bicicleta, Elíptica |
+| Grupo | Nº | Ejemplos |
+|---|---|---|
+| Hombros | 8 | Press Mancuernas, Elevaciones Laterales, Face Pull, Press Barra/Máquina |
+| Espalda | 7 | Jalón Cerrado/Amplio Cable, Remo Cable/Barra/Máquina, Pull Down |
+| Piernas | 9 | Extensión Máquina, Prensa, Curl Femoral, Peso Muerto, Sentadilla, Abducción |
+| Pecho | 3 | Press Máquina Frontal/Inclinado, Aperturas Máquina |
+| Brazos Bíceps | 5 | Curl Mancuernas, Curl Scott, Curl Martillo, Curl Alterno |
+| Brazos Tríceps | 4 | Press Cuerda Cable, Extensión Polea, Press Barra, Fondos |
+| Core | 6 | Plancha, Crunch, Rueda Abdominal, Elevación Piernas, Oblicuos |
+| Cardio | 3 | Cinta, Bicicleta, Elíptica |
+
+> El catálogo se carga desde PostgreSQL al iniciar sesión. Los grupos musculares del selector de workout son dinámicos según la BD.
 
 ---
 
@@ -145,6 +152,7 @@ node server.js
 - **JWT**: access token (15 min) + refresh token (persistente)
 - Datos aislados por usuario con `user_id` en PostgreSQL
 - Rate limiting: 30 req/15min en auth, 120 req/min en el resto
+- Endpoints `/api/catalogo/*` públicos (sin JWT)
 
 ---
 
