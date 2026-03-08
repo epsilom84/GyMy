@@ -1562,7 +1562,6 @@ function importHistorialCSV(event){
 }
 
 function openImportPreview(rawText,filename){
-  // Build modal content
   const preview=rawText.slice(0,500)+(rawText.length>500?'\n...':'');
   const lines=rawText.split('\n').filter(l=>l.trim()).length;
   const modalHtml=
@@ -1570,127 +1569,331 @@ function openImportPreview(rawText,filename){
     '<strong style="color:var(--text)">'+filename+'</strong> · '+lines+' líneas</div>'+
     '<pre style="font-size:11px;color:var(--text2);background:var(--bg3);padding:12px;border-radius:10px;overflow:auto;max-height:140px;white-space:pre-wrap">'+
     preview.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre>'+
-    '<p style="font-size:13px;color:var(--text2);margin:14px 0 6px">La IA analizará el archivo e identificará:</p>'+
+    '<p style="font-size:13px;color:var(--text2);margin:14px 0 6px">Se analizará el CSV e identificará:</p>'+
     '<ul style="font-size:12px;color:var(--text2);padding-left:18px;line-height:1.8">'+
-    '<li>Fechas de cada entrenamiento</li>'+
-    '<li>Tipo de ejercicio (fuerza, cardio, etc.)</li>'+
+    '<li>Fechas y hora de cada entrenamiento</li>'+
+    '<li>Tipo de sesión y grupo muscular</li>'+
     '<li>Ejercicios, series, reps y pesos</li>'+
-    '<li>Duración, calorías y notas</li>'+
+    '<li>Ejercicios nuevos → se añaden al catálogo</li>'+
     '</ul>'+
     '<div id="import-status" style="margin-top:12px;font-size:13px;min-height:20px;color:var(--accent3)"></div>'+
     '<div style="display:flex;gap:8px;margin-top:16px">'+
     '<button class="c-btn-cancel" onclick="closeModal(\'modal-import-preview\')">Cancelar</button>'+
-    '<button class="c-btn-primary" id="btn-run-import" onclick="runAIImport()">🤖 Analizar con IA</button>'+
+    '<button class="c-btn-primary" id="btn-run-import" onclick="runImport()">📥 Importar</button>'+
     '</div>';
-  // Reuse confirm modal structure or create dedicated one
   document.getElementById('import-preview-body').innerHTML=modalHtml;
   window._importRawText=rawText;
+  window._importFilename=filename;
   openModal('modal-import-preview');
 }
 
-async function runAIImport(){
+// ── DETECCIÓN DE GRUPO MUSCULAR ──────────────────────────────────────────────
+const GRUPOS_KEYWORDS={
+  'Pecho':['press pecho','pec deck','aperturas pecho','crossover','push up','flexiones pecho','pecho','chest','bench press','incline press'],
+  'Espalda':['jalón','pulldown','pull-down','dominadas','remo','espalda','peso muerto','deadlift','lat pull','seated row','back'],
+  'Piernas':['sentadilla','squat','prensa','leg press','extensión cuad','curl femoral','leg curl','gemelos','calf','abducción','aducción','piernas','legs','lunges','zancadas','hip thrust'],
+  'Hombros':['press hombros','press militar','overhead press','elevaciones lat','elevacion frontal','face pull','arnold','hombros','shoulder','deltoid'],
+  'Brazos Bíceps':['curl bíceps','curl biceps','curl martillo','hammer curl','curl scott','preacher curl','bicep','bícep'],
+  'Brazos Tríceps':['press tríceps','tricep','trícep','extensión tríceps','fondos tríceps','skull crusher','pushdown'],
+  'Core':['abdominales','abs','crunch','plancha','plank','oblicuos','core','sit up','russian twist','rueda abdominal'],
+  'Cardio':['correr','carrera','bici','ciclismo','eliptica','cinta','treadmill','running','cardio','remo cardio','rowing','nadar','natación','saltar']
+};
+
+function detectarGrupo(nombreEj){
+  const n=nombreEj.toLowerCase().trim();
+  for(const[grupo,kws]of Object.entries(GRUPOS_KEYWORDS)){
+    if(kws.some(k=>n.includes(k)))return grupo;
+  }
+  // Buscar en catálogo cacheado
+  if(window._catalogoCache){
+    for(const[grupo,ejercicios]of Object.entries(window._catalogoCache)){
+      if(ejercicios.some(e=>e.nombre.toLowerCase().includes(n)||n.includes(e.nombre.toLowerCase())))return grupo;
+    }
+  }
+  return 'Fuerza';
+}
+
+function detectarTipoSesion(ejercicios){
+  if(!ejercicios||!ejercicios.length)return'Fuerza';
+  const grupos={};
+  ejercicios.forEach(e=>{
+    const g=e.grupo_muscular||detectarGrupo(e.nombre);
+    grupos[g]=(grupos[g]||0)+1;
+  });
+  const top=Object.entries(grupos).sort((a,b)=>b[1]-a[1])[0];
+  const g=top?top[0]:'Fuerza';
+  // Mapear grupo → tipo sesión
+  const mapa={'Pecho':'Pecho','Espalda':'Espalda','Piernas':'Piernas','Hombros':'Hombros',
+    'Brazos Bíceps':'Brazos','Brazos Tríceps':'Brazos','Core':'Core',
+    'Cardio':'Cardio','Fuerza':'Fuerza'};
+  return mapa[g]||g;
+}
+
+// ── PARSEO CSV INTELIGENTE ───────────────────────────────────────────────────
+function parsearCSV(rawText){
+  const lines=rawText.split('\n').map(l=>l.trim()).filter(l=>l);
+  if(!lines.length)return[];
+
+  // Detectar separador (coma, punto y coma, tab)
+  const sep=[',',';','\t'].find(s=>lines[0].includes(s))||',';
+
+  function parseLine(line){
+    const result=[];let cur='';let inQ=false;
+    for(const c of line){
+      if(c==='"'){inQ=!inQ;}
+      else if(c===sep&&!inQ){result.push(cur.trim());cur='';}
+      else cur+=c;
+    }
+    result.push(cur.trim());
+    return result;
+  }
+
+  // Detectar cabecera
+  const header=parseLine(lines[0]).map(h=>h.toLowerCase().replace(/['"]/g,'').trim());
+  const hasHeader=header.some(h=>['fecha','date','ejercicio','exercise','nombre','name','grupo','group'].includes(h));
+  const dataLines=hasHeader?lines.slice(1):lines;
+
+  // Mapear columnas por nombre
+  function colIdx(names){return names.map(n=>header.indexOf(n)).find(i=>i>=0)??-1;}
+  const iDate  =colIdx(['fecha','date','día','dia','day','timestamp','datetime']);
+  const iTime  =colIdx(['hora','time','timestamp','datetime','hour']);
+  const iTipo  =colIdx(['tipo','type','categoria','category','workout type','session type']);
+  const iNombre=colIdx(['ejercicio','exercise','nombre','name','movement']);
+  const iGrupo =colIdx(['grupo','group','grupo muscular','muscle group','body part','muscle']);
+  const iSeries=colIdx(['series','sets','set']);
+  const iReps  =colIdx(['reps','repeticiones','repetitions','rep']);
+  const iPeso  =colIdx(['peso','weight','peso_kg','kg','lbs','load']);
+  const iDur   =colIdx(['duracion','duration','duracion_min','minutes','tiempo']);
+  const iCal   =colIdx(['calorias','calories','kcal','cal']);
+  const iNotas =colIdx(['notas','notes','nota','note','comments','comentarios']);
+  const iOrigen=colIdx(['app','origen','source','from','aplicacion']);
+
+  // Si no hay cabecera, usar posiciones fijas del formato propio
+  // fecha,tipo,duracion_min,calorias,ejercicio,series,reps,peso_kg,notas
+  const byFecha={};
+
+  dataLines.forEach(line=>{
+    if(!line.trim())return;
+    const cols=hasHeader?parseLine(line):[...parseLine(line)];
+
+    function get(idx,fallback=''){
+      if(idx<0||idx>=cols.length)return fallback;
+      return (cols[idx]||'').replace(/^["']|["']$/g,'').trim();
+    }
+
+    // Fecha
+    let fecha='';
+    if(iDate>=0){
+      fecha=get(iDate);
+    } else if(!hasHeader){
+      fecha=get(0); // posición fija
+    }
+    // Normalizar fecha: acepta YYYY-MM-DD, DD/MM/YYYY, MM/DD/YYYY, timestamps
+    if(fecha){
+      fecha=fecha.replace(/["']/g,'').trim();
+      // ISO con tiempo: tomar solo fecha
+      if(/\d{4}-\d{2}-\d{2}/.test(fecha))fecha=fecha.match(/\d{4}-\d{2}-\d{2}/)[0];
+      // DD/MM/YYYY o DD-MM-YYYY
+      else if(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/.test(fecha)){
+        const[,d,m,y]=fecha.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+        fecha=`${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+      }
+      // MM/DD/YYYY
+      else if(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.test(fecha)){
+        const[,m,d,y]=fecha.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+        const year=y.length===2?'20'+y:y;
+        fecha=`${year}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+      }
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha))fecha='';
+    }
+    if(!fecha)fecha=new Date().toISOString().split('T')[0];
+
+    // Hora (para info, la incluimos en notas)
+    const hora=iTime>=0?get(iTime):(iDate>=0&&get(iDate).includes(':'))?get(iDate).match(/\d{2}:\d{2}/)?.[0]||'':'':'';
+
+    // Nombre ejercicio
+    const nombre=iNombre>=0?get(iNombre):(!hasHeader?get(4):'');
+    if(!nombre)return; // skip filas sin ejercicio
+
+    // Grupo muscular
+    const grupoRaw=iGrupo>=0?get(iGrupo):'';
+    const grupo=grupoRaw||detectarGrupo(nombre);
+
+    // Tipo sesión (por fila o se detecta al final)
+    const tipoFila=iTipo>=0?get(iTipo):(!hasHeader?get(1):'');
+
+    // Métricas
+    const series=parseInt(iSeries>=0?get(iSeries):(!hasHeader?get(5):'')||'1')||1;
+    const reps  =parseInt(iReps>=0  ?get(iReps)  :(!hasHeader?get(6):'')||'0')||0;
+    const peso  =parseFloat(iPeso>=0?get(iPeso)  :(!hasHeader?get(7):'')||'0')||0;
+    const dur   =parseInt(iDur>=0   ?get(iDur)   :(!hasHeader?get(2):'')||'0')||0;
+    const cal   =parseInt(iCal>=0   ?get(iCal)   :(!hasHeader?get(3):'')||'0')||0;
+    const notas =iNotas>=0?get(iNotas):(!hasHeader?get(8):'');
+    const origenApp=iOrigen>=0?get(iOrigen):'';
+
+    // Agrupar por fecha
+    const key=fecha;
+    if(!byFecha[key]){
+      byFecha[key]={
+        fecha,
+        tipo:tipoFila||'',
+        duracion_min:dur,
+        calorias:cal,
+        notas:'',
+        _origen:origenApp,
+        _hora:hora,
+        ejercicios:[]
+      };
+    } else {
+      // Acumular duración y calorías
+      if(dur>byFecha[key].duracion_min)byFecha[key].duracion_min=dur;
+      if(cal>byFecha[key].calorias)byFecha[key].calorias=cal;
+    }
+
+    byFecha[key].ejercicios.push({
+      nombre,
+      grupo_muscular:grupo,
+      series,
+      reps,
+      peso_kg:peso,
+      _hora:hora
+    });
+  });
+
+  // Post-proceso: detectar tipo sesión si no está
+  Object.values(byFecha).forEach(s=>{
+    if(!s.tipo)s.tipo=detectarTipoSesion(s.ejercicios);
+    // Construir nota de origen
+    const origenStr=s._origen?` [${s._origen}]`:'';
+    const horaStr=s._hora?` ${s._hora}`:'';
+    s.notas=`Importado de app externa${origenStr}${horaStr}`.trim();
+    if(s.ejercicios.length){
+      const grupos=[...new Set(s.ejercicios.map(e=>e.grupo_muscular))].join(', ');
+      s.notas+=` · ${grupos}`;
+    }
+  });
+
+  return Object.values(byFecha);
+}
+
+// ── CREAR EJERCICIOS NUEVOS EN EL CATÁLOGO ───────────────────────────────────
+async function crearEnCatalogo(ejerciciosNuevos){
+  const token=localStorage.getItem('gymy_access');
+  let creados=0;
+  for(const ej of ejerciciosNuevos){
+    try{
+      const r=await fetch('/api/catalogo',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body:JSON.stringify({
+          nombre:ej.nombre,
+          grupo_muscular:ej.grupo_muscular,
+          subgrupo:ej.grupo_muscular,
+          equipo:'Libre',
+          tipo:ej.grupo_muscular==='Cardio'?'Cardio':'Fuerza',
+          descripcion:'Importado de app externa'
+        })
+      });
+      const d=await r.json();
+      if(d.ok&&d.created)creados++;
+    }catch(e){console.warn('Error creando en catálogo:',ej.nombre,e);}
+  }
+  return creados;
+}
+
+// ── MAIN IMPORT ──────────────────────────────────────────────────────────────
+async function runImport(){
   const rawText=window._importRawText;
   if(!rawText)return;
   const btn=document.getElementById('btn-run-import');
   const status=document.getElementById('import-status');
   btn.disabled=true;
-  btn.textContent='Analizando...';
-  status.textContent='🤖 La IA está leyendo tu archivo...';
-
-  const DB_GRUPOS={
-    'Pecho':['press pecho','pecho máquina','pec deck','aperturas','fondos','crossover','push up','flexiones'],
-    'Espalda':['jalón','jalon','pulldown','pull','remo','espalda','peso muerto','deadlift'],
-    'Piernas':['sentadilla','squat','prensa','press piernas','extensión cuad','curl femoral','leg curl','leg press','gemelos','calf','abducción','aducción'],
-    'Hombros':['press hombros','press militar','elevaciones lat','elevacion frontal','face pull','arnold','remo máquina'],
-    'Brazos':['curl','biceps','bicep','tricep','tríceps','extensión tricep','fondos tricep','martillo'],
-    'Core':['abdominales','abs','crunch','plancha','plank','oblicuos'],
-    'Cardio':['correr','carrera','bici','ciclismo','remo cardio','eliptica','cinta','treadmill','running']
-  };
-  function detectarGrupo(nombreEj){
-    const n=nombreEj.toLowerCase();
-    for(const[grupo,palabras]of Object.entries(DB_GRUPOS)){
-      if(palabras.some(p=>n.includes(p)))return grupo;
-    }
-    return 'Fuerza';
-  }
-
-  const prompt=`Analiza este archivo de entrenamiento y extrae TODOS los datos en formato JSON.
-El archivo puede tener cualquier formato: CSV, texto libre, notas, exportaciones de apps fitness, etc.
-
-Devuelve ÚNICAMENTE un objeto JSON válido, sin backticks, sin texto extra, con esta estructura:
-{
-  "sesiones": [
-    {
-      "fecha": "YYYY-MM-DD",
-      "tipo": "Pecho|Espalda|Piernas|Hombros|Brazos|Fuerza|Cardio|HIIT|Core|Otro",
-      "duracion_min": 45,
-      "calorias": 300,
-      "notas": "Importado desde app externa",
-      "ejercicios": [
-        {
-          "nombre": "nombre del ejercicio",
-          "grupo": "Pecho|Espalda|Piernas|Hombros|Brazos|Core|Cardio|Fuerza",
-          "series": 3,
-          "reps": 10,
-          "peso_kg": 80
-        }
-      ]
-    }
-  ]
-}
-
-Reglas OBLIGATORIAS:
-- "notas" siempre debe ser exactamente: "Importado desde app externa"
-- Detecta "tipo" de sesión según los ejercicios predominantes (pecho/press→Pecho, dominadas/remo→Espalda, sentadilla/prensa→Piernas, press militar→Hombros, curl/tricep→Brazos, correr/bici→Cardio)
-- Para "grupo" de cada ejercicio: asigna el grupo muscular principal
-- Si hay múltiples series del mismo ejercicio, crea una entrada por cada set (no agrupes)
-- Si no hay fecha, usa: ${new Date().toISOString().split('T')[0]}
-- Si faltan series/reps/peso usa 0
-- Agrupa ejercicios del mismo día en la misma sesión
-- Estima duración si no está (30min por defecto), calorías si no están (0)
-
-ARCHIVO:
-${rawText.slice(0,6000)}`;
+  btn.textContent='Procesando...';
+  status.textContent='Analizando CSV...';
 
   try{
-    const resp=await fetch('/api/ai/import',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('gymy_access')},
-      body:JSON.stringify({prompt})
+    // 1. Parsear CSV
+    const sesiones=parsearCSV(rawText);
+    if(!sesiones.length){status.style.color='var(--accent2)';status.textContent='No se encontraron sesiones válidas';btn.disabled=false;btn.textContent='📥 Importar';return;}
+    status.textContent=`✓ ${sesiones.length} sesión(es) detectada(s). Verificando ejercicios...`;
+
+    // 2. Detectar ejercicios que no están en el catálogo y crearlos
+    const catalogoActual=window._catalogoCache||{};
+    const todosEnCatalogo=Object.values(catalogoActual).flat().map(e=>e.nombre.toLowerCase());
+    const ejerciciosNuevos=[];
+    const vistos=new Set();
+    sesiones.forEach(s=>{
+      (s.ejercicios||[]).forEach(e=>{
+        const key=e.nombre.toLowerCase()+'|'+e.grupo_muscular;
+        if(!vistos.has(key)&&!todosEnCatalogo.some(n=>n===e.nombre.toLowerCase())){
+          vistos.add(key);
+          ejerciciosNuevos.push(e);
+        }
+      });
     });
-    if(!resp.ok){
-      const errData=await resp.json().catch(()=>({}));
-      throw new Error(errData.error||'Error del servidor ('+resp.status+'). ¿Está configurada ANTHROPIC_API_KEY en Railway?');
+
+    let creados=0;
+    if(ejerciciosNuevos.length&&navigator.onLine){
+      status.textContent=`Añadiendo ${ejerciciosNuevos.length} ejercicio(s) nuevo(s) al catálogo...`;
+      creados=await crearEnCatalogo(ejerciciosNuevos);
+      // Refrescar catálogo en memoria
+      try{await loadCatalogo();}catch(e){}
     }
-    const data=await resp.json();
-    const text=data.text||'';    // Extract JSON from response
-    let jsonStr=text.trim();
-    const jsonMatch=jsonStr.match(/\{[\s\S]*\}/);
-    if(!jsonMatch)throw new Error('No se encontró JSON en la respuesta');
-    const parsed=JSON.parse(jsonMatch[0]);
-    const sesiones=parsed.sesiones||[];
-    if(!sesiones.length)throw new Error('No se encontraron sesiones');
-    status.textContent='✓ Detectadas '+sesiones.length+' sesiones. Guardando...';
-    await importSesiones(sesiones,status,btn);
+
+    // 3. Guardar sesiones
+    status.textContent=`Guardando sesiones...`;
+    let imported=0,errors=0;
+    for(const s of sesiones){
+      // Limpiar campos internos
+      const sesion={
+        fecha:s.fecha,
+        tipo:s.tipo,
+        duracion_min:s.duracion_min||30,
+        calorias:s.calorias||0,
+        notas:s.notas,
+        ejercicios:(s.ejercicios||[]).map(e=>({
+          nombre:e.nombre,
+          series:e.series||1,
+          reps:e.reps||0,
+          peso_kg:e.peso_kg||0
+        }))
+      };
+      if(!navigator.onLine){guardarOffline(sesion);imported++;}
+      else{
+        const r=await crearSesion(sesion);
+        if(r.data&&r.data.ok)imported++;
+        else{errors++;console.warn('Error sesión',s.fecha,r.data);}
+      }
+      status.textContent=`Guardando ${imported}/${sesiones.length}...`;
+    }
+
+    updateOfflineBadge();loadDashboard();statsCache=null;
+    closeModal('modal-import-preview');
+
+    let msg=`${imported} sesión(es) importada(s)`;
+    if(creados>0)msg+=` · ${creados} ejercicio(s) nuevo(s) en catálogo`;
+    if(errors>0)msg+=` · ${errors} error(es)`;
+    showToast(msg+(navigator.onLine?'':' (offline)'),'success');
+
   }catch(err){
     console.error(err);
     status.style.color='var(--accent2)';
-    status.textContent='Error: '+err.message+'. Intentando análisis básico...';
-    // Fallback: basic CSV parse
-    await importSesionesBasico(rawText,status,btn);
+    status.textContent='Error: '+err.message;
+    btn.disabled=false;
+    btn.textContent='📥 Importar';
   }
 }
+
+// Mantener compatibilidad con el botón IA (ahora llama al mismo import)
+async function runAIImport(){return runImport();}
 
 async function importSesiones(sesiones,status,btn){
   let imported=0,errors=0;
   for(const s of sesiones){
     if(!s.fecha)continue;
-    // Normalizar fecha a YYYY-MM-DD (la IA puede devolver ISO full)
     s.fecha=s.fecha.toString().slice(0,10);
     if(!/^\d{4}-\d{2}-\d{2}$/.test(s.fecha))continue;
-    // Siempre marcar como importado
-    s.notas=((s.notas||'').replace('Importado desde app externa','').trim()+' · Importado desde app externa').replace(/^\s*·\s*/,'');
-    // Normalizar ejercicios (quitar grupo_muscular que no acepta el backend)
+    s.notas=((s.notas||'').replace('Importado desde app externa','').trim()+' · Importado de app externa').replace(/^\s*·\s*/,'');
     if(s.ejercicios)s.ejercicios=s.ejercicios.map(e=>({
       nombre:e.nombre||'Ejercicio',
       series:Number(e.series)||1,
@@ -1700,10 +1903,10 @@ async function importSesiones(sesiones,status,btn){
     if(!navigator.onLine){guardarOffline(s);imported++;}
     else{
       const r=await crearSesion(s);
-      if(r.data.ok)imported++;
+      if(r.data&&r.data.ok)imported++;
       else{errors++;console.warn('Error guardando sesión',s.fecha,r.data);}
     }
-    status.textContent='Guardando... '+imported+'/'+sesiones.length;
+    if(status)status.textContent='Guardando... '+imported+'/'+sesiones.length;
   }
   updateOfflineBadge();loadDashboard();
   closeModal('modal-import-preview');
@@ -1712,7 +1915,6 @@ async function importSesiones(sesiones,status,btn){
 }
 
 async function importSesionesBasico(rawText,status,btn){
-  // Simple fallback CSV parser
   const lines=rawText.split('\n').filter(l=>l.trim());
   const start=lines[0]&&lines[0].toLowerCase().includes('fecha')?1:0;
   const byFecha={};
@@ -1722,7 +1924,7 @@ async function importSesionesBasico(rawText,status,btn){
     if(!fecha||!fecha.match(/\d{4}-\d{2}-\d{2}/))return;
     if(!byFecha[fecha])byFecha[fecha]={fecha,tipo:tipo||'Fuerza',
       duracion_min:parseInt(durMin)||30,calorias:parseInt(cal)||0,
-      notas:'Importado desde app externa',ejercicios:[]};
+      notas:'Importado de app externa',ejercicios:[]};
     if(ejercicio)byFecha[fecha].ejercicios.push({
       nombre:ejercicio,series:parseInt(series)||1,reps:parseInt(reps)||0,peso_kg:parseFloat(pesoKg)||0
     });

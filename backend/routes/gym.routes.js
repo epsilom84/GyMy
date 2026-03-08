@@ -62,6 +62,26 @@ router.get('/catalogo/:id', async (req, res) => {
 });
 
 
+// POST /api/catalogo - Crear nuevo ejercicio en el catálogo (requiere JWT)
+router.post('/catalogo', async (req, res) => {
+  try {
+    const { nombre, grupo_muscular, subgrupo, equipo, tipo, descripcion } = req.body;
+    if (!nombre || !grupo_muscular) return res.status(400).json({ ok: false, error: 'nombre y grupo_muscular requeridos' });
+    // Verificar si ya existe (case-insensitive)
+    const existing = await queryOne(
+      `SELECT id FROM ejercicios_catalogo WHERE nombre ILIKE $1 AND grupo_muscular ILIKE $2 AND activo = TRUE`,
+      [nombre, grupo_muscular]
+    );
+    if (existing) return res.json({ ok: true, id: existing.id, created: false });
+    const row = await queryOne(
+      `INSERT INTO ejercicios_catalogo (nombre, grupo_muscular, subgrupo, equipo, tipo, descripcion, activo)
+       VALUES ($1, $2, $3, $4, $5, $6, TRUE) RETURNING id`,
+      [nombre, grupo_muscular, subgrupo||grupo_muscular, equipo||'Libre', tipo||'Fuerza', descripcion||'Importado']
+    );
+    res.status(201).json({ ok: true, id: row.id, created: true });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
 router.use(verifyToken);
 
 const validateSesion = [
