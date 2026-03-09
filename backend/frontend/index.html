@@ -269,6 +269,9 @@ input:focus,select:focus{border-color:var(--accent);}
 .del-btn{background:transparent;border:none;cursor:pointer;color:var(--text2);font-size:13px;opacity:.35;display:flex;align-items:center;justify-content:center;}
 .del-btn:hover{opacity:1;color:var(--accent2);}
 .add-serie-btn{width:100%;padding:12px;background:transparent;border:none;border-top:1.5px dashed var(--border);color:var(--purple,#6c47ff);font-family:var(--font-b);font-size:14px;font-weight:600;cursor:pointer;}
+.gauss-wrap{padding:0 12px 4px;position:relative;}
+.gauss-wrap canvas{display:block;width:100%!important;height:80px!important;}
+.gauss-pct{text-align:center;font-size:11px;color:var(--text2);padding-bottom:8px;font-weight:600;letter-spacing:.4px;}
 .add-ex-btn-wk{width:100%;padding:15px;background:var(--bg2);border:1.5px solid var(--border);border-radius:16px;color:var(--purple,#6c47ff);font-family:var(--font-b);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:20px;}
 /* Workout stats bar — inside the page, not fixed */
 .wk-stats-bar{display:flex;align-items:center;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:14px;margin-bottom:12px;}
@@ -2100,6 +2103,7 @@ function wkSaveLocalHistorial(exs){
 // ── State ──
 let wkExs=[],wkEid=0,wkSecs=0,wkRunning=false;
 let wkRestSecs=0,wkRestRunning=false,wkRestInterval=null;
+let _wkGaussCharts={};
 let wkCurTipo='',wkStarted=false,wkSecInterval=null,wkAutoSaveInterval=null;
 const WK_KEY='gymy_workout_live';
 
@@ -2309,9 +2313,68 @@ function wkAddEx(e){
   setTimeout(()=>document.getElementById('wk-ex-'+id)?.scrollIntoView({behavior:'smooth',block:'nearest'}),100);
 }
 
+// ── Gaussian helpers ──
+function _gaussErf(x){
+  const s=x>=0?1:-1;x=Math.abs(x);
+  const t=1/(1+0.3275911*x);
+  return s*(1-(((((1.061405429*t-1.453152027)*t+1.421413741)*t-0.284496736)*t+0.254829592)*t)*Math.exp(-x*x));
+}
+function _gaussCDF(x,mu,sg){return sg===0?(x>=mu?1:0):0.5*(1+_gaussErf((x-mu)/(sg*Math.SQRT2)));}
+function _gaussPDF(x,mu,sg){return sg===0?0:Math.exp(-0.5*((x-mu)/sg)**2)/(sg*Math.sqrt(2*Math.PI));}
+function _wkHistVols(nombre){
+  return JSON.parse(localStorage.getItem('gymy_historial_local')||'[]')
+    .filter(h=>h.nombre===nombre)
+    .map(h=>(h.sets||[]).reduce((a,s)=>a+(s.kg||0)*(s.reps||0),0))
+    .filter(v=>v>0);
+}
+function wkInitGauss(ex){
+  const canvasId='wk-gauss-cv-'+ex.id;
+  const pctId='wk-gauss-pct-'+ex.id;
+  const canvas=document.getElementById(canvasId);
+  if(!canvas)return;
+  if(_wkGaussCharts[ex.id]){_wkGaussCharts[ex.id].destroy();delete _wkGaussCharts[ex.id];}
+  const vols=_wkHistVols(ex.n);
+  if(vols.length<3)return;
+  const n=vols.length;
+  const mu=vols.reduce((a,b)=>a+b,0)/n;
+  let sg=Math.sqrt(vols.reduce((s,v)=>s+(v-mu)**2,0)/n);
+  if(sg<1)sg=Math.max(1,mu*0.05);
+  const lo=Math.max(0,mu-3.5*sg),hi=mu+3.5*sg;
+  const pts=80,step=(hi-lo)/(pts-1);
+  const curVol=ex.sets.filter(s=>s.done).reduce((a,s)=>a+s.kg*s.reps,0);
+  const pct=Math.round(_gaussCDF(curVol,mu,sg)*100);
+  const peakPDF=_gaussPDF(mu,mu,sg);
+  const bellData=Array.from({length:pts},(_,i)=>{const x=lo+i*step;return{x,y:_gaussPDF(x,mu,sg)};});
+  const markerData=curVol>0?[{x:curVol,y:0},{x:curVol,y:peakPDF}]:[];
+  const isDark=!document.body.classList.contains('theme-light')&&!document.body.classList.contains('theme-material-light');
+  const gridColor=isDark?'rgba(255,255,255,.04)':'rgba(0,0,0,.06)';
+  _wkGaussCharts[ex.id]=new Chart(canvas,{
+    type:'line',
+    data:{datasets:[
+      {data:bellData,borderColor:'rgba(108,71,255,.7)',backgroundColor:'rgba(108,71,255,.18)',
+       fill:true,tension:0,pointRadius:0,borderWidth:1.5,parsing:false},
+      {data:markerData,type:'scatter',showLine:true,borderColor:'#e8ff47',backgroundColor:'#e8ff47',
+       pointRadius:0,borderWidth:2,parsing:false}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false},tooltip:{enabled:false}},
+      scales:{
+        x:{type:'linear',display:false,grid:{display:false}},
+        y:{display:false,grid:{color:gridColor}}
+      }
+    }
+  });
+  const pctEl=document.getElementById(pctId);
+  if(pctEl){
+    if(curVol>0)pctEl.textContent='Volumen actual: '+curVol+' kg · Percentil '+pct+'%';
+    else pctEl.textContent=n+' sesiones previas · media '+Math.round(mu)+' kg';
+  }
+}
+
 // ── Render ──
 function wkRender(){
   document.getElementById('wk-ex-container').innerHTML=wkExs.map(ex=>wkCardHTML(ex)).join('');
+  wkExs.forEach(ex=>wkInitGauss(ex));
   wkRefreshStats();
   wkSaveState();
 }
@@ -2363,6 +2426,7 @@ function wkCardHTML(ex){
     +'<div class="col-heads"><span>SET</span><span>KG</span><span>REPS</span><span></span><span></span></div>'
     +setsHtml
     +'<button class="add-serie-btn" onclick="wkAddSet('+ex.id+')">＋ Serie</button>'
+    +(hist.length>=3?'<div class="gauss-wrap"><canvas id="wk-gauss-cv-'+ex.id+'"></canvas><div class="gauss-pct" id="wk-gauss-pct-'+ex.id+'"></div></div>':'')
   +'</div>';
 }
 
@@ -2404,7 +2468,12 @@ function wkDelSet(exId,si){
   ex.sets.splice(si,1);wkReRenderCard(ex);wkRefreshStats();
 }
 function wkDelExercise(exId){wkExs=wkExs.filter(e=>e.id!==exId);wkRender();}
-function wkReRenderCard(ex){const el=document.getElementById('wk-ex-'+ex.id);if(el)el.outerHTML=wkCardHTML(ex);}
+function wkReRenderCard(ex){
+  if(_wkGaussCharts[ex.id]){_wkGaussCharts[ex.id].destroy();delete _wkGaussCharts[ex.id];}
+  const el=document.getElementById('wk-ex-'+ex.id);
+  if(el)el.outerHTML=wkCardHTML(ex);
+  wkInitGauss(ex);
+}
 
 function wkRefreshStats(){
   let vol=0,ser=0;
