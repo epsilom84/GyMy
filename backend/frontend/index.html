@@ -1715,27 +1715,13 @@ function parsearCSV(rawText){
     const _timeRe=/\d\d:\d\d/;
     const hora=iTime>=0?get(iTime):(iDate>=0&&get(iDate).includes(':'))?(_timeRe.exec(get(iDate))||[''])[0]:'';
 
-    // Nombre ejercicio
-    const nombre=iNombre>=0?get(iNombre):(!hasHeader?get(4):'');
-    if(!nombre)return; // skip filas sin ejercicio
-
-    // Grupo muscular
-    const grupoRaw=iGrupo>=0?get(iGrupo):'';
-    const grupo=grupoRaw||detectarGrupo(nombre);
-
-    // Tipo sesión (por fila o se detecta al final)
+    // Tipo sesión y métricas de sesión (leídas antes del check de nombre)
     const tipoFila=iTipo>=0?get(iTipo):(!hasHeader?get(1):'');
-
-    // Métricas
-    const series=parseInt(iSeries>=0?get(iSeries):(!hasHeader?get(5):'')||'1')||1;
-    const reps  =parseInt(iReps>=0  ?get(iReps)  :(!hasHeader?get(6):'')||'0')||0;
-    const peso  =parseFloat(iPeso>=0?get(iPeso)  :(!hasHeader?get(7):'')||'0')||0;
     const dur   =parseInt(iDur>=0   ?get(iDur)   :(!hasHeader?get(2):'')||'0')||0;
     const cal   =parseInt(iCal>=0   ?get(iCal)   :(!hasHeader?get(3):'')||'0')||0;
-    const notas =iNotas>=0?get(iNotas):(!hasHeader?get(8):'');
     const origenApp=iOrigen>=0?get(iOrigen):'';
 
-    // Agrupar por fecha
+    // Agrupar por fecha SIEMPRE (aunque la fila no tenga ejercicio)
     const key=fecha;
     if(!byFecha[key]){
       byFecha[key]={
@@ -1753,6 +1739,16 @@ function parsearCSV(rawText){
       if(dur>byFecha[key].duracion_min)byFecha[key].duracion_min=dur;
       if(cal>byFecha[key].calorias)byFecha[key].calorias=cal;
     }
+
+    // Solo añadir ejercicio si hay nombre
+    const nombre=iNombre>=0?get(iNombre):(!hasHeader?get(4):'');
+    if(!nombre)return;
+
+    const grupoRaw=iGrupo>=0?get(iGrupo):'';
+    const grupo=grupoRaw||detectarGrupo(nombre);
+    const series=parseInt(iSeries>=0?get(iSeries):(!hasHeader?get(5):'')||'1')||1;
+    const reps  =parseInt(iReps>=0  ?get(iReps)  :(!hasHeader?get(6):'')||'0')||0;
+    const peso  =parseFloat(iPeso>=0?get(iPeso)  :(!hasHeader?get(7):'')||'0')||0;
 
     byFecha[key].ejercicios.push({
       nombre,
