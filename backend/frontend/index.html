@@ -1762,7 +1762,9 @@ function parsearCSV(rawText){
 
     // Tipo sesión y métricas de sesión (leídas antes del check de nombre)
     const workoutName=iWorkout>=0?get(iWorkout):'';
-    const tipoFila=iTipo>=0?get(iTipo):workoutName||(!hasHeader?get(1):'');
+    const tipoRaw=iTipo>=0?get(iTipo):workoutName||(!hasHeader?get(1):'');
+    // Ignorar valores puramente numéricos (ej: "1") que no son tipos de sesión
+    const tipoFila=/^\d+$/.test(tipoRaw)?'':tipoRaw;
     const dur   =parseInt(iDur>=0   ?get(iDur)   :(!hasHeader?get(2):'')||'0')||0;
     const cal   =parseInt(iCal>=0   ?get(iCal)   :(!hasHeader?get(3):'')||'0')||0;
     const origenApp=iOrigen>=0?get(iOrigen):'';
@@ -1791,7 +1793,8 @@ function parsearCSV(rawText){
     if(!nombre)return;
 
     const grupoRaw=iGrupo>=0?get(iGrupo):'';
-    const grupo=grupoRaw||detectarGrupo(nombre);
+    // Ignorar grupo numérico (ej: "1") y detectarlo por nombre del ejercicio
+    const grupo=(/^\d+$/.test(grupoRaw)?'':grupoRaw)||detectarGrupo(nombre);
     // Si hay columna set_order → una fila = una serie (agruparemos después)
     const setOrderVal=iSetOrder>=0?parseInt(get(iSetOrder))||0:0;
     const series=iSetOrder>=0?1:(parseInt(iSeries>=0?get(iSeries):(!hasHeader?get(5):'')||'1')||1);
