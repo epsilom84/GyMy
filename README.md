@@ -87,13 +87,31 @@ node server.js
 
 ### 📋 Historial
 - Búsqueda y filtros por tipo de sesión
-- **Exportar CSV**: descarga todo el historial
-- **Importar CSV**: carga sesiones desde archivo (misma fecha = misma sesión)
+- **Exportar CSV**: descarga todo el historial en formato propio
+- **Importar historial**: carga sesiones desde archivo externo (ver formatos abajo)
+- **Eliminar todo el historial**: borra todas las sesiones con confirmación
 - **Repetir Workout**: recarga ejercicios y pesos de una sesión anterior
-- Formato CSV de importación:
-  ```
-  fecha,tipo,duracion_min,calorias,ejercicio,series,reps,peso_kg,notas
-  ```
+
+#### Importación de historial
+
+El importador detecta automáticamente el formato del archivo:
+
+| Aspecto | Detalle |
+|---|---|
+| Separadores | Tab (`\t`), punto y coma (`;`), pipe (`\|`), coma (`,`) — autodetectado |
+| Formatos de fecha | `DD.MM.YYYY`, `DD/MM/YYYY`, `DD-MM-YYYY`, `YYYY-MM-DD`, ISO con hora |
+| Agrupación | Una sesión por día — múltiples series del mismo ejercicio se agrupan |
+| Series | Detecta columna `Set`/`Set Order` para contar series por ejercicio |
+| Duración | Lee columna `Duration`; si está vacía, calcula desde timestamps de inicio/fin |
+| Tipo de sesión | Detectado automáticamente por nombre de ejercicio si la columna es numérica |
+| Grupo muscular | Detectado por nombre cuando la columna contiene valores no textuales |
+| Catálogo | Añade automáticamente ejercicios nuevos al catálogo de la BD |
+
+Formatos compatibles (entre otros):
+- **Formato propio GyMy**: `fecha,tipo,duracion_min,calorias,ejercicio,series,reps,peso_kg,notas`
+- **Gymbook** y apps similares: TSV con columnas `Date, Time, Routine, Exercise, Set, Weight, Reps, ...`
+- **Hevy / Strong**: CSV con columna `set order` o `exercise name`
+- Cualquier CSV/TSV con columnas de fecha y ejercicio reconocibles
 
 ### 📊 Stats
 - Progresión por ejercicio: peso máximo, volumen máximo, gráfica temporal
@@ -101,7 +119,7 @@ node server.js
 
 ### 👤 Perfil
 - Datos personales: edad, género, altura, peso, nivel de actividad, objetivo
-- **Catálogo completo**: 66 ejercicios de BD agrupados por músculo (acordeones)
+- **Catálogo completo**: ejercicios de BD agrupados por músculo (acordeones)
 - Mis ejercicios personalizados (localStorage)
 - Configuración: tema visual, preload automático, plantillas, sync offline
 - Cerrar sesión
@@ -120,7 +138,7 @@ node server.js
 
 ---
 
-## 💪 Catálogo de ejercicios (66 ejercicios en BD)
+## 💪 Catálogo de ejercicios (66 ejercicios base en BD)
 
 | Grupo | Nº | Ejemplos |
 |---|---|---|
@@ -133,7 +151,7 @@ node server.js
 | Core | 6 | Plancha, Crunch, Rueda Abdominal, Elevación Piernas, Oblicuos |
 | Cardio | 3 | Cinta, Bicicleta, Elíptica |
 
-> El catálogo se carga desde PostgreSQL al iniciar sesión. Los grupos musculares del selector de workout son dinámicos según la BD.
+> El catálogo base se crea al arrancar el servidor. La importación de historial puede añadir ejercicios nuevos automáticamente.
 
 ---
 
