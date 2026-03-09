@@ -1,4 +1,6 @@
 const { Pool } = require('pg');
+const fs   = require('fs');
+const path = require('path');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -73,6 +75,23 @@ async function initDB() {
     `);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_catalogo_grupo ON ejercicios_catalogo(grupo_muscular);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_catalogo_activo ON ejercicios_catalogo(activo);`);
+
+    // Plantillas de ejercicios: genéricas (user_id NULL) + personales por usuario
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS plantillas_ejercicios (
+        id             SERIAL PRIMARY KEY,
+        nombre         TEXT NOT NULL,
+        grupo_muscular TEXT NOT NULL,
+        subgrupo       TEXT,
+        equipo         TEXT,
+        tipo           TEXT DEFAULT 'fuerza',
+        user_id        INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        activo         BOOLEAN DEFAULT TRUE,
+        created_at     TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_plantillas_user  ON plantillas_ejercicios(user_id);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_plantillas_grupo ON plantillas_ejercicios(grupo_muscular);`);
 
     // Poblar catálogo solo si está vacío
     const { rows: existing } = await client.query(`SELECT COUNT(*) FROM ejercicios_catalogo`);
@@ -165,6 +184,32 @@ async function initDB() {
         ON CONFLICT (nombre) DO NOTHING;
       `);
       console.log('[DB] Catálogo de ejercicios poblado ✓');
+    }
+
+    // Seed plantillas genéricas desde assets/plantillas_ejercicios.json si la tabla está vacía
+    const { rows: existingPlantillas } = await client.query(
+      `SELECT COUNT(*) FROM plantillas_ejercicios WHERE user_id IS NULL`
+    );
+    if (parseInt(existingPlantillas[0].count) === 0) {
+      const seedFile = path.join(__dirname, '../frontend/assets/plantillas_ejercicios.json');
+      if (fs.existsSync(seedFile)) {
+        try {
+          const seedData = JSON.parse(fs.readFileSync(seedFile, 'utf8'));
+          let seeded = 0;
+          for (const e of (Array.isArray(seedData) ? seedData : [])) {
+            if (!e.nombre || !e.grupo_muscular) continue;
+            await client.query(
+              `INSERT INTO plantillas_ejercicios (nombre, grupo_muscular, subgrupo, equipo, tipo)
+               VALUES ($1,$2,$3,$4,$5)`,
+              [e.nombre, e.grupo_muscular, e.subgrupo||null, e.equipo||null, e.tipo||'fuerza']
+            );
+            seeded++;
+          }
+          if (seeded > 0) console.log(`[DB] Plantillas genéricas: ${seeded} ejercicios ✓`);
+        } catch(e) {
+          console.warn('[DB] plantillas_ejercicios.json no se pudo leer:', e.message);
+        }
+      }
     }
 
     await client.query('COMMIT');

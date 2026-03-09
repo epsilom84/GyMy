@@ -556,9 +556,11 @@ input:focus,select:focus{border-color:var(--accent);}
 
       <div class="card" style="padding:14px 16px;margin-bottom:8px">
         <div class="card-title">Mis ejercicios personalizados</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Solo visibles para ti. Se añaden al catálogo base.</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Solo visibles para ti. Guardados en la base de datos.</div>
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
-          <button class="btn btn-secondary" style="font-size:13px" onclick="openModal('modal-add-plantilla')">➕ Añadir ejercicio personal</button>
+          <button class="btn btn-secondary" style="font-size:13px" onclick="openAddPlantilla()">➕ Añadir ejercicio</button>
+          <button class="btn btn-secondary" style="font-size:13px" onclick="document.getElementById('inp-plantillas-file').click()">📂 Importar desde archivo</button>
+          <input type="file" id="inp-plantillas-file" accept=".csv,.txt,.json" style="display:none" onchange="importPlantillasFile(event)"/>
           <button class="btn btn-danger" style="font-size:13px" onclick="confirmEliminarPlantillas()">🗑 Eliminar mis personalizados</button>
         </div>
         <div id="plantillas-list" style="margin-top:12px"></div>
@@ -666,13 +668,46 @@ input:focus,select:focus{border-color:var(--accent);}
       <select id="new-ej-grupo">
         <option value="Pecho">Pecho</option><option value="Espalda">Espalda</option>
         <option value="Piernas">Piernas</option><option value="Hombros">Hombros</option>
-        <option value="Brazos">Brazos</option><option value="Cardio">Cardio</option>
+        <option value="Brazos">Brazos</option><option value="Core">Core</option>
+        <option value="Cardio">Cardio</option><option value="General">General</option>
       </select>
     </div>
-    <div class="form-group"><label>Emoji</label><input type="text" id="new-ej-em" placeholder="💪" maxlength="2"/></div>
-    <div class="form-group"><label>Nombre del ejercicio</label><input type="text" id="new-ej-nombre" placeholder="Press Banca"/></div>
-    <div class="form-group"><label>Músculo</label><input type="text" id="new-ej-musculo" placeholder="PECHO"/></div>
+    <div class="form-group"><label>Nombre del ejercicio</label><input type="text" id="new-ej-nombre" placeholder="Press Banca" autocomplete="off"/></div>
+    <div class="form-group"><label>Músculo / subgrupo (opcional)</label><input type="text" id="new-ej-musculo" placeholder="Pectoral mayor"/></div>
     <button class="btn btn-primary" onclick="addPlantillaManual()">Añadir</button>
+  </div>
+</div>
+
+<!-- Nuevo ejercicio desde workout -->
+<div class="modal-overlay center" id="modal-wk-nuevo-ej">
+  <div class="modal center-dialog">
+    <div class="modal-header">
+      <div class="modal-title">Nuevo ejercicio</div>
+      <button class="close-btn" onclick="closeModal('modal-wk-nuevo-ej')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+    </div>
+    <div class="form-group"><label>Nombre del ejercicio</label><input type="text" id="wk-new-nombre" placeholder="Mi ejercicio..." autocomplete="off"/></div>
+    <div class="form-group"><label>Grupo muscular</label>
+      <select id="wk-new-grupo"></select>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-wk-nuevo-ej')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1" onclick="wkCrearNuevoEjercicio()">Guardar y añadir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import plantillas preview -->
+<div class="modal-overlay center" id="modal-import-plantillas">
+  <div class="modal center-dialog" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title">Importar ejercicios</div>
+      <button class="close-btn" onclick="closeModal('modal-import-plantillas')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+    </div>
+    <div id="import-plantillas-body" style="max-height:320px;overflow-y:auto;margin-bottom:12px"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-import-plantillas')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1" id="btn-confirm-import-plantillas" onclick="confirmarImportPlantillas()">Importar</button>
+    </div>
   </div>
 </div>
 
@@ -907,8 +942,9 @@ function initApp(){
   applySettingsUI();
   // Cargar historial desde Postgres para precarga
   cargarHistorialLocal();
-  // Precargar catálogo de ejercicios desde BD
+  // Precargar catálogo de ejercicios y plantillas personales desde BD
   loadCatalogo().then(()=>console.log('[Catálogo] Cargado:',Object.keys(_catalogoCache||{}).length,'grupos'));
+  loadPlantillas().then(()=>console.log('[Plantillas] Cargadas:',(_plantillasCache||[]).length,'ejercicios'));
   // Restore workout tab if active
   const wtab = document.getElementById('tab-workout');
   if(wtab) wtab.style.display = wkIsActive() ? 'flex' : 'none';
@@ -1367,69 +1403,165 @@ async function renderCatalogoList(){
   }).join('');
 }
 
-function renderPlantillasList(){
-  const plantillas=JSON.parse(localStorage.getItem('gymy_plantillas')||'{}');
+async function renderPlantillasList(){
   const el=document.getElementById('plantillas-list');
-  const all=Object.entries(plantillas).flatMap(([grupo,ejs])=>ejs.map(e=>({...e,grupo})));
+  if(!el)return;
+  el.innerHTML='<div style="font-size:12px;color:var(--text2);padding:8px 0">Cargando...</div>';
+  await loadPlantillas();
+  // DB exercises (own only)
+  const dbEjs=(_plantillasCache||[]).filter(p=>p.propia);
+  // localStorage exercises (legacy)
+  const loc=JSON.parse(localStorage.getItem('gymy_plantillas')||'{}');
+  const locEjs=Object.entries(loc).flatMap(([grupo,ejs])=>ejs.map(e=>({...e,grupo,db:false})));
+  const all=[...dbEjs.map(p=>({n:p.nombre,grupo:p.grupo_muscular,em:ejEmoji(p.equipo),id:p.id,db:true})),...locEjs];
   if(!all.length){el.innerHTML='<p style="font-size:12px;color:var(--text2)">No hay plantillas personalizadas.</p>';return;}
   el.innerHTML='<div style="font-size:11px;color:var(--text2);margin-bottom:6px">'+all.length+' ejercicio(s) personalizados</div>'+
-    all.map(e=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--bg3);border-radius:8px;margin-bottom:5px;font-size:13px">'+
-      '<span>'+e.em+' '+e.n+' <span style="color:var(--text2);font-size:11px">('+e.grupo+')</span></span>'+
-      '<button onclick="delPlantilla(\''+e.grupo+'\',\''+e.n+'\')" style="background:transparent;border:none;color:var(--accent2);cursor:pointer;font-size:14px">✕</button>'+
-    '</div>').join('');
+    all.map(e=>{
+      const delFn=e.db?`delPlantillaDB(${e.id})`:`delPlantillaLocal('${e.grupo}','${e.n}')`;
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--bg3);border-radius:8px;margin-bottom:5px;font-size:13px">'+
+        '<span>'+(e.em||'💪')+' '+e.n+' <span style="color:var(--text2);font-size:11px">('+e.grupo+')</span></span>'+
+        '<button onclick="'+delFn+'" style="background:transparent;border:none;color:var(--accent2);cursor:pointer;font-size:14px">✕</button>'+
+      '</div>';
+    }).join('');
 }
 
-function addPlantillaManual(){
+function openAddPlantilla(){
+  // Populate grupo select dynamically from loaded catalog
+  const grupos=[...new Set([...Object.keys(_catalogoCache||{}),...Object.keys(JSON.parse(localStorage.getItem('gymy_plantillas')||'{}')),'General'])].sort();
+  const sel=document.getElementById('new-ej-grupo');
+  const BASE=['Pecho','Espalda','Piernas','Hombros','Brazos','Core','Cardio','General'];
+  const all=[...new Set([...grupos,...BASE])].sort();
+  sel.innerHTML=all.map(g=>`<option value="${g}">${g}</option>`).join('');
+  document.getElementById('new-ej-nombre').value='';
+  document.getElementById('new-ej-musculo').value='';
+  openModal('modal-add-plantilla');
+}
+
+async function addPlantillaManual(){
   const grupo=document.getElementById('new-ej-grupo').value;
-  const em=document.getElementById('new-ej-em').value||'💪';
   const nombre=document.getElementById('new-ej-nombre').value.trim();
-  const musculo=document.getElementById('new-ej-musculo').value.trim().toUpperCase();
+  const musculo=document.getElementById('new-ej-musculo').value.trim();
   if(!nombre)return showToast('Introduce un nombre','error');
-  const p=JSON.parse(localStorage.getItem('gymy_plantillas')||'{}');
-  if(!p[grupo])p[grupo]=[];
-  p[grupo].push({em,n:nombre,m:musculo||grupo.toUpperCase()});
-  localStorage.setItem('gymy_plantillas',JSON.stringify(p));
+  const{data}=await apiCall('POST','/plantillas',{nombre,grupo_muscular:grupo,subgrupo:musculo||grupo});
+  if(!data.ok)return showToast(data.error||'Error al guardar','error');
+  invalidatePlantillas();
   closeModal('modal-add-plantilla');
   renderPlantillasList();
   showToast('Ejercicio añadido','success');
 }
 
-function delPlantilla(grupo,nombre){
+async function delPlantillaDB(id){
+  const{data}=await apiCall('DELETE','/plantillas/'+id);
+  if(!data.ok)return showToast(data.error||'Error al eliminar','error');
+  invalidatePlantillas();
+  renderPlantillasList();
+}
+function delPlantillaLocal(grupo,nombre){
   const p=JSON.parse(localStorage.getItem('gymy_plantillas')||'{}');
   if(p[grupo])p[grupo]=p[grupo].filter(e=>e.n!==nombre);
   localStorage.setItem('gymy_plantillas',JSON.stringify(p));
   renderPlantillasList();
 }
+// Compat alias (kept for any remaining calls)
+function delPlantilla(grupo,nombre){delPlantillaLocal(grupo,nombre);}
 
-function importCSV(event){
+// Mapa de inferencia de grupo muscular por nombre
+function _inferirGrupo(nombre){
+  const n=nombre.toLowerCase();
+  if(/pecho|banca|press.*pec|apertura|cruce/.test(n))return'Pecho';
+  if(/espalda|jalón|jalon|remo|pull|dominada|hiperexten/.test(n))return'Espalda';
+  if(/pierna|sentadilla|prensa|femoral|gemelo|abducc|aducc|zancada|extensión.*pierna|extension.*pierna/.test(n))return'Piernas';
+  if(/hombro|deltoid|elevac|face pull|arnold|vuelo/.test(n))return'Hombros';
+  if(/tríceps|triceps|fondo|francés|frances|cuerda|extensión.*tri|extension.*tri/.test(n))return'Brazos';
+  if(/bíceps|biceps|curl/.test(n))return'Brazos';
+  if(/brazo/.test(n))return'Brazos';
+  if(/core|abdom|plancha|crunch|oblicuo|rueda|elevación.*pierna/.test(n))return'Core';
+  if(/cardio|cinta|bicicleta|elíptica|eliptica|remo ergó|escaladora/.test(n))return'Cardio';
+  return'General';
+}
+
+// Parsea archivo de plantillas (JSON, CSV con varias columnas, texto plano)
+function _parsePlantillasFile(text){
+  // Intentar JSON
+  try{
+    const d=JSON.parse(text);
+    if(Array.isArray(d))return d.map(e=>({
+      nombre:e.nombre||e.name||e.ejercicio||'',
+      grupo_muscular:e.grupo_muscular||e.grupo||e.muscle_group||_inferirGrupo(e.nombre||e.name||''),
+      subgrupo:e.subgrupo||null,equipo:e.equipo||null,tipo:e.tipo||'fuerza'
+    })).filter(e=>e.nombre);
+  }catch(e){}
+  // CSV / texto
+  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(!lines.length)return[];
+  // Detect separator: tab > ; > , > space
+  const sep=lines[0].includes('\t')?'\t':lines[0].includes(';')?';':',';
+  const headers=lines[0].split(sep).map(h=>h.toLowerCase().replace(/"/g,'').trim());
+  const iNombre=headers.findIndex(h=>/nombre|name|ejercicio|exercise/.test(h));
+  const iGrupo=headers.findIndex(h=>/grupo|muscle|muscular|group/.test(h));
+  const iSubgrupo=headers.findIndex(h=>/subgrupo|sub/.test(h));
+  const iEquipo=headers.findIndex(h=>/equipo|equipment/.test(h));
+  // If no recognizable header, treat each line as a name
+  if(iNombre===-1&&lines.length>0){
+    const startI=headers.some(h=>/nombre|name|grupo|muscle/.test(h))?1:0;
+    return lines.slice(startI).map(l=>{
+      const nombre=l.replace(/"/g,'').trim();
+      return{nombre,grupo_muscular:_inferirGrupo(nombre),subgrupo:null,equipo:null,tipo:'fuerza'};
+    }).filter(e=>e.nombre);
+  }
+  return lines.slice(1).map(line=>{
+    const cols=line.split(sep).map(c=>c.replace(/"/g,'').trim());
+    const nombre=(iNombre>=0?cols[iNombre]:cols[0])||'';
+    const grupoRaw=(iGrupo>=0?cols[iGrupo]:'')||'';
+    const grupo_muscular=grupoRaw||_inferirGrupo(nombre);
+    return{nombre,grupo_muscular,subgrupo:iSubgrupo>=0?cols[iSubgrupo]||null:null,equipo:iEquipo>=0?cols[iEquipo]||null:null,tipo:'fuerza'};
+  }).filter(e=>e.nombre);
+}
+
+let _importPlantillasParsed=[];
+function importPlantillasFile(event){
   const file=event.target.files[0];if(!file)return;
+  event.target.value='';
   const reader=new FileReader();
-  reader.onload=(e)=>{
-    const lines=e.target.result.split('\n').filter(l=>l.trim());
-    const p=JSON.parse(localStorage.getItem('gymy_plantillas')||'{}');
-    let count=0;
-    // Format: grupo,emoji,nombre,musculo
-    lines.forEach((line,i)=>{
-      if(i===0&&line.toLowerCase().includes('grupo'))return;// skip header
-      const parts=line.split(',').map(s=>s.trim().replace(/"/g,''));
-      if(parts.length>=3){
-        const[grupo,em,nombre,musculo]=parts;
-        if(!p[grupo])p[grupo]=[];
-        p[grupo].push({em:em||'💪',n:nombre,m:musculo||grupo.toUpperCase()});
-        count++;
-      }
-    });
-    localStorage.setItem('gymy_plantillas',JSON.stringify(p));
-    renderPlantillasList();
-    showToast(count+' ejercicios importados','success');
-    event.target.value='';
+  reader.onload=(ev)=>{
+    const parsed=_parsePlantillasFile(ev.target.result);
+    if(!parsed.length)return showToast('No se encontraron ejercicios en el archivo','error');
+    _importPlantillasParsed=parsed;
+    // Show preview
+    const byGrupo={};
+    parsed.forEach(e=>{if(!byGrupo[e.grupo_muscular])byGrupo[e.grupo_muscular]=[];byGrupo[e.grupo_muscular].push(e.nombre);});
+    const body=document.getElementById('import-plantillas-body');
+    body.innerHTML='<div style="font-size:13px;margin-bottom:10px">Se importarán <strong>'+parsed.length+'</strong> ejercicios:</div>'+
+      Object.entries(byGrupo).map(([grupo,ejs])=>
+        '<div style="margin-bottom:8px"><div style="font-size:12px;font-weight:600;color:var(--accent)">'+grupoEmoji(grupo)+' '+grupo+'</div>'+
+        ejs.map(n=>'<div style="font-size:12px;padding:2px 8px;color:var(--text2)">'+n+'</div>').join('')+'</div>'
+      ).join('');
+    openModal('modal-import-plantillas');
   };
-  reader.readAsText(file);
+  reader.readAsText(file,'utf-8');
+}
+async function confirmarImportPlantillas(){
+  if(!_importPlantillasParsed.length)return;
+  const btn=document.getElementById('btn-confirm-import-plantillas');
+  btn.disabled=true;btn.textContent='Importando...';
+  const{data}=await apiCall('POST','/plantillas/bulk',{ejercicios:_importPlantillasParsed});
+  btn.disabled=false;btn.textContent='Importar';
+  closeModal('modal-import-plantillas');
+  if(data.ok){
+    invalidatePlantillas();
+    renderPlantillasList();
+    showToast((data.creados||0)+' ejercicios importados','success');
+  } else {
+    showToast(data.error||'Error al importar','error');
+  }
+  _importPlantillasParsed=[];
 }
 
 function confirmEliminarPlantillas(){
-  showConfirm('¿Eliminar todas las plantillas?','Se eliminarán todos los ejercicios personalizados. Los ejercicios base no se ven afectados.','Eliminar todo',()=>{
+  showConfirm('¿Eliminar todas las plantillas?','Se eliminarán todos los ejercicios personalizados. Los ejercicios base no se ven afectados.','Eliminar todo',async()=>{
+    await apiCall('DELETE','/plantillas');
     localStorage.removeItem('gymy_plantillas');
+    invalidatePlantillas();
     renderPlantillasList();
     showToast('Plantillas eliminadas','info');
   });
@@ -2108,6 +2240,9 @@ function ejEmoji(equipo){return EQUIPO_EM[equipo]||'💪';}
 // Caché en memoria del catálogo (se carga una vez por sesión)
 let _catalogoCache=null;
 let _catalogoLoading=null;
+let _plantillasCache=null;
+let _plantillasLoading=null;
+let wkCurEjGrupo='';
 
 async function loadCatalogo(){
   if(_catalogoCache)return _catalogoCache;
@@ -2135,19 +2270,47 @@ async function loadCatalogo(){
   return _catalogoLoading;
 }
 
+// Carga plantillas personales + genéricas desde la API
+async function loadPlantillas(){
+  if(_plantillasCache)return _plantillasCache;
+  if(_plantillasLoading)return _plantillasLoading;
+  _plantillasLoading=(async()=>{
+    try{
+      const{data}=await apiCall('GET','/plantillas');
+      if(data.ok){_plantillasCache=data.plantillas||[];return _plantillasCache;}
+    }catch(e){console.warn('[Plantillas] Error:',e.message);}
+    return[];
+  })();
+  return _plantillasLoading;
+}
+function invalidatePlantillas(){_plantillasCache=null;_plantillasLoading=null;}
+
 // Versión síncrona (usa caché si ya está cargada)
 function wkGetDB(){
-  const c=JSON.parse(localStorage.getItem('gymy_plantillas')||'{}');
+  // Base catalog
   const base=_catalogoCache||{};
   const m={};
-  Object.keys(base).forEach(k=>{m[k]=[...base[k],...(c[k]||[])];});
-  Object.keys(c).forEach(k=>{if(!m[k])m[k]=c[k];});
+  Object.keys(base).forEach(k=>{m[k]=[...base[k]];});
+  // DB plantillas (genéricas + propias)
+  (_plantillasCache||[]).forEach(p=>{
+    const g=p.grupo_muscular;
+    if(!m[g])m[g]=[];
+    if(!m[g].some(e=>e.n===p.nombre)){
+      m[g].push({em:ejEmoji(p.equipo),n:p.nombre,m:(p.subgrupo||g).toUpperCase(),id:p.id,db:true,propia:p.propia});
+    }
+  });
+  // localStorage (compat)
+  const loc=JSON.parse(localStorage.getItem('gymy_plantillas')||'{}');
+  Object.keys(loc).forEach(k=>{
+    if(!m[k])m[k]=[];
+    loc[k].forEach(e=>{if(!m[k].some(ex=>ex.n===e.n))m[k].push(e);});
+  });
   return m;
 }
 
-// Versión async: asegura que el catálogo está cargado antes de devolver
+// Versión async: asegura que el catálogo y plantillas están cargados
 async function wkGetDBAsync(){
-  await loadCatalogo();
+  await Promise.all([loadCatalogo(),loadPlantillas()]);
   return wkGetDB();
 }
 function wkGetPreloadMode(){return localStorage.getItem('gymy_preload')||'ultimo';}
@@ -2359,6 +2522,7 @@ function wkCloseEjBack(){
 }
 function wkPickTipo(tipo){
   if(!wkCurTipo)wkCurTipo=tipo;
+  wkCurEjGrupo=tipo;
   wkHide('wk-ov-tipo');
   document.getElementById('wk-ov-ej-title').textContent=tipo;
   document.getElementById('wk-ej-q').value='';
@@ -2366,7 +2530,7 @@ function wkPickTipo(tipo){
   setTimeout(()=>wkShow('wk-ov-ej'),180);
 }
 function wkRenderEjList(list){
-  document.getElementById('wk-ej-scroll').innerHTML=list.map(e=>{
+  const items=list.map(e=>{
     const pre=wkGetPreload(e.n);
     const hint=pre?(()=>{
       const maxKg=Math.max(...pre.sets.map(s=>s.kg));
@@ -2381,6 +2545,11 @@ function wkRenderEjList(list){
       +'<div><div class="ej-item-n">'+e.n+hint+'</div><div class="ej-item-m">'+e.m+'</div></div>'
       +'</div>';
   }).join('');
+  const addBtn='<div class="ej-item" style="border-top:1px solid var(--border);margin-top:4px;color:var(--accent)" onclick="wkNuevoEjercicio()">'
+    +'<div class="ej-item-em">➕</div>'
+    +'<div><div class="ej-item-n">Crear nuevo ejercicio</div><div class="ej-item-m">Añadir al catálogo personal</div></div>'
+    +'</div>';
+  document.getElementById('wk-ej-scroll').innerHTML=items+addBtn;
 }
 function wkFilterEj(){
   const q=document.getElementById('wk-ej-q').value.toLowerCase();
@@ -2402,6 +2571,31 @@ function wkAddEx(e){
   wkExs.push({id,em:e.em,n:e.n,m:e.m,sets});
   wkRender();
   setTimeout(()=>document.getElementById('wk-ex-'+id)?.scrollIntoView({behavior:'smooth',block:'nearest'}),100);
+}
+
+// ── Crear nuevo ejercicio desde el selector de workout ──────────────────────
+function wkNuevoEjercicio(){
+  // Populate grupo select with current DB groups
+  const grupos=Object.keys(wkGetDB());
+  const sel=document.getElementById('wk-new-grupo');
+  const cur=wkCurEjGrupo||grupos[0]||'General';
+  sel.innerHTML=grupos.map(g=>`<option value="${g}"${g===cur?' selected':''}>${g}</option>`).join('')
+    +'<option value="General"'+(cur==='General'?' selected':'')+'>General</option>';
+  document.getElementById('wk-new-nombre').value='';
+  openModal('modal-wk-nuevo-ej');
+}
+async function wkCrearNuevoEjercicio(){
+  const nombre=document.getElementById('wk-new-nombre').value.trim();
+  const grupo=document.getElementById('wk-new-grupo').value;
+  if(!nombre)return showToast('Introduce un nombre','error');
+  const{data}=await apiCall('POST','/plantillas',{nombre,grupo_muscular:grupo});
+  if(!data.ok)return showToast(data.error||'Error al guardar','error');
+  invalidatePlantillas();
+  await loadPlantillas();
+  closeModal('modal-wk-nuevo-ej');
+  // Add exercise to workout immediately
+  wkAddEx({em:'💪',n:nombre,m:grupo.toUpperCase()});
+  showToast('Ejercicio creado y añadido','success');
 }
 
 // ── Gaussian helpers ──
