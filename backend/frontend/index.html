@@ -1676,11 +1676,11 @@ function detectarTipoSesion(ejercicios){
 
 // ── PARSEO CSV INTELIGENTE ───────────────────────────────────────────────────
 function parsearCSV(rawText){
-  const lines=rawText.split('\n').map(l=>l.trim()).filter(l=>l);
+  const lines=rawText.split(/\r?\n|\r/).map(l=>l.trim()).filter(l=>l);
   if(!lines.length)return[];
 
-  // Detectar separador (coma, punto y coma, tab)
-  const sep=[',',';','\t'].find(s=>lines[0].includes(s))||',';
+  // Detectar separador (tab, punto y coma, pipe, coma)
+  const sep=['\t',';','|',','].find(s=>lines[0].includes(s))||',';
 
   function parseLine(line){
     const result=[];let cur='';let inQ=false;
@@ -1732,8 +1732,8 @@ function parsearCSV(rawText){
     let fecha='';
     if(iDate>=0){
       fecha=get(iDate);
-    } else if(!hasHeader){
-      fecha=get(0); // posición fija
+    } else {
+      fecha=get(0); // posición fija (sin cabecera) o cabecera sin columna fecha reconocida
     }
     // Normalizar fecha: acepta YYYY-MM-DD, DD/MM/YYYY, MM/DD/YYYY, timestamps
     if(fecha){
@@ -1947,6 +1947,7 @@ async function runImport(){
     setTimeout(()=>goTab('historial',document.getElementById('tab-historial')),300);
 
     let msg=`${imported} sesión(es) importada(s)`;
+    if(imported>0){const fechas=sesiones.slice(0,3).map(s=>s.fecha).join(', ');msg+=` (${fechas}${sesiones.length>3?'…':''})`;}
     if(creados>0)msg+=` · ${creados} ejercicio(s) nuevo(s) en catálogo`;
     if(errors>0)msg+=` · ${errors} error(es)`;
     showToast(msg+(navigator.onLine?'':' (offline)'),'success');
