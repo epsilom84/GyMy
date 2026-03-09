@@ -1190,15 +1190,15 @@ function repetirWorkout(id){
       if(!data.ok){ showToast('Error al cargar sesión','error'); return; }
       const s = data.sesion;
       // Guardar en sessionStorage para que actividad.html lo cargue
+      // Agrupar series por ejercicio para precargar el bloque completo
+      const _ejByNombre={};
+      (s.ejercicios||[]).forEach(e=>{
+        if(!_ejByNombre[e.nombre])_ejByNombre[e.nombre]={em:'🏋️',n:e.nombre,m:e.nombre.toUpperCase(),sets:[]};
+        _ejByNombre[e.nombre].sets.push({kg:e.peso_kg||60,reps:e.reps||10});
+      });
       const preload = {
         tipo: s.tipo,
-        ejercicios: (s.ejercicios||[]).map(e => ({
-          em: '🏋️',
-          n: e.nombre,
-          m: e.nombre.toUpperCase(),
-          kg: e.peso_kg || 60,
-          reps: e.reps || 10
-        }))
+        ejercicios: Object.values(_ejByNombre)
       };
       sessionStorage.setItem('gymy_preload_workout', JSON.stringify(preload));
       // Open workout tab directly (no page navigation)
@@ -2209,10 +2209,12 @@ async function cargarHistorialLocal(){
         }catch(e){}
       }
       // Group sets by nombre within this session
+      // series||1: supports old format (1 row, series=N) and new format (1 row per set, series=1)
       const byNombre={};
       ejercicios.forEach(e=>{
         if(!byNombre[e.nombre])byNombre[e.nombre]=[];
-        byNombre[e.nombre].push({kg:e.peso_kg||0,reps:e.reps||0});
+        const n=e.series||1;
+        for(let i=0;i<n;i++) byNombre[e.nombre].push({kg:e.peso_kg||0,reps:e.reps||0});
       });
       Object.entries(byNombre).forEach(([nombre,sets])=>{
         if(!byNombreSession[nombre])byNombreSession[nombre]=[];
@@ -2400,8 +2402,10 @@ function wkInit(){
       wkCurTipo=pw.tipo||'Fuerza';
       pw.ejercicios.forEach(e=>{
         const id=wkEid++;
-        wkExs.push({id,em:e.em||'🏋️',n:e.n,m:e.m||e.n.toUpperCase(),
-          sets:[{kg:e.kg||60,reps:e.reps||10,done:false,pre:true}]});
+        const sets=(e.sets&&e.sets.length)
+          ?e.sets.map(s=>({kg:s.kg||60,reps:s.reps||10,done:false,pre:true}))
+          :[{kg:e.kg||60,reps:e.reps||10,done:false,pre:true}];
+        wkExs.push({id,em:e.em||'🏋️',n:e.n,m:e.m||e.n.toUpperCase(),sets});
       });
       wkActivate();
       wkRender();
