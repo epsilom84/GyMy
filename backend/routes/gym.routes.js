@@ -270,6 +270,14 @@ router.put('/sesiones/:id', validateSesion, async (req, res) => {
   }
 });
 
+// ── DELETE /api/sesiones (eliminar todo el historial del usuario) ──
+router.delete('/sesiones', async (req, res) => {
+  try {
+    await queryOne('DELETE FROM sesiones WHERE user_id=$1', [req.user.id]);
+    res.json({ ok: true, mensaje: 'Historial eliminado' });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
 // ── DELETE /api/sesiones/:id ───────────────────────────────
 router.delete('/sesiones/:id', async (req, res) => {
   try {

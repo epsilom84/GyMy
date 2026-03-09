@@ -403,6 +403,7 @@ input:focus,select:focus{border-color:var(--accent);}
           📥 Importar Historial
           <input type="file" id="hist-csv-import" accept=".csv,.txt,.tsv" style="display:none" onchange="importHistorialCSV(event)"/>
         </label>
+        <button class="hist-btn" style="color:var(--accent2);border-color:var(--accent2)" onclick="confirmarEliminarHistorial()">🗑️</button>
       </div>
       <input type="search" id="search-q" placeholder="🔍  Buscar..." style="margin-bottom:10px" oninput="loadHistorial()"/>
       <div class="filters" id="tipo-filters">
@@ -817,6 +818,18 @@ async function getSesion(id){return apiCall('GET','/sesiones/'+id);}
 async function crearSesion(d){return apiCall('POST','/sesiones',d);}
 async function actualizarSesion(id,d){return apiCall('PUT','/sesiones/'+id,d);}
 async function eliminarSesion(id){return apiCall('DELETE','/sesiones/'+id);}
+async function eliminarTodoHistorial(){
+  const{data}=await apiCall('DELETE','/sesiones');
+  if(data.ok){
+    localStorage.removeItem('gymy_historial_local');
+    statsCache=null;currentPage=1;
+    loadDashboard();loadHistorial();
+    showToast('Historial eliminado','info');
+  } else showToast(data.error||'Error al eliminar','error');
+}
+function confirmarEliminarHistorial(){
+  showConfirm('¿Eliminar todo el historial?','Se borrarán todas tus sesiones y ejercicios. Esta acción no se puede deshacer.','Eliminar todo',eliminarTodoHistorial);
+}
 async function exportarCSV(){
   const t=getAccessToken();
   const r=await fetch(API_URL+'/sesiones/export/csv',{headers:{'Authorization':'Bearer '+t}});
