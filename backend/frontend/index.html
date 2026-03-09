@@ -400,8 +400,8 @@ input:focus,select:focus{border-color:var(--accent);}
       <div style="display:flex;gap:8px;margin-bottom:10px">
         <button class="hist-btn" onclick="exportHistorialCSV()">📤 Exportar CSV</button>
         <label class="hist-btn" style="cursor:pointer;flex:1;justify-content:center">
-          📥 Importar CSV
-          <input type="file" id="hist-csv-import" accept=".csv" style="display:none" onchange="importHistorialCSV(event)"/>
+          📥 Importar Historial
+          <input type="file" id="hist-csv-import" accept=".csv,.txt,.tsv" style="display:none" onchange="importHistorialCSV(event)"/>
         </label>
       </div>
       <input type="search" id="search-q" placeholder="🔍  Buscar..." style="margin-bottom:10px" oninput="loadHistorial()"/>
@@ -1565,24 +1565,53 @@ function importHistorialCSV(event){
 }
 
 function openImportPreview(rawText,filename){
-  const preview=rawText.slice(0,500)+(rawText.length>500?'\n...':'');
   const lines=rawText.split('\n').filter(l=>l.trim()).length;
+
+  // Parsear para mostrar preview real
+  let sesiones=[];
+  try{sesiones=parsearCSV(rawText);}catch(e){}
+
+  // Construir resumen de sesiones
+  let resumenHtml='';
+  if(sesiones.length){
+    const totalEj=sesiones.reduce((a,s)=>a+(s.ejercicios||[]).length,0);
+    const totalSeries=sesiones.reduce((a,s)=>(s.ejercicios||[]).reduce((b,e)=>b+(e.series||1),a),0);
+    resumenHtml+=
+      '<div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:12px">'+
+      '<div style="font-size:13px;font-weight:600;color:var(--accent3);margin-bottom:8px">'+
+      '✓ '+sesiones.length+' sesión(es) · '+totalEj+' ejercicio(s) · '+totalSeries+' serie(s)</div>';
+    // Listar cada sesión con sus ejercicios
+    sesiones.slice(0,5).forEach(s=>{
+      const ejList=(s.ejercicios||[]).slice(0,4).map(e=>
+        '<span style="color:var(--text2)">'+e.nombre+
+        ' <span style="color:var(--text);font-weight:600">'+e.series+'×'+e.reps+
+        (e.peso_kg?' — '+e.peso_kg+'kg':'')+'</span></span>'
+      ).join('<br>');
+      const masEj=(s.ejercicios||[]).length>4?'<br><span style="color:var(--text2);font-size:11px">+'+((s.ejercicios||[]).length-4)+' más...</span>':'';
+      resumenHtml+=
+        '<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">'+
+        '<div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px">'+
+        '📅 '+formatFecha(s.fecha)+(s.tipo?' · '+s.tipo:'')+
+        '</div>'+
+        '<div style="font-size:11px;line-height:1.7;padding-left:8px">'+ejList+masEj+'</div>'+
+        '</div>';
+    });
+    if(sesiones.length>5){
+      resumenHtml+='<div style="font-size:12px;color:var(--text2);text-align:center">...y '+(sesiones.length-5)+' sesión(es) más</div>';
+    }
+    resumenHtml+='</div>';
+  } else {
+    resumenHtml='<div style="color:var(--accent2);font-size:13px;margin-bottom:12px">⚠️ No se detectaron sesiones válidas. Comprueba el formato del archivo.</div>';
+  }
+
   const modalHtml=
     '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">'+
     '<strong style="color:var(--text)">'+filename+'</strong> · '+lines+' líneas</div>'+
-    '<pre style="font-size:11px;color:var(--text2);background:var(--bg3);padding:12px;border-radius:10px;overflow:auto;max-height:140px;white-space:pre-wrap">'+
-    preview.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre>'+
-    '<p style="font-size:13px;color:var(--text2);margin:14px 0 6px">Se analizará el CSV e identificará:</p>'+
-    '<ul style="font-size:12px;color:var(--text2);padding-left:18px;line-height:1.8">'+
-    '<li>Fechas y hora de cada entrenamiento</li>'+
-    '<li>Tipo de sesión y grupo muscular</li>'+
-    '<li>Ejercicios, series, reps y pesos</li>'+
-    '<li>Ejercicios nuevos → se añaden al catálogo</li>'+
-    '</ul>'+
-    '<div id="import-status" style="margin-top:12px;font-size:13px;min-height:20px;color:var(--accent3)"></div>'+
-    '<div style="display:flex;gap:8px;margin-top:16px">'+
+    resumenHtml+
+    '<div id="import-status" style="margin-top:4px;font-size:13px;min-height:20px;color:var(--accent3)"></div>'+
+    '<div style="display:flex;gap:8px;margin-top:14px">'+
     '<button class="c-btn-cancel" onclick="closeModal(\'modal-import-preview\')">Cancelar</button>'+
-    '<button class="c-btn-primary" id="btn-run-import" onclick="runImport()">📥 Importar</button>'+
+    '<button class="c-btn-primary" id="btn-run-import" onclick="runImport()" '+(sesiones.length?'':'disabled')+'>📥 Importar</button>'+
     '</div>';
   document.getElementById('import-preview-body').innerHTML=modalHtml;
   window._importRawText=rawText;
@@ -1663,9 +1692,11 @@ function parsearCSV(rawText){
   const iTipo  =colIdx(['tipo','type','categoria','category','workout type','session type']);
   const iNombre=colIdx(['ejercicio','exercise','nombre','name','movement']);
   const iGrupo =colIdx(['grupo','group','grupo muscular','muscle group','body part','muscle']);
-  const iSeries=colIdx(['series','sets','set']);
+  const iSeries  =colIdx(['series','sets']);
+  const iSetOrder=colIdx(['set order','set_order','set num','set_num','numero serie','número serie']);
   const iReps  =colIdx(['reps','repeticiones','repetitions','rep']);
   const iPeso  =colIdx(['peso','weight','peso_kg','kg','lbs','load']);
+  const iWorkout =colIdx(['workout name','workout','entrenamiento','sesion','sesión']);
   const iDur   =colIdx(['duracion','duration','duracion_min','minutes','tiempo']);
   const iCal   =colIdx(['calorias','calories','kcal','cal']);
   const iNotas =colIdx(['notas','notes','nota','note','comments','comentarios']);
@@ -1717,7 +1748,8 @@ function parsearCSV(rawText){
     const hora=iTime>=0?get(iTime):(iDate>=0&&get(iDate).includes(':'))?(_timeRe.exec(get(iDate))||[''])[0]:'';
 
     // Tipo sesión y métricas de sesión (leídas antes del check de nombre)
-    const tipoFila=iTipo>=0?get(iTipo):(!hasHeader?get(1):'');
+    const workoutName=iWorkout>=0?get(iWorkout):'';
+    const tipoFila=iTipo>=0?get(iTipo):workoutName||(!hasHeader?get(1):'');
     const dur   =parseInt(iDur>=0   ?get(iDur)   :(!hasHeader?get(2):'')||'0')||0;
     const cal   =parseInt(iCal>=0   ?get(iCal)   :(!hasHeader?get(3):'')||'0')||0;
     const origenApp=iOrigen>=0?get(iOrigen):'';
@@ -1747,7 +1779,9 @@ function parsearCSV(rawText){
 
     const grupoRaw=iGrupo>=0?get(iGrupo):'';
     const grupo=grupoRaw||detectarGrupo(nombre);
-    const series=parseInt(iSeries>=0?get(iSeries):(!hasHeader?get(5):'')||'1')||1;
+    // Si hay columna set_order → una fila = una serie (agruparemos después)
+    const setOrderVal=iSetOrder>=0?parseInt(get(iSetOrder))||0:0;
+    const series=iSetOrder>=0?1:(parseInt(iSeries>=0?get(iSeries):(!hasHeader?get(5):'')||'1')||1);
     const reps  =parseInt(iReps>=0  ?get(iReps)  :(!hasHeader?get(6):'')||'0')||0;
     const peso  =parseFloat(iPeso>=0?get(iPeso)  :(!hasHeader?get(7):'')||'0')||0;
 
@@ -1757,11 +1791,37 @@ function parsearCSV(rawText){
       series,
       reps,
       peso_kg:peso,
-      _hora:hora
+      _hora:hora,
+      _setOrder:setOrderVal
     });
   });
 
-  // Post-proceso: detectar tipo sesión si no está
+  // Post-proceso 1: agrupar series del mismo ejercicio en un bloque de series
+  // Aplica cuando hay filas duplicadas (una fila por serie, formato Hevy/Strong/etc.)
+  Object.values(byFecha).forEach(s=>{
+    const nombres=s.ejercicios.map(e=>e.nombre.toLowerCase());
+    const hayDuplicados=nombres.length!==new Set(nombres).size;
+    const haySetOrder=s.ejercicios.some(e=>e._setOrder>0);
+    if(!hayDuplicados&&!haySetOrder)return; // ya viene agrupado
+    // Agrupar preservando orden de aparición
+    const bloques={};const orden=[];
+    s.ejercicios.forEach(e=>{
+      const k=e.nombre.toLowerCase();
+      if(!bloques[k]){
+        bloques[k]={nombre:e.nombre,grupo_muscular:e.grupo_muscular,
+          series:1,reps:e.reps,peso_kg:e.peso_kg,_hora:e._hora,_sets:[{reps:e.reps,peso_kg:e.peso_kg}]};
+        orden.push(k);
+      } else {
+        bloques[k].series++;
+        bloques[k]._sets.push({reps:e.reps,peso_kg:e.peso_kg});
+        if(e.reps>bloques[k].reps)bloques[k].reps=e.reps;
+        if(e.peso_kg>bloques[k].peso_kg)bloques[k].peso_kg=e.peso_kg;
+      }
+    });
+    s.ejercicios=orden.map(k=>{const b=bloques[k];delete b._sets;return b;});
+  });
+
+  // Post-proceso 2: detectar tipo sesión si no está
   Object.values(byFecha).forEach(s=>{
     if(!s.tipo)s.tipo=detectarTipoSesion(s.ejercicios);
     // Construir nota de origen
