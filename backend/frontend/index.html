@@ -2423,10 +2423,10 @@ function wkCardHTML(ex){
       +'</div>'
     +'</div>'
     +vsHtml
+    +(hist.length>=3?'<div class="gauss-wrap"><canvas id="wk-gauss-cv-'+ex.id+'"></canvas><div class="gauss-pct" id="wk-gauss-pct-'+ex.id+'"></div></div>':'')
     +'<div class="col-heads"><span>SET</span><span>KG</span><span>REPS</span><span></span><span></span></div>'
     +setsHtml
     +'<button class="add-serie-btn" onclick="wkAddSet('+ex.id+')">＋ Serie</button>'
-    +(hist.length>=3?'<div class="gauss-wrap"><canvas id="wk-gauss-cv-'+ex.id+'"></canvas><div class="gauss-pct" id="wk-gauss-pct-'+ex.id+'"></div></div>':'')
   +'</div>';
 }
 
