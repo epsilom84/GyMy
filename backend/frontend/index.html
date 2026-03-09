@@ -1191,10 +1191,12 @@ function repetirWorkout(id){
       const s = data.sesion;
       // Guardar en sessionStorage para que actividad.html lo cargue
       // Agrupar series por ejercicio para precargar el bloque completo
+      // series||1: 1 row/set (workout directo) o 1 row con series=N (CSV import)
       const _ejByNombre={};
       (s.ejercicios||[]).forEach(e=>{
         if(!_ejByNombre[e.nombre])_ejByNombre[e.nombre]={em:'🏋️',n:e.nombre,m:e.nombre.toUpperCase(),sets:[]};
-        _ejByNombre[e.nombre].sets.push({kg:e.peso_kg||60,reps:e.reps||10});
+        const n=e.series||1;
+        for(let i=0;i<n;i++) _ejByNombre[e.nombre].sets.push({kg:e.peso_kg||60,reps:e.reps||10});
       });
       const preload = {
         tipo: s.tipo,
