@@ -82,14 +82,15 @@ input:focus,select:focus{border-color:var(--accent);}
 .section-sub{color:var(--text2);font-size:13px;margin-bottom:18px;}
 
 /* ── COACH SASHA ── */
-.coach-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:14px 14px 14px 14px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start;position:relative;}
-.coach-avatar{font-size:40px;line-height:1;flex-shrink:0;filter:drop-shadow(0 2px 8px rgba(232,255,71,.25));}
+.coach-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start;position:relative;overflow:hidden;}
+.coach-card::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(108,71,255,.08),rgba(232,255,71,.04));pointer-events:none;}
+.coach-avatar-wrap{flex-shrink:0;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--accent));display:flex;align-items:center;justify-content:center;font-size:28px;line-height:1;box-shadow:0 0 16px rgba(108,71,255,.35);}
 .coach-body{flex:1;min-width:0;}
-.coach-name{font-family:var(--font-d);font-size:16px;color:var(--accent);letter-spacing:1.5px;margin-bottom:6px;}
-.coach-bubble{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.55;color:var(--text);transition:opacity .18s ease;}
-.coach-refresh{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--text2);font-size:17px;cursor:pointer;padding:5px 7px;border-radius:8px;transition:.18s;line-height:1;}
-.coach-refresh:hover{color:var(--accent);background:var(--bg3);}
-.coach-refresh:active{transform:rotate(180deg);}
+.coach-name{font-family:var(--font-d);font-size:15px;color:var(--accent);letter-spacing:1.5px;margin-bottom:5px;}
+.coach-bubble{font-size:13px;line-height:1.6;color:var(--text);transition:opacity .2s ease;}
+.coach-refresh{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;padding:4px 7px;border-radius:8px;transition:.18s;line-height:1;}
+.coach-refresh:hover{color:var(--accent);}
+.coach-refresh:active{transform:rotate(180deg);transition:transform .3s;}
 
 /* ── STAT CARDS ── */
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
@@ -388,10 +389,10 @@ input:focus,select:focus{border-color:var(--accent);}
       <div class="section-title">Dashboard</div>
       <div class="section-sub" id="dash-greeting">Tu progreso</div>
       <div class="coach-card" id="coach-card">
-        <div class="coach-avatar">🏋️‍♀️</div>
+        <div class="coach-avatar-wrap">🏋️‍♀️</div>
         <div class="coach-body">
           <div class="coach-name">COACH SASHA</div>
-          <div class="coach-bubble" id="coach-phrase">Cargando sabiduría...</div>
+          <div class="coach-bubble" id="coach-phrase"> </div>
         </div>
         <button class="coach-refresh" onclick="refreshCoach()" title="Nueva frase">↻</button>
       </div>
@@ -956,6 +957,7 @@ function initApp(){
     document.getElementById('dash-greeting').textContent=g+', '+u.username+' 👋';
   }
   updateOfflineBadge();
+  refreshCoach();
   loadDashboard();
   applySettingsUI();
   // Cargar historial desde Postgres para precarga
@@ -1108,60 +1110,58 @@ async function loadDashboard(){
 
 // ── COACH SASHA ──
 let _coachStats=null,_coachIdx=-1;
+const _COACH_GENERIC=[
+  'El 80% de la gente abandona el gimnasio antes de febrero. Tú sigues aquí. Eso ya es ganar.',
+  'Arnold entrenaba 6 horas al día. Tú tienes potencial de llegar al 15%. Poco a poco.',
+  'El músculo no crece durante el entrenamiento, sino en el descanso. Dormir también es entrenar. De nada.',
+  'El récord mundial de dominadas en 1 minuto son 51. Tú vas bien... para ser terrestre.',
+  'Científicamente, el ejercicio libera endorfinas. Las endorfinas te hacen feliz. Conclusión: soy yo quien te hace feliz.',
+  'Los griegos competían desnudos en los Juegos Olímpicos. Agradece el pantalón de chándal y entrena.',
+  'Una sesión de fuerza eleva el metabolismo hasta 48h después. Lo que comas esta noche... yo no dije nada.',
+  'El corazón late 100.000 veces al día. En el gym le pides que se acelere. Eso es tortura. Sigue así.',
+  'El dolor muscular de 24-48h se llama DOMS. Tu cuerpo dice "gracias". O "para ya". Depende del contexto.',
+  'Escuchar música aumenta el rendimiento un 15%. ¿Qué escuchas tú? No me lo digas, no quiero saber.',
+  'La fuerza máxima se desarrolla entre los 25 y 35 años. ¿Ya los superaste? Más razón para no perder lo que tienes.',
+  'Los músculos tienen memoria. El tuyo probablemente recuerda aquella época en que entrenabas más.',
+  'Dato: el ser humano tardó 4 millones de años en bipedarse. Lleva ese legado al press de banca.',
+  'La proteína de una lata de atún equivale a unos 25g. Come, levanta, duerme. Repite.',
+  'Un estudio dice que mirarse al espejo mientras entrenas mejora la técnica. O simplemente te gusta mirarte. Los dos son válidos.',
+];
 function _coachPhrases(s){
   const total=s.total||0,racha=s.racha||0,semana=s.ultimasSemana||0;
   const horas=Math.floor((s.totalMinutos||0)/60);
   const u=JSON.parse(localStorage.getItem('gymy_user')||'{}');
   const n=u.username||'campeón';
-  const ph=[];
-  // Basadas en racha
+  const ph=[..._COACH_GENERIC];
   if(racha===0&&total>0)  ph.push(`¿Sin racha, ${n}? Mi abuela tiene mejor ritmo y va con andador.`);
   if(racha===0&&total===0)ph.push(`Cero sesiones, cero racha. El sofá te ha ganado sin pelear. Deplorable.`);
   if(racha===1)           ph.push(`Un día de racha. Una palmadita en la espalda... con una chancla.`);
-  if(racha>=2&&racha<5)   ph.push(`${racha} días seguidos, ${n}. Eso está bien. Para ser principiante.`);
+  if(racha>=2&&racha<5)   ph.push(`${racha} días seguidos. Eso está bien. Para ser principiante.`);
   if(racha>=5&&racha<7)   ph.push(`${racha} días de racha. Casi pareces un atleta. Casi.`);
   if(racha>=7&&racha<14)  ph.push(`¡${racha} días de racha! Esto ya empieza a parecerse a disciplina de verdad.`);
-  if(racha>=14&&racha<30) ph.push(`${racha} días seguidos. O tienes mucha fuerza de voluntad o no tienes vida social. De cualquier modo: bien.`);
-  if(racha>=30)           ph.push(`${racha} días de racha. ¿Tienes familia? ¿Amigos? No importa, estoy orgullosa de ti.`);
-  // Basadas en sesiones totales
+  if(racha>=14&&racha<30) ph.push(`${racha} días seguidos. O tienes fuerza de voluntad o no tienes vida social. De cualquier modo: bien.`);
+  if(racha>=30)           ph.push(`${racha} días de racha. ¿Tienes amigos? No importa, estoy orgullosa de ti.`);
   if(total===0)           ph.push(`Sin sesiones. La barra olímpica lleva tu nombre grabado... y tiene polvo.`);
   if(total>=1&&total<5)   ph.push(`Solo ${total} sesión(es). El gimnasio aún te da miedo, ¿verdad? Normal.`);
   if(total>=10&&total<30) ph.push(`${total} sesiones. Ya no eres un recién llegado. Todavía no eres impresionante, pero algo es algo.`);
-  if(total>=30&&total<60) ph.push(`${total} sesiones acumuladas. El hierro ya reconoce tu olor. No sé si eso es bueno o malo.`);
-  if(total>=60&&total<100)ph.push(`${total} sesiones. Eso es dedicación. O adicción. En el gimnasio las dos son válidas.`);
-  if(total>=100)          ph.push(`${total} sesiones, ${n}. Cien. ¿Sabes cuántas personas llegan aquí? Muy pocas. Bien hecho.`);
-  if(total>=200)          ph.push(`${total} sesiones. Eso ya no es un hobby, es un estilo de vida. Bienvenido al club de los raros.`);
-  // Basadas en sesiones de la semana
+  if(total>=30&&total<60) ph.push(`${total} sesiones acumuladas. El hierro ya reconoce tu olor.`);
+  if(total>=60&&total<100)ph.push(`${total} sesiones. Dedicación. O adicción. En el gimnasio las dos son válidas.`);
+  if(total>=100)          ph.push(`${total} sesiones, ${n}. ¿Sabes cuántas personas llegan aquí? Muy pocas. Bien hecho.`);
+  if(total>=200)          ph.push(`${total} sesiones. Eso ya no es un hobby, es un estilo de vida.`);
   if(semana===0&&total>0) ph.push(`Cero sesiones esta semana, ${n}. Mis plantas tienen más actividad física que tú.`);
-  if(semana===1)          ph.push(`Una sesión esta semana. Honestamente esperaba menos, así que... sorpresa agradable.`);
-  if(semana===2)          ph.push(`Dos sesiones esta semana. Correcto. Ni para quejarse ni para presumir.`);
-  if(semana>=3&&semana<5) ph.push(`${semana} sesiones esta semana. Eso está bien. ¿Ves cómo cuando quieres puedes?`);
-  if(semana>=5)           ph.push(`${semana} sesiones esta semana, ${n}. ¿Cuándo duermes? ¿Cuándo comes? ¿Tienes amigos?`);
-  // Basadas en horas totales
-  if(horas<5&&total>3)    ph.push(`${horas} horas totales entrenando. Un capítulo de Netflix dura más que tu historial completo.`);
-  if(horas>=10&&horas<50) ph.push(`${horas} horas de entrenamiento acumuladas. Los resultados no se ven en el espejo, pero van llegando.`);
-  if(horas>=50&&horas<100)ph.push(`${horas} horas sudando. Eso es más de dos días enteros de tu vida dedicados al hierro. Me alegra.`);
-  if(horas>=100)          ph.push(`${horas} horas de entreno en total. Podrías haber aprendido chino. Elegiste el hierro. Buena decisión.`);
-  // Datos random del mundo fitness (siempre disponibles)
-  ph.push(`El récord mundial de dominadas en 1 minuto son 51. Tú vas bien... para ser terrestre.`);
-  ph.push(`Dato: el músculo no crece durante el entrenamiento, sino en el descanso. Técnicamente, dormir también es entrenar. De nada.`);
-  ph.push(`Arnold Schwarzenegger entrenaba 6 horas al día. Tú tienes potencial de llegar al 15%. Poco a poco.`);
-  ph.push(`El 80% de la gente abandona el gimnasio antes de febrero. Tú sigues aquí. Eso ya es ganar.`);
-  ph.push(`Científicamente, el ejercicio libera endorfinas. Las endorfinas te hacen feliz. Conclusión: básicamente soy yo quien te hace feliz.`);
-  ph.push(`Los griegos antiguos competían desnudos en los Juegos Olímpicos. Agradece el pantalón de chándal y sigue entrenando.`);
-  ph.push(`Una sesión de fuerza eleva el metabolismo hasta 48 horas después. Lo que comas esta noche... yo no dije nada.`);
-  ph.push(`El corazón humano late unos 100.000 veces al día. En el gym le dices que se acelere. Eso es básicamente tortura. Sigue así.`);
-  ph.push(`Dato motivacional: el dolor muscular de 24-48h se llama DOMS. Es tu cuerpo diciéndote "gracias". O "para ya". Depende del contexto.`);
-  ph.push(`Un estudio dice que escuchar música aumenta el rendimiento en un 15%. ¿Qué escuchas tú? No me lo digas, no quiero saber.`);
-  ph.push(`El ser humano tardó 4 millones de años en evolucionar. Tú llevas ${total} sesiones. Vas un poco lento, pero bien.`);
-  ph.push(`La fuerza máxima se desarrolla entre los 25 y los 35 años. ¿Estás en esa franja? Aprovecha. ¿Ya la superaste? Más razón para no perder lo que tienes.`);
+  if(semana===1)          ph.push(`Una sesión esta semana. Honestamente esperaba menos. Sorpresa agradable.`);
+  if(semana===2)          ph.push(`Dos sesiones esta semana. Ni para quejarse ni para presumir.`);
+  if(semana>=3&&semana<5) ph.push(`${semana} sesiones esta semana. ¿Ves cómo cuando quieres puedes?`);
+  if(semana>=5)           ph.push(`${semana} sesiones esta semana. ¿Cuándo duermes? ¿Tienes amigos?`);
+  if(horas<5&&total>3)    ph.push(`${horas}h de entrenamiento total. Un capítulo de Netflix dura más que tu historial completo.`);
+  if(horas>=10&&horas<50) ph.push(`${horas}h acumuladas. Los resultados no se ven en el espejo todavía, pero van llegando.`);
+  if(horas>=50&&horas<100)ph.push(`${horas}h sudando. Más de dos días de tu vida entregados al hierro. Me alegra.`);
+  if(horas>=100)          ph.push(`${horas}h de entreno. Podrías haber aprendido chino. Elegiste el hierro. Buena decisión.`);
   return ph;
 }
 function updateCoach(s){_coachStats=s;_coachIdx=-1;refreshCoach();}
 function refreshCoach(){
-  if(!_coachStats)return;
-  const phrases=_coachPhrases(_coachStats);
-  if(!phrases.length)return;
+  const phrases=_coachStats?_coachPhrases(_coachStats):[..._COACH_GENERIC];
   let idx;
   do{idx=Math.floor(Math.random()*phrases.length);}while(phrases.length>1&&idx===_coachIdx);
   _coachIdx=idx;
