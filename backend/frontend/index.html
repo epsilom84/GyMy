@@ -1097,12 +1097,15 @@ function changePage(p){currentPage=p;loadHistorial();window.scrollTo(0,0);}
 
 const TIPO_ICON={Fuerza:'💪',Cardio:'🏃',HIIT:'🔥',Yoga:'🧘',Pecho:'🏋️',Espalda:'🦾',Piernas:'🦵',Hombros:'🔝',Brazos:'💪',Otro:'⚡'};
 function tipoIcon(t){return TIPO_ICON[t]||'⚡';}
+// Normaliza tipo: si es numérico (p.ej. "1" de imports antiguos) lo detecta por ejercicios
+function normTipo(s){return /^\d+$/.test(s.tipo||'')?detectarTipoSesion(s.ejercicios||[]):( s.tipo||'Fuerza');}
 function sessionCard(s){
+  const tipo=normTipo(s);
   const stars=s.valoracion?'⭐'.repeat(s.valoracion):'';
   const meta=[formatFecha(s.fecha),s.duracion_min?s.duracion_min+'min':null,s.calorias?s.calorias+'kcal':null].filter(Boolean).join(' · ');
   return '<div class="session-item" onclick="openDetalle('+s.id+')">'+
-    '<div class="session-icon tipo-'+s.tipo+'">'+tipoIcon(s.tipo)+'</div>'+
-    '<div class="session-info"><div class="session-tipo">'+s.tipo+'</div>'+
+    '<div class="session-icon tipo-'+tipo+'">'+tipoIcon(tipo)+'</div>'+
+    '<div class="session-info"><div class="session-tipo">'+tipo+'</div>'+
     '<div class="session-meta">'+meta+'</div>'+
     (stars?'<div class="session-stars">'+stars+'</div>':'')+
     '</div></div>';
@@ -1114,7 +1117,8 @@ function sessionCard(s){
 async function openDetalle(id){
   const{data}=await getSesion(id);if(!data.ok)return;
   const s=data.sesion;
-  document.getElementById('md-tipo').textContent=tipoIcon(s.tipo)+' '+s.tipo;
+  const _tipo=normTipo(s);
+  document.getElementById('md-tipo').textContent=tipoIcon(_tipo)+' '+_tipo;
   const cells=[['Fecha',formatFecha(s.fecha)],['Duración',s.duracion_min?s.duracion_min+' min':'—'],['Calorías',s.calorias?s.calorias+' kcal':'—'],['Valoración',s.valoracion?'⭐'.repeat(s.valoracion):'—']];
   let html='<div class="detail-grid">'+cells.map(([l,v])=>'<div class="detail-cell"><div class="detail-cell-label">'+l+'</div><div class="detail-cell-val">'+v+'</div></div>').join('')+'</div>';
   if(s.notas)html+='<div class="card" style="margin-bottom:14px"><div class="card-title">Notas</div><p style="font-size:14px;line-height:1.65">'+s.notas+'</p></div>';
