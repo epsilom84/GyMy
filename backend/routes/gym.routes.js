@@ -132,7 +132,28 @@ router.get('/sesiones', [
     if (tipo) { where += ` AND s.tipo=$${pi++}`; params.push(tipo); }
     if (desde) { where += ` AND s.fecha>=$${pi++}`; params.push(desde); }
     if (hasta) { where += ` AND s.fecha<=$${pi++}`; params.push(hasta); }
-    if (q) { where += ` AND (s.tipo ILIKE $${pi} OR s.notas ILIKE $${pi})`; params.push('%'+q+'%'); pi++; }
+    if (q) {
+      where += ` AND (
+        s.tipo ILIKE $${pi}
+        OR s.notas ILIKE $${pi}
+        OR (
+          TO_CHAR(s.fecha,'DD') || ' ' ||
+          CASE EXTRACT(MONTH FROM s.fecha)::int
+            WHEN 1 THEN 'ene' WHEN 2 THEN 'feb' WHEN 3 THEN 'mar' WHEN 4 THEN 'abr'
+            WHEN 5 THEN 'may' WHEN 6 THEN 'jun' WHEN 7 THEN 'jul' WHEN 8 THEN 'ago'
+            WHEN 9 THEN 'sep' WHEN 10 THEN 'oct' WHEN 11 THEN 'nov' WHEN 12 THEN 'dic'
+          END || ' ' || TO_CHAR(s.fecha,'YYYY')
+        ) ILIKE $${pi}
+        OR TO_CHAR(s.fecha,'YYYY-MM-DD') ILIKE $${pi}
+        OR TO_CHAR(s.fecha,'DD/MM/YYYY') ILIKE $${pi}
+        OR EXISTS (
+          SELECT 1 FROM ejercicios e2
+          WHERE e2.sesion_id = s.id AND e2.nombre ILIKE $${pi}
+        )
+      )`;
+      params.push('%'+q+'%');
+      pi++;
+    }
 
     const totalRow = await queryOne(`SELECT COUNT(*) as n FROM sesiones s ${where}`, params);
     const total = parseInt(totalRow.n);

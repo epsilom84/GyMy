@@ -405,7 +405,7 @@ input:focus,select:focus{border-color:var(--accent);}
         </label>
         <button class="hist-btn" style="color:var(--accent2);border-color:var(--accent2)" onclick="confirmarEliminarHistorial()">🗑️</button>
       </div>
-      <input type="search" id="search-q" placeholder="🔍  Buscar..." style="margin-bottom:10px" oninput="loadHistorial()"/>
+      <input class="ej-search" type="search" id="search-q" placeholder="🔍  Buscar sesión, ejercicio o fecha…" oninput="onHistSearch()"/>
       <div class="filters" id="tipo-filters">
         <div class="filter-chip active" onclick="setTipoFilter('',this)">Todos</div>
         <div class="filter-chip" onclick="setTipoFilter('Fuerza',this)">💪 Fuerza</div>
@@ -1105,22 +1105,31 @@ function renderRecientes(sesiones){
 // ══════════════════════════════════════════════
 // HISTORIAL
 // ══════════════════════════════════════════════
+let _histSearchTimer=null;
+function onHistSearch(){
+  clearTimeout(_histSearchTimer);
+  _histSearchTimer=setTimeout(()=>{currentPage=1;loadHistorial();},320);
+}
 async function loadHistorial(){
-  const q=document.getElementById('search-q')?.value||'';
+  const q=(document.getElementById('search-q')?.value||'').trim();
   const params={page:currentPage,limit:15};
   if(currentTipoFilter)params.tipo=currentTipoFilter;
+  if(q)params.q=q;
   const{data}=await getSesiones(params);if(!data.ok)return;
   const el=document.getElementById('historial-lista');
-  if(!data.sesiones.length){el.innerHTML='<p style="color:var(--text2);font-size:13px">No hay sesiones.</p>';document.getElementById('pagination').innerHTML='';return;}
-  let list=data.sesiones;
-  if(q)list=list.filter(s=>s.tipo.toLowerCase().includes(q.toLowerCase())||s.fecha.includes(q)||(s.notas||'').toLowerCase().includes(q.toLowerCase()));
-  el.innerHTML=list.map(s=>sessionCard(s)).join('');
+  if(!data.sesiones.length){
+    el.innerHTML='<p style="color:var(--text2);font-size:13px">'+(q?'Sin resultados para "'+q+'"':'No hay sesiones.')+'</p>';
+    document.getElementById('pagination').innerHTML='';return;
+  }
+  el.innerHTML=data.sesiones.map(s=>sessionCard(s)).join('');
   renderPagination(data.page,data.pages);
 }
 function setTipoFilter(tipo,el){
   currentTipoFilter=tipo;currentPage=1;
   document.querySelectorAll('#tipo-filters .filter-chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');loadHistorial();
+  el.classList.add('active');
+  clearTimeout(_histSearchTimer);
+  loadHistorial();
 }
 function renderPagination(page,pages){
   const el=document.getElementById('pagination');
