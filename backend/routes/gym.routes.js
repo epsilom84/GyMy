@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, query, validationResult } = require('express-validator');
-const { queryOne, queryAll, withTransaction } = require('../database/init');
+const { pool, queryOne, queryAll, withTransaction } = require('../database/init');
 const verifyToken = require('../middleware/verifyToken');
 const router = express.Router();
 
@@ -370,6 +370,86 @@ router.post('/ai/import', async (req, res) => {
   } catch(e) {
     res.status(500).json({ ok: false, error: e.message });
   }
+});
+
+// ── GET /api/plantillas — genéricas + propias del usuario ──────────────────
+router.get('/plantillas', async (req, res) => {
+  try {
+    const rows = await queryAll(
+      `SELECT id, nombre, grupo_muscular, subgrupo, equipo, tipo, user_id,
+              (user_id = $1) AS propia
+       FROM plantillas_ejercicios
+       WHERE activo = TRUE AND (user_id IS NULL OR user_id = $1)
+       ORDER BY grupo_muscular, nombre`,
+      [req.user.id]
+    );
+    res.json({ ok: true, plantillas: rows });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// ── POST /api/plantillas — crear plantilla personal ─────────────────────────
+router.post('/plantillas', async (req, res) => {
+  try {
+    const { nombre, grupo_muscular, subgrupo, equipo, tipo } = req.body;
+    if (!nombre || !grupo_muscular)
+      return res.status(400).json({ ok: false, error: 'nombre y grupo_muscular requeridos' });
+    const existing = await queryOne(
+      `SELECT id FROM plantillas_ejercicios WHERE lower(nombre)=lower($1) AND user_id=$2 AND activo=TRUE`,
+      [nombre, req.user.id]
+    );
+    if (existing) return res.json({ ok: true, id: existing.id, created: false });
+    const row = await queryOne(
+      `INSERT INTO plantillas_ejercicios (nombre, grupo_muscular, subgrupo, equipo, tipo, user_id)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+      [nombre, grupo_muscular, subgrupo||grupo_muscular, equipo||'libre', tipo||'fuerza', req.user.id]
+    );
+    res.status(201).json({ ok: true, id: row.id, created: true });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// ── POST /api/plantillas/bulk — importar varias plantillas ──────────────────
+router.post('/plantillas/bulk', async (req, res) => {
+  try {
+    const { ejercicios } = req.body;
+    if (!Array.isArray(ejercicios) || !ejercicios.length)
+      return res.status(400).json({ ok: false, error: 'ejercicios array requerido' });
+    let count = 0;
+    for (const e of ejercicios) {
+      if (!e.nombre || !e.grupo_muscular) continue;
+      const exists = await queryOne(
+        `SELECT id FROM plantillas_ejercicios WHERE lower(nombre)=lower($1) AND user_id=$2`,
+        [e.nombre, req.user.id]
+      );
+      if (exists) continue;
+      await queryOne(
+        `INSERT INTO plantillas_ejercicios (nombre, grupo_muscular, subgrupo, equipo, tipo, user_id)
+         VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+        [e.nombre, e.grupo_muscular, e.subgrupo||e.grupo_muscular, e.equipo||'libre', e.tipo||'fuerza', req.user.id]
+      );
+      count++;
+    }
+    res.json({ ok: true, creados: count });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// ── DELETE /api/plantillas/:id — eliminar plantilla propia ─────────────────
+router.delete('/plantillas/:id', async (req, res) => {
+  try {
+    const row = await queryOne(
+      `DELETE FROM plantillas_ejercicios WHERE id=$1 AND user_id=$2 RETURNING id`,
+      [req.params.id, req.user.id]
+    );
+    if (!row) return res.status(404).json({ ok: false, error: 'Plantilla no encontrada o sin permisos' });
+    res.json({ ok: true, mensaje: 'Plantilla eliminada' });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// ── DELETE /api/plantillas — eliminar todas las plantillas propias ──────────
+router.delete('/plantillas', async (req, res) => {
+  try {
+    await pool.query(`DELETE FROM plantillas_ejercicios WHERE user_id=$1`, [req.user.id]);
+    res.json({ ok: true, mensaje: 'Plantillas personales eliminadas' });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
 module.exports = router;

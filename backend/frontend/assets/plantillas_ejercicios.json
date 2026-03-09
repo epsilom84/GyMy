@@ -1,0 +1,12 @@
+[
+  { "nombre": "Aperturas Cable Alto", "grupo_muscular": "Pecho", "subgrupo": "Pectoral mayor", "equipo": "cable", "tipo": "fuerza" },
+  { "nombre": "Press Inclinado Mancuernas", "grupo_muscular": "Pecho", "subgrupo": "Pectoral superior", "equipo": "mancuernas", "tipo": "fuerza" },
+  { "nombre": "Pull Over Mancuerna", "grupo_muscular": "Pecho", "subgrupo": "Pectoral mayor", "equipo": "mancuernas", "tipo": "fuerza" },
+  { "nombre": "Remo Pendlay", "grupo_muscular": "Espalda", "subgrupo": "Dorsal medio", "equipo": "barra", "tipo": "fuerza" },
+  { "nombre": "Face Pull Cuerda", "grupo_muscular": "Hombros", "subgrupo": "Deltoides posterior", "equipo": "cable", "tipo": "fuerza" },
+  { "nombre": "Curl Araña", "grupo_muscular": "Brazos", "subgrupo": "Bíceps", "equipo": "barra", "tipo": "fuerza" },
+  { "nombre": "Extensión Tríceps Tumbado Mancuerna", "grupo_muscular": "Brazos", "subgrupo": "Tríceps", "equipo": "mancuernas", "tipo": "fuerza" },
+  { "nombre": "Plancha Lateral", "grupo_muscular": "Core", "subgrupo": "Oblicuos", "equipo": "peso_corporal", "tipo": "fuerza" },
+  { "nombre": "Hip Thrust Barra", "grupo_muscular": "Piernas", "subgrupo": "Glúteo", "equipo": "barra", "tipo": "fuerza" },
+  { "nombre": "Sentadilla Goblet", "grupo_muscular": "Piernas", "subgrupo": "Cuádriceps", "equipo": "mancuernas", "tipo": "fuerza" }
+]
