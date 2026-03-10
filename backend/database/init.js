@@ -54,10 +54,13 @@ async function initDB() {
         nombre    TEXT NOT NULL,
         series    INTEGER,
         reps      INTEGER,
-        peso_kg   REAL
+        peso_kg   REAL,
+        sets_data TEXT
       );
     `);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_ejercicios_sesion ON ejercicios(sesion_id);`);
+    // Migración: añadir columna sets_data si no existe
+    await client.query(`ALTER TABLE ejercicios ADD COLUMN IF NOT EXISTS sets_data TEXT;`);
 
     // Catálogo de ejercicios clasificados por grupo muscular
     await client.query(`

@@ -1284,14 +1284,28 @@ async function openDetalle(id){
   let html='<div class="detail-grid">'+cells.map(([l,v])=>'<div class="detail-cell"><div class="detail-cell-label">'+l+'</div><div class="detail-cell-val">'+v+'</div></div>').join('')+'</div>';
   if(s.notas)html+='<div class="card" style="margin-bottom:14px"><div class="card-title">Notas</div><p style="font-size:14px;line-height:1.65">'+s.notas+'</p></div>';
   if(s.ejercicios?.length){
-    html+='<div class="card-title" style="margin-bottom:8px">Ejercicios ('+s.ejercicios.length+')</div>';
-    html+=s.ejercicios.map(e=>{
-      const hasSets=e.series>0&&(e.reps>0||e.peso_kg>0);
-      const setsHtml=hasSets?Array.from({length:e.series},(_,i)=>
+    // Agrupar filas por nombre (retrocompat: datos anteriores tienen 1 fila por serie)
+    const ejIdx={};const ejOrd=[];
+    s.ejercicios.forEach(e=>{
+      const k=e.nombre.toLowerCase();
+      if(!ejIdx[k]){ejIdx[k]={...e,_rows:[e]};ejOrd.push(k);}
+      else{ejIdx[k]._rows.push(e);ejIdx[k].series=(ejIdx[k].series||0)+(e.series||1);ejIdx[k].reps=Math.max(ejIdx[k].reps||0,e.reps||0);ejIdx[k].peso_kg=Math.max(ejIdx[k].peso_kg||0,e.peso_kg||0);}
+    });
+    const ejList=ejOrd.map(k=>ejIdx[k]);
+    html+='<div class="card-title" style="margin-bottom:8px">Ejercicios ('+ejList.length+')</div>';
+    html+=ejList.map(e=>{
+      // Determinar series reales: 1) sets_data de la primera fila, 2) múltiples filas antiguas, 3) sintético
+      let sets=null;
+      const firstWithData=e._rows.find(r=>r.sets_data);
+      if(firstWithData?.sets_data){try{sets=JSON.parse(firstWithData.sets_data);}catch(x){}}
+      if(!sets&&e._rows.length>1){sets=e._rows.map(r=>({reps:r.reps,kg:r.peso_kg}));}
+      if(!sets&&e.series>0){sets=Array.from({length:e.series},()=>({reps:e.reps,kg:e.peso_kg}));}
+      const hasSets=sets?.length>0;
+      const setsHtml=hasSets?sets.map((s,i)=>
         '<div class="ej-set-row"><span class="ej-set-num">'+(i+1)+'</span>'
-        +'<span class="ej-set-weight">'+(e.peso_kg>0?e.peso_kg+'kg':'—')+'</span>'
+        +'<span class="ej-set-weight">'+(s.kg>0?s.kg+'kg':'—')+'</span>'
         +'<span style="color:var(--text2);font-size:11px">×</span>'
-        +'<span class="ej-set-reps">'+(e.reps>0?e.reps+' reps':'—')+'</span>'
+        +'<span class="ej-set-reps">'+(s.reps>0?s.reps+' reps':'—')+'</span>'
         +'</div>').join(''):'';
       return '<div class="ej-group'+(hasSets?'" onclick="this.classList.toggle(\'expanded\')"':'" style="cursor:default"')+'>'
         +'<div class="session-ej-row" style="margin-bottom:0">'
@@ -2170,7 +2184,7 @@ function parsearCSV(rawText){
         if(e.peso_kg>bloques[k].peso_kg)bloques[k].peso_kg=e.peso_kg;
       }
     });
-    s.ejercicios=orden.map(k=>{const b=bloques[k];delete b._sets;return b;});
+    s.ejercicios=orden.map(k=>{const b=bloques[k];if(b._sets?.length)b.sets_data=JSON.stringify(b._sets);delete b._sets;return b;});
   });
 
   // Post-proceso 2: detectar tipo sesión si no está
@@ -2345,7 +2359,8 @@ async function runImport(){
           nombre:e.nombre,
           series:e.series||1,
           reps:e.reps||0,
-          peso_kg:e.peso_kg||0
+          peso_kg:e.peso_kg||0,
+          sets_data:e.sets_data||null
         }))
       };
       if(!navigator.onLine){guardarOffline(sesion);imported++;}
@@ -3286,8 +3301,15 @@ async function wkDoSave(){
   const fab=document.getElementById('wk-fab-ok');
   fab.classList.add('saving');
   fab.innerHTML='<svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-dasharray="28" stroke-dashoffset="8"/></svg>';
-  const ejercicios=wkExs.flatMap(ex=>ex.sets.filter(s=>s.done).map(s=>({nombre:ex.n,series:1,reps:s.reps,peso_kg:s.kg})));
-  const totalVol=ejercicios.reduce((a,e)=>a+e.peso_kg*e.reps,0);
+  // Una fila por ejercicio con sets_data para guardar cada serie real
+  const ejercicios=wkExs.filter(ex=>ex.sets.some(s=>s.done)).map(ex=>{
+    const done=ex.sets.filter(s=>s.done);
+    return{nombre:ex.n,series:done.length,
+      reps:done.reduce((m,s)=>Math.max(m,s.reps),0),
+      peso_kg:done.reduce((m,s)=>Math.max(m,s.kg),0),
+      sets_data:JSON.stringify(done.map(s=>({reps:s.reps,kg:s.kg})))};
+  });
+  const totalVol=ejercicios.reduce((a,e)=>a+(e.peso_kg||0)*(e.reps||0)*(e.series||1),0);
   const kcal=0; // kcal bar removed
   const sesion={fecha:new Date().toISOString().split('T')[0],tipo:wkCurTipo||'Fuerza',
     duracion_min:Math.max(1,Math.round(wkSecs/60)),calorias:kcal,
