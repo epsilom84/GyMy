@@ -140,20 +140,19 @@ Formatos compatibles (entre otros):
 
 ---
 
-## 💪 Catálogo de ejercicios (66 ejercicios base en BD)
+## 💪 Catálogo de ejercicios (268 ejercicios en BD)
 
-| Grupo | Nº | Ejemplos |
-|---|---|---|
-| Hombros | 8 | Press Mancuernas, Elevaciones Laterales, Face Pull, Press Barra/Máquina |
-| Espalda | 7 | Jalón Cerrado/Amplio Cable, Remo Cable/Barra/Máquina, Pull Down |
-| Piernas | 9 | Extensión Máquina, Prensa, Curl Femoral, Peso Muerto, Sentadilla, Abducción |
-| Pecho | 3 | Press Máquina Frontal/Inclinado, Aperturas Máquina |
-| Brazos Bíceps | 5 | Curl Mancuernas, Curl Scott, Curl Martillo, Curl Alterno |
-| Brazos Tríceps | 4 | Press Cuerda Cable, Extensión Polea, Press Barra, Fondos |
-| Core | 6 | Plancha, Crunch, Rueda Abdominal, Elevación Piernas, Oblicuos |
-| Cardio | 3 | Cinta, Bicicleta, Elíptica |
+| Grupo | Subgrupos |
+|---|---|
+| Hombros | Deltoides anterior/lateral/posterior |
+| Espalda | Dorsal, Lumbar, Trapecio |
+| Piernas | Cuádriceps, Femoral, Gemelos, Glúteo |
+| Pecho | Pectoral |
+| Brazos Bíceps | Bíceps |
+| Brazos Tríceps | Tríceps |
+| Core | Recto abdominal |
 
-> El catálogo base se crea al arrancar el servidor. La importación de historial puede añadir ejercicios nuevos automáticamente.
+> El catálogo se borra y re-puebla automáticamente al arrancar el servidor desde `plantillas_ejercicios.json`. La importación de historial puede añadir ejercicios nuevos al catálogo.
 
 ---
 
