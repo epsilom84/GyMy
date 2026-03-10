@@ -1494,7 +1494,7 @@ async function renderCatalogoList(){
     const subgruposHTML=Object.entries(porSubgrupo).map(([sg,list])=>
       `<div style="font-size:10px;color:var(--accent);font-weight:700;letter-spacing:.5px;margin:8px 0 4px;padding:0 2px">${sg}</div>`+
       list.map(e=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bg3);border-radius:7px;margin-bottom:4px;font-size:13px">`+
-        `<span style="display:flex;align-items:center">${equipoSVGHtml(e.equipo,18)}</span><span>${e.n}</span></div>`).join('')
+        `<span style="display:flex;align-items:center">${ejIconHtml(e.n,e.equipo,18)}</span><span>${e.n}</span></div>`).join('')
     ).join('');
     return `<details style="margin-bottom:8px"><summary style="cursor:pointer;font-size:13px;font-weight:600;padding:8px 10px;background:var(--bg3);border-radius:8px;list-style:none;display:flex;justify-content:space-between;align-items:center">`+
       `<span style="display:inline-flex;align-items:center;gap:8px">${grupoSVGHtml(grupo,22)} ${grupo}</span><span style="font-size:11px;color:var(--text2)">${ejs.length} ejercicios</span></summary>`+
@@ -2386,6 +2386,13 @@ const EQUIPO_SVG={
 // Normaliza claves de equipo
 function _normEquipo(e){return e==='mancuerna'?'mancuernas':e==='maquina'?'máquina':e||'';}
 // Devuelve SVG inline del equipamiento; si no existe, fallback a emoji
+const EJ_ICONOS={'sentadilla barra':'/assets/descarga.jpeg'};
+function ejIconHtml(nombre,equipo,size){
+  const img=EJ_ICONOS[(nombre||'').toLowerCase().trim()];
+  const sz=size||24;
+  if(img)return`<img src="${img}" alt="${nombre}" width="${sz}" height="${sz}" style="object-fit:cover;border-radius:4px;flex-shrink:0;display:block">`;
+  return equipoSVGHtml(equipo,sz);
+}
 function equipoSVGHtml(equipo, size){
   const k=_normEquipo(equipo);
   const paths=EQUIPO_SVG[k];
@@ -2765,7 +2772,7 @@ function wkRenderEjList(list){
     })():'';
     const safeE=JSON.stringify({em:e.em,equipo:e.equipo||null,n:e.n,m:e.m}).replace(/'/g,"&#39;");
     return '<div class="ej-item" onclick=\'wkAddEx('+safeE+')\'>'
-      +'<div class="ej-item-em">'+equipoSVGHtml(e.equipo,26)+'</div>'
+      +'<div class="ej-item-em">'+ejIconHtml(e.n,e.equipo,26)+'</div>'
       +'<div><div class="ej-item-n">'+e.n+hint+'</div><div class="ej-item-m">'+e.m+'</div></div>'
       +'</div>';
   }).join('');
@@ -2924,7 +2931,7 @@ function wkCardHTML(ex){
   }).join('');
   return '<div class="ex-card" id="wk-ex-'+ex.id+'">'
     +'<div class="ex-header">'
-      +'<div class="ex-left"><div class="ex-emoji">'+equipoSVGHtml(ex.equipo,28)+'</div>'
+      +'<div class="ex-left"><div class="ex-emoji">'+ejIconHtml(ex.n,ex.equipo,28)+'</div>'
       +'<div><div class="ex-name">'+ex.n+'</div><div class="ex-muscle">'+ex.m+'</div></div></div>'
       +'<div style="display:flex;align-items:center;gap:6px">'
         +(prKg?'<div class="pr-badge">PR '+prKg+'kg</div>':'')
