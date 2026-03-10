@@ -456,6 +456,7 @@ input:focus,select:focus{border-color:var(--accent);}
       </div>
       <!-- Ejercicio view -->
       <div id="stats-ejercicio-view">
+        <div class="days-grid" id="stats-grupo-filter" style="margin-bottom:12px;gap:6px"></div>
         <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openStatsEjModal()">
           <div style="display:flex;align-items:center;justify-content:space-between">
             <div>
@@ -1355,6 +1356,7 @@ async function loadStatsEjercicios(){
   });
   window._statsEjMap=ejMap;
   window._statsAllSessions=all;
+  renderStatsGrupoChips();
   renderStatsEjList(Object.values(ejMap));
 }
 
@@ -1376,29 +1378,49 @@ function detectarGrupoStats(nombre){
   return 'Otros';
 }
 
+function renderStatsGrupoChips(){
+  const ejMap=window._statsEjMap||{};
+  const grupos=new Set(Object.values(ejMap).map(e=>detectarGrupoStats(e.nombre)));
+  const orden=['Pecho','Espalda','Piernas','Hombros','Brazos','Core','Cardio','Otros'];
+  const sel=window._statsGrupoSel||'';
+  const chips=['<div class="day-chip'+(sel===''?' active':'')+'" onclick="setStatsGrupo(\'\')">Todos</div>'];
+  orden.filter(g=>grupos.has(g)).forEach(g=>{
+    chips.push('<div class="day-chip'+(sel===g?' active':'')+'" onclick="setStatsGrupo(\''+g+'\')">'+g+'</div>');
+  });
+  const el=document.getElementById('stats-grupo-filter');
+  if(el)el.innerHTML=chips.join('');
+}
+function setStatsGrupo(g){
+  window._statsGrupoSel=g;
+  renderStatsGrupoChips();
+}
+function statsRenderEjGrid(){
+  const all=window._statsEjAll||Object.values(window._statsEjMap||{});
+  const q=_normQ(document.getElementById('stats-ej-q')?.value||'');
+  const g=window._statsGrupoSel||'';
+  let list=[...all];
+  if(g)list=list.filter(e=>detectarGrupoStats(e.nombre)===g);
+  if(q)list=list.filter(e=>_normQ(e.nombre).includes(q));
+  list.sort((a,b)=>b.maxKg-a.maxKg);
+  const body=document.getElementById('stats-modal-body');
+  if(!list.length){body.innerHTML='<div style="text-align:center;padding:32px;color:var(--text2);font-size:13px">Sin resultados</div>';return;}
+  body.innerHTML='<div class="ej-grid" style="padding:4px 12px 8px">'+
+    list.map(e=>'<div class="ej-card" onclick=\'selectStatsEjFromModal("'+e.nombre.replace(/"/g,'&quot;')+'")\'>'
+      +'<div class="ej-item-em">'+ejIconHtml(e.nombre,null,44)+'</div>'
+      +'<div class="ej-card-n">'+e.nombre+'</div>'
+      +'<div class="ej-card-hint">'+e.maxKg+'kg</div>'
+      +'</div>').join('')
+    +'</div>';
+}
 function openStatsEjModal(){
   const ejMap=window._statsEjMap||{};
   const all=Object.values(ejMap);
   if(!all.length){showToast('Sin datos de ejercicios todavía','info');return;}
-  // Agrupar por grupo muscular
-  const grupos={};
-  all.forEach(e=>{
-    const g=detectarGrupoStats(e.nombre);
-    if(!grupos[g])grupos[g]=[];
-    grupos[g].push(e);
-  });
-  const orden=['Pecho','Espalda','Piernas','Hombros','Brazos','Core','Cardio','Otros'];
-  const body=document.getElementById('stats-modal-body');
-  document.getElementById('stats-modal-title').textContent='Grupo muscular';
-  body.innerHTML=orden.filter(g=>grupos[g]).map(g=>`
-    <div style="margin-bottom:4px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);padding:8px 16px 4px">${g}</div>
-      ${grupos[g].map(e=>`
-        <div class="ex-selector-item" style="margin:2px 12px;border-radius:10px" onclick="selectStatsEjFromModal('${e.nombre.replace(/'/g,"\'")}')">
-          <div class="ex-name">${e.nombre}</div>
-          <div class="ex-stats">Máx: ${e.maxKg}kg · Vol máx: ${e.maxVol}kg</div>
-        </div>`).join('')}
-    </div>`).join('');
+  window._statsEjAll=all;
+  const qEl=document.getElementById('stats-ej-q');
+  if(qEl)qEl.value='';
+  document.getElementById('stats-modal-title').textContent='Seleccionar ejercicio';
+  statsRenderEjGrid();
   openModal('modal-stats-ej');
 }
 
@@ -3221,6 +3243,7 @@ function wkCancelStart(){
       <div class="modal-title" id="stats-modal-title">Grupo muscular</div>
       <button class="close-btn" onclick="closeModal('modal-stats-ej')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
     </div>
+    <div style="padding:0 16px 8px"><input class="ej-search" type="search" id="stats-ej-q" placeholder="🔍 Buscar ejercicio..." oninput="statsRenderEjGrid()"/></div>
     <div id="stats-modal-body" style="overflow-y:auto;padding:4px 0 16px"></div>
   </div>
 </div>
