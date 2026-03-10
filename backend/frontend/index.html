@@ -324,8 +324,15 @@ input:focus,select:focus{border-color:var(--accent);}
 .tipo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:6px;}
 .tipo-card{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px 12px;background:var(--bg3);border:2px solid transparent;border-radius:14px;cursor:pointer;transition:.15s;font-size:12px;font-weight:600;color:var(--text2);}
 .tipo-card:active,.tipo-card:hover{border-color:var(--accent);}
-.ej-search{width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font-b);font-size:14px;outline:none;margin-bottom:10px;}
-.ej-scroll{max-height:52vh;overflow-y:auto;}
+.ej-search{width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font-b);font-size:14px;outline:none;margin-bottom:10px;box-sizing:border-box;}
+.ej-new-btn{width:100%;padding:10px 14px;background:var(--bg3);border:1.5px dashed var(--accent);border-radius:11px;color:var(--accent);font-family:var(--font-b);font-size:13px;font-weight:600;cursor:pointer;text-align:left;margin-bottom:8px;box-sizing:border-box;}
+.ej-scroll{max-height:52vh;overflow-y:auto;padding-right:2px;}
+.ej-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.ej-card{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 6px 10px;background:var(--bg3);border:2px solid transparent;border-radius:14px;cursor:pointer;transition:.15s;text-align:center;}
+.ej-card:active,.ej-card:hover{border-color:var(--accent);}
+.ej-card-n{font-weight:600;font-size:11px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;}
+.ej-card-hint{font-size:10px;color:var(--accent2);font-weight:700;}
+.ej-card-m{font-size:9px;color:var(--text2);margin-top:1px;}
 .ej-item{display:flex;align-items:center;gap:12px;padding:11px 12px;background:var(--bg3);border-radius:11px;margin-bottom:7px;cursor:pointer;border:1.5px solid transparent;transition:.15s;}
 .ej-item:active,.ej-item:hover{border-color:var(--accent);}
 .ej-item-em{font-size:22px;width:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -818,8 +825,8 @@ input:focus,select:focus{border-color:var(--accent);}
       </div>
       <button class="close-btn" onclick="wkCloseEjSafe()"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
     </div>
-    <div class="wk-sub">Selecciona un ejercicio</div>
-    <input class="ej-search" type="search" placeholder="🔍  Buscar..." id="wk-ej-q" oninput="wkFilterEj()"/>
+    <button class="ej-new-btn" onclick="wkNuevoEjercicio()">➕ Crear nuevo ejercicio</button>
+    <input class="ej-search" type="search" placeholder="🔍  Buscar en todos los grupos…" id="wk-ej-q" oninput="wkFilterEj()"/>
     <div class="ej-scroll" id="wk-ej-scroll"></div>
   </div>
 </div>
@@ -2393,12 +2400,12 @@ const EJ_ICONOS={
   'curl alterno con mancuernas sentado':'/assets/iconos_tipos_ejercicios/Curl%20alterno%20con%20mancuernas%20sentado.png',
   'curl alterno de b\u00edceps con mancuernas de pie':'/assets/iconos_tipos_ejercicios/Curl%20alterno%20de%20b%C3%ADceps%20con%20mancuernas%20de%20pie.gif',
   'curl de piernas sentado femoral':'/assets/iconos_tipos_ejercicios/Curl%20de%20piernas%20sentado%20femoral.jpg',
-  'curl predicador con mancuerna (scott)':'/assets/iconos_tipos_ejercicios/Curl%20predicador%20con%20mancuerna%20%28scott%29.jpg',
+  'curl predicador con mancuerna':'/assets/iconos_tipos_ejercicios/Curl%20predicador%20con%20mancuerna%20%28scott%29.jpg',
   'elevaciones laterales con mancuernas de pie':'/assets/iconos_tipos_ejercicios/Elevaciones%20laterales%20con%20mancuernas%20de%20pie.jpg',
   'elevaci\u00f3n de talones con barra sentado':'/assets/iconos_tipos_ejercicios/Elevaci%C3%B3n%20de%20talones%20con%20barra%20sentado.jpg',
   'elevaci\u00f3n lateral en polea una mano':'/assets/iconos_tipos_ejercicios/Elevaci%C3%B3n%20lateral%20en%20polea%20una%20mano.jpg',
   'extensiones de tr\u00edceps con cuerda':'/assets/iconos_tipos_ejercicios/Extensiones%20de%20tr%C3%ADceps%20con%20cuerda.jpeg',
-  'extensi\u00f3n de cu\u00e1driceps leg extension':'/assets/iconos_tipos_ejercicios/Extensi%C3%B3n%20de%20cu%C3%A1driceps%20Leg%20extension.jpg',
+  'extensi\u00f3n de cu\u00e1driceps':'/assets/iconos_tipos_ejercicios/Extensi%C3%B3n%20de%20cu%C3%A1driceps%20Leg%20extension.jpg',
   'face pull':'/assets/iconos_tipos_ejercicios/Face%20pull.jpeg',
   'jal\u00f3n al pecho agarre ancho':'/assets/iconos_tipos_ejercicios/Jal%C3%B3n%20al%20pecho%20agarre%20ancho.jpeg',
   'jal\u00f3n al pecho agarre neutro cerrado':'/assets/iconos_tipos_ejercicios/Jal%C3%B3n%20al%20pecho%20agarre%20neutro%20cerrado.gif',
@@ -2409,7 +2416,7 @@ const EJ_ICONOS={
   'prensa de piernas inclinado':'/assets/iconos_tipos_ejercicios/Prensa%20de%20piernas%20inclinado.jpeg',
   'press de hombros con mancuernas sentado':'/assets/iconos_tipos_ejercicios/Press%20de%20hombros%20con%20mancuernas%20sentado.jpg',
   'press de hombros en m\u00e1quina sentado':'/assets/iconos_tipos_ejercicios/Press%20de%20hombros%20en%20m%C3%A1quina%20sentado.gif',
-  'press de pecho en m\u00e1quina inclinado':'/assets/iconos_tipos_ejercicios/Press%20de%20pecho%20en%20m%C3%A1quina%20inclinado.jpg',
+  'press de pecho en m\u00e1quina':'/assets/iconos_tipos_ejercicios/Press%20de%20pecho%20en%20m%C3%A1quina%20inclinado.jpg',
   'press de pecho sentado en m\u00e1quina':'/assets/iconos_tipos_ejercicios/Press%20de%20pecho%20sentado%20en%20m%C3%A1quina.jpeg',
   'press militar con barra de pie':'/assets/iconos_tipos_ejercicios/Press%20militar%20con%20barra%20de%20pie.jpg',
   'press piernas horizontal':'/assets/iconos_tipos_ejercicios/Press%20piernas%20horizontal.webp',
@@ -2752,11 +2759,18 @@ async function wkRenderTipoGrid(){
   const db=await wkGetDBAsync();
   const grid=document.getElementById('wk-tipo-grid');
   if(!grid)return;
-  const grupos=Object.keys(db);
+  let grupos=Object.keys(db);
   if(!grupos.length){
     grid.innerHTML='<div style="text-align:center;color:var(--text2);font-size:13px;grid-column:1/-1;padding:20px 0">Sin ejercicios disponibles</div>';
     return;
   }
+  // Ordenar por frecuencia de uso en historial local
+  const hist=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]');
+  const nameToGrupo={};
+  grupos.forEach(g=>db[g].forEach(e=>{nameToGrupo[e.n]=g;}));
+  const freq={};
+  hist.forEach(e=>{const g=nameToGrupo[e.nombre];if(g)freq[g]=(freq[g]||0)+1;});
+  grupos.sort((a,b)=>(freq[b]||0)-(freq[a]||0));
   grid.innerHTML=grupos.map(g=>
     `<div class="tipo-card" onclick="wkPickTipo('${g}')">${grupoSVGHtml(g,50)}<span style="margin-top:2px">${g}</span></div>`
   ).join('');
@@ -2793,34 +2807,44 @@ function wkPickTipo(tipo){
   wkRenderEjList(wkGetDB()[tipo]||[]);
   setTimeout(()=>wkShow('wk-ov-ej'),180);
 }
-function wkRenderEjList(list){
-  const items=list.map(e=>{
+function _normQ(s){return(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
+function wkRenderEjList(list,showGroup){
+  const hist=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]');
+  const freq={};
+  hist.forEach(e=>{freq[e.nombre]=(freq[e.nombre]||0)+1;});
+  const sorted=[...list].sort((a,b)=>(freq[b.n]||0)-(freq[a.n]||0));
+  const cards=sorted.map(e=>{
     const pre=wkGetPreload(e.n);
     const hint=pre?(()=>{
       const maxKg=Math.max(...pre.sets.map(s=>s.kg));
       const avgReps=Math.round(pre.sets.reduce((a,s)=>a+s.reps,0)/pre.sets.length);
-      const ns=pre.sets.length;
-      return '<span style="font-size:10px;color:var(--text2);margin-left:4px">'
-        +(ns>1?ns+'x':'')+maxKg+'kg x'+avgReps+'</span>';
+      return maxKg+'kg×'+avgReps;
     })():'';
     const safeE=JSON.stringify({em:e.em,equipo:e.equipo||null,n:e.n,m:e.m}).replace(/'/g,"&#39;");
-    return '<div class="ej-item" onclick=\'wkAddEx('+safeE+')\'>'
-      +'<div class="ej-item-em">'+ejIconHtml(e.n,e.equipo,26)+'</div>'
-      +'<div><div class="ej-item-n">'+e.n+hint+'</div><div class="ej-item-m">'+e.m+'</div></div>'
+    return '<div class="ej-card" onclick=\'wkAddEx('+safeE+')\'>'
+      +'<div class="ej-item-em">'+ejIconHtml(e.n,e.equipo,44)+'</div>'
+      +'<div class="ej-card-n">'+e.n+'</div>'
+      +(hint?'<div class="ej-card-hint">'+hint+'</div>':'')
+      +(showGroup?'<div class="ej-card-m">'+e.m+'</div>':'')
       +'</div>';
   }).join('');
-  const addBtn='<div class="ej-item" style="border-top:1px solid var(--border);margin-top:4px;color:var(--accent)" onclick="wkNuevoEjercicio()">'
-    +'<div class="ej-item-em">➕</div>'
-    +'<div><div class="ej-item-n">Crear nuevo ejercicio</div><div class="ej-item-m">Añadir al catálogo personal</div></div>'
+  document.getElementById('wk-ej-scroll').innerHTML='<div class="ej-grid">'
+    +(cards||'<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text2);font-size:13px">Sin resultados</div>')
     +'</div>';
-  document.getElementById('wk-ej-scroll').innerHTML=items+addBtn;
 }
 function wkFilterEj(){
-  const q=document.getElementById('wk-ej-q').value.toLowerCase();
-  const titulo=document.getElementById('wk-ov-ej-title').textContent;
+  const q=_normQ(document.getElementById('wk-ej-q').value);
   const db=wkGetDB();
-  const list=(db[titulo]||[]).filter(e=>e.n.toLowerCase().includes(q)||e.m.toLowerCase().includes(q));
-  wkRenderEjList(list);
+  if(!q){
+    const titulo=document.getElementById('wk-ov-ej-title').textContent;
+    wkRenderEjList(db[titulo]||[]);
+    return;
+  }
+  const all=[];
+  Object.values(db).forEach(ejs=>ejs.forEach(e=>{
+    if(_normQ(e.n).includes(q)||_normQ(e.m).includes(q))all.push(e);
+  }));
+  wkRenderEjList(all,true);
 }
 function wkAddEx(e){
   wkHide('wk-ov-ej');
