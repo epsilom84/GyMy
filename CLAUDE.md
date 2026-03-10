@@ -108,7 +108,7 @@ INDEX: (sesion_id)
 id SERIAL PK, nombre TEXT, grupo_muscular TEXT, subgrupo TEXT,
 equipo TEXT, tipo TEXT, descripcion TEXT, activo BOOLEAN, created_at TIMESTAMPTZ
 ```
-Se crea y puebla automáticamente en `init.js` al arrancar el servidor (66 ejercicios seed).
+Se borra y re-puebla automáticamente en `init.js` al arrancar el servidor desde `plantillas_ejercicios.json` (268 ejercicios).
 
 ### Helper functions (database/init.js)
 - `queryOne(text, params)` → primera fila o null
@@ -211,10 +211,10 @@ Para añadir un icono a otro ejercicio:
 - `stats` — Progresión por ejercicio + distribución por días
 - `profile` — Datos personales + catálogo BD + configuración + temas
 
-### Grupos musculares (catálogo en BD, 66 ejercicios)
+### Grupos musculares (catálogo en BD, 268 ejercicios desde Excel)
 ```
-Brazos Bíceps (5), Brazos Tríceps (4), Cardio (3), Core (6),
-Espalda (7), Hombros (8), Pecho (3), Piernas (9)
+Brazos Bíceps, Brazos Tríceps, Core, Espalda (Dorsal/Lumbar/Trapecio),
+Hombros, Pecho, Piernas (Cuádriceps/Femoral/Gemelos/Glúteo)
 ```
 El selector de grupos del workout se genera dinámicamente desde `_catalogoCache`.
 
