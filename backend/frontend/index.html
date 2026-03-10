@@ -121,6 +121,19 @@ input:focus,select:focus{border-color:var(--accent);}
 .tipo-Pecho,.tipo-Espalda,.tipo-Piernas,.tipo-Hombros,.tipo-Brazos,.tipo-Core{background:rgba(108,71,255,.12);box-shadow:0 0 0 1px rgba(108,71,255,.18);}
 .session-ej-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border-radius:11px;margin-bottom:6px;}
 .session-ej-row .session-info{flex:1;min-width:0;}
+/* ── EJ ACCORDION (detalle sesión) ── */
+.ej-group{margin-bottom:6px;}
+.ej-group .session-ej-row{margin-bottom:0;transition:.15s;}
+.ej-group.expanded .session-ej-row{border-radius:11px 11px 0 0;}
+.ej-expand-arrow{font-size:13px;color:var(--text2);transition:transform .22s;flex-shrink:0;padding:4px;}
+.ej-group.expanded .ej-expand-arrow{transform:rotate(180deg);}
+.ej-sets-collapse{max-height:0;overflow:hidden;transition:max-height .28s ease;background:var(--bg3);border-radius:0 0 11px 11px;border-top:1px solid transparent;}
+.ej-group.expanded .ej-sets-collapse{max-height:800px;border-top-color:var(--border);}
+.ej-set-row{display:flex;align-items:center;gap:12px;padding:8px 14px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04);}
+.ej-set-row:last-child{border-bottom:none;}
+.ej-set-num{width:20px;text-align:center;font-size:11px;color:var(--text2);font-weight:700;background:var(--bg2);border-radius:50%;height:20px;line-height:20px;flex-shrink:0;}
+.ej-set-weight{font-weight:700;min-width:46px;color:var(--accent);}
+.ej-set-reps{color:var(--text2);font-size:12px;}
 .tipo-Yoga{background:rgba(71,255,178,.1);}
 .tipo-Otro,.tipo-Pecho,.tipo-Espalda,.tipo-Piernas,.tipo-Hombros,.tipo-Brazos{background:rgba(108,71,255,.1);}
 
@@ -1272,7 +1285,24 @@ async function openDetalle(id){
   if(s.notas)html+='<div class="card" style="margin-bottom:14px"><div class="card-title">Notas</div><p style="font-size:14px;line-height:1.65">'+s.notas+'</p></div>';
   if(s.ejercicios?.length){
     html+='<div class="card-title" style="margin-bottom:8px">Ejercicios ('+s.ejercicios.length+')</div>';
-    html+=s.ejercicios.map(e=>'<div class="session-ej-row"><div class="session-icon" style="background:var(--bg2);width:38px;height:38px;flex-shrink:0;">'+ejIconHtml(e.nombre,e.equipo,26)+'</div><div class="session-info"><div class="session-tipo">'+e.nombre+'</div><div class="session-meta">'+[e.series?e.series+' series':null,e.reps?e.reps+' reps':null,e.peso_kg?e.peso_kg+'kg':null].filter(Boolean).join(' · ')+'</div></div></div>').join('');
+    html+=s.ejercicios.map(e=>{
+      const hasSets=e.series>0&&(e.reps>0||e.peso_kg>0);
+      const setsHtml=hasSets?Array.from({length:e.series},(_,i)=>
+        '<div class="ej-set-row"><span class="ej-set-num">'+(i+1)+'</span>'
+        +'<span class="ej-set-weight">'+(e.peso_kg>0?e.peso_kg+'kg':'—')+'</span>'
+        +'<span style="color:var(--text2);font-size:11px">×</span>'
+        +'<span class="ej-set-reps">'+(e.reps>0?e.reps+' reps':'—')+'</span>'
+        +'</div>').join(''):'';
+      return '<div class="ej-group'+(hasSets?'" onclick="this.classList.toggle(\'expanded\')"':'" style="cursor:default"')+'>'
+        +'<div class="session-ej-row" style="margin-bottom:0">'
+        +'<div class="session-icon" style="background:var(--bg2);width:38px;height:38px;flex-shrink:0;">'+ejIconHtml(e.nombre,e.equipo,26)+'</div>'
+        +'<div class="session-info"><div class="session-tipo">'+e.nombre+'</div>'
+        +'<div class="session-meta">'+[e.series?e.series+' series':null,e.reps?e.reps+' reps':null,e.peso_kg?e.peso_kg+'kg':null].filter(Boolean).join(' · ')+'</div></div>'
+        +(hasSets?'<svg class="ej-expand-arrow" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>':'')
+        +'</div>'
+        +(hasSets?'<div class="ej-sets-collapse">'+setsHtml+'</div>':'')
+        +'</div>';
+    }).join('');
   }
   html+='<div style="display:flex;gap:8px;margin-top:16px">'+
     '<button class="btn btn-secondary" style="flex:1" onclick="borrarSesionConfirm('+s.id+')">🗑 Eliminar</button>'+
@@ -2188,6 +2218,51 @@ async function crearEnCatalogo(ejerciciosNuevos){
   return creados;
 }
 
+// ── IMPORT: similitud de ejercicios ─────────────────────────────────────────
+function _normEjN(s){return(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim();}
+function _ejSimilar(a,b){
+  const na=_normEjN(a),nb=_normEjN(b);
+  if(na===nb)return 1;
+  if(na.includes(nb)||nb.includes(na))return 0.85;
+  const ta=na.split(' ').filter(t=>t.length>2);
+  const tb=nb.split(' ').filter(t=>t.length>2);
+  if(!ta.length||!tb.length)return 0;
+  const common=ta.filter(t=>tb.includes(t));
+  return common.length/Math.max(ta.length,tb.length);
+}
+function _findImportCandidates(importName,catalogNames){
+  return catalogNames.filter(cn=>_ejSimilar(importName,cn)>=0.4).slice(0,3);
+}
+function _askMerges(candidates){
+  return new Promise(res=>{
+    window._mergeQueue=[...candidates];
+    window._mergeMap={};
+    window._mergeDone=res;
+    _askNextMerge();
+  });
+}
+function _askNextMerge(){
+  if(!window._mergeQueue.length){
+    closeModal('modal-merge-ej');
+    if(window._mergeDone){window._mergeDone(window._mergeMap);window._mergeDone=null;}
+    return;
+  }
+  const{importName,matches}=window._mergeQueue.shift();
+  const rem=window._mergeQueue.length;
+  document.getElementById('merge-ej-body').innerHTML=
+    '<div style="margin:12px 0 14px;font-size:14px;line-height:1.55">El ejercicio <strong style="color:var(--accent)">'+importName+'</strong> no está en el catálogo.<br><span style="color:var(--text2);font-size:12px">¿Es el mismo que alguno de estos?</span></div>'+
+    '<div style="display:flex;flex-direction:column;gap:7px">'+
+    matches.map(m=>'<button class="btn btn-secondary" style="text-align:left;padding:11px 14px" onclick="_chooseMerge('+JSON.stringify(importName)+','+JSON.stringify(m)+')"><strong>'+m+'</strong></button>').join('')+
+    '<button class="btn" style="margin-top:3px;background:var(--bg3);border:1px solid var(--border);color:var(--text2)" onclick="_chooseMerge('+JSON.stringify(importName)+',null)">No, importar como nuevo ejercicio</button>'+
+    '</div>'+
+    (rem?'<div style="font-size:11px;color:var(--text2);margin-top:12px;text-align:right">'+rem+' ejercicio(s) más</div>':'');
+  openModal('modal-merge-ej');
+}
+function _chooseMerge(importName,catalogName){
+  if(catalogName)window._mergeMap[importName.toLowerCase()]=catalogName;
+  _askNextMerge();
+}
+
 // ── MAIN IMPORT ──────────────────────────────────────────────────────────────
 async function runImport(){
   const rawText=window._importRawText;
@@ -2204,26 +2279,54 @@ async function runImport(){
     if(!sesiones.length){status.style.color='var(--accent2)';status.textContent='No se encontraron sesiones válidas';btn.disabled=false;btn.textContent='📥 Importar';return;}
     status.textContent=`✓ ${sesiones.length} sesión(es) detectada(s). Verificando ejercicios...`;
 
-    // 2. Detectar ejercicios que no están en el catálogo y crearlos
+    // 2. Detectar ejercicios nuevos y resolver similitudes
     const catalogoActual=window._catalogoCache||{};
-    const todosEnCatalogo=Object.values(catalogoActual).flat().map(e=>e.nombre.toLowerCase());
+    const catalogNames=Object.values(catalogoActual).flat().map(e=>e.n||e.nombre||'');
+    const catalogNamesLower=catalogNames.map(n=>n.toLowerCase());
     const ejerciciosNuevos=[];
     const vistos=new Set();
     sesiones.forEach(s=>{
       (s.ejercicios||[]).forEach(e=>{
-        const key=e.nombre.toLowerCase()+'|'+e.grupo_muscular;
-        if(!vistos.has(key)&&!todosEnCatalogo.some(n=>n===e.nombre.toLowerCase())){
+        const key=e.nombre.toLowerCase();
+        if(!vistos.has(key)&&!catalogNamesLower.includes(key)){
           vistos.add(key);
           ejerciciosNuevos.push(e);
         }
       });
     });
 
+    // Separar: con candidatos similares en catálogo vs. sin candidatos
+    const conCandidatos=[],sinCandidatos=[];
+    ejerciciosNuevos.forEach(e=>{
+      const matches=_findImportCandidates(e.nombre,catalogNames);
+      if(matches.length)conCandidatos.push({importName:e.nombre,matches});
+      else sinCandidatos.push(e);
+    });
+
+    // Preguntar uno a uno los que tienen similares
+    let nameMap={};
+    if(conCandidatos.length){
+      status.textContent=conCandidatos.length+' ejercicio(s) con nombre similar encontrado(s). Revisando...';
+      nameMap=await _askMerges(conCandidatos);
+    }
+
+    // Aplicar renombrado en sesiones
+    if(Object.keys(nameMap).length){
+      sesiones.forEach(s=>{
+        s.ejercicios=s.ejercicios.map(e=>{
+          const mapped=nameMap[e.nombre.toLowerCase()];
+          return mapped?{...e,nombre:mapped}:e;
+        });
+      });
+    }
+
+    // Solo crear ejercicios que no se mapearon a uno existente
+    const ejParaCrear=[...sinCandidatos,...ejerciciosNuevos.filter(e=>!nameMap[e.nombre.toLowerCase()])];
+
     let creados=0;
-    if(ejerciciosNuevos.length&&navigator.onLine){
-      status.textContent=`Añadiendo ${ejerciciosNuevos.length} ejercicio(s) nuevo(s) al catálogo...`;
-      creados=await crearEnCatalogo(ejerciciosNuevos);
-      // Refrescar catálogo en memoria
+    if(ejParaCrear.length&&navigator.onLine){
+      status.textContent=`Añadiendo ${ejParaCrear.length} ejercicio(s) nuevo(s) al catálogo...`;
+      creados=await crearEnCatalogo(ejParaCrear);
       try{await loadCatalogo();}catch(e){}
     }
 
@@ -3241,5 +3344,14 @@ function wkCancelStart(){
   </div>
 </div>
 
+<!-- Modal merge ejercicio import -->
+<div class="modal-overlay center" id="modal-merge-ej">
+  <div class="modal center-dialog" style="max-width:380px">
+    <div class="modal-header">
+      <div class="modal-title">Ejercicio similar encontrado</div>
+    </div>
+    <div id="merge-ej-body" style="padding:0 16px 16px"></div>
+  </div>
+</div>
 </body>
 </html>
