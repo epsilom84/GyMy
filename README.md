@@ -28,7 +28,8 @@ gymy/
     └── frontend/
         ├── index.html      ← SPA completa (toda la app en un archivo)
         ├── actividad.html  ← Vista workout activo
-        └── api.js          ← Cliente HTTP
+        ├── api.js          ← Cliente HTTP
+        └── assets/         ← Imágenes estáticas (SVGs de equipo, iconos ejercicios)
 ```
 
 ---
@@ -82,6 +83,7 @@ node server.js
 - **Preload de pesos**: carga el último peso usado o el de máximo volumen
 - **Timer de descanso**: se activa automáticamente al marcar ✓ en una serie
 - **Detector de PR** en tiempo real
+- **Iconos personalizados** por ejercicio (imagen desde `/assets/`) — actualmente: Sentadilla Barra
 - Tab "Workout" persiste en la barra de navegación hasta guardar o descartar
 - Puedes navegar a otras pantallas sin perder el workout
 

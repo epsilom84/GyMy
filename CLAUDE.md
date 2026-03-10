@@ -36,9 +36,14 @@ gymy/
     │   ├── auth.routes.js     ← /api/auth/*
     │   └── gym.routes.js      ← /api/catalogo/* (PÚBLICO, antes de verifyToken) + /api/* (JWT)
     └── frontend/
-        ├── index.html         ← SPA completa (~2300 líneas)
+        ├── index.html         ← SPA completa (~3130 líneas)
         ├── actividad.html     ← Vista workout activo
-        └── api.js             ← Cliente HTTP: apiCall(method, endpoint, body)
+        ├── api.js             ← Cliente HTTP: apiCall(method, endpoint, body)
+        └── assets/
+            ├── musculos.svg
+            ├── equipo/        ← SVGs de equipamiento
+            ├── iconos_tipos_ejercicios/
+            └── descarga.jpeg  ← Icono personalizado: Sentadilla Barra
 ```
 
 ---
@@ -172,7 +177,24 @@ wkGetDBAsync()                     // Devuelve catálogo (async, espera si no es
 formatFecha(f)                     // Convierte DATE a "07 mar 2026"
 showToast(msg, type)               // Notificación flotante
 tipoIcon(t)                        // Emoji para tipo de sesión/grupo muscular
+ejIconHtml(nombre, equipo, size)   // Icono del ejercicio: imagen personalizada si existe en EJ_ICONOS,
+                                   // si no, SVG de equipo vía equipoSVGHtml()
+equipoSVGHtml(equipo, size)        // SVG inline del equipamiento (barra, mancuerna, máquina…)
 ```
+
+### Iconos personalizados por ejercicio (`EJ_ICONOS`)
+
+```js
+const EJ_ICONOS = {
+  'sentadilla barra': '/assets/descarga.jpeg',
+  // añadir más: 'nombre ejercicio en minúsculas': '/assets/imagen.ext'
+};
+```
+
+Para añadir un icono a otro ejercicio:
+1. Pon la imagen en `backend/frontend/assets/`
+2. Añade la entrada en `EJ_ICONOS` (nombre en minúsculas, sin tildes no importa)
+3. `ejIconHtml` lo usará automáticamente en el selector de workout, tarjeta activa y catálogo de perfil
 
 ### ⚠️ Trampas conocidas
 
@@ -250,6 +272,7 @@ El PAT expira ~14 mar 2026: `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`
 - **Sin frameworks CSS**. CSS custom properties para temas (variables `--bg`, `--accent`, etc.).
 - El frontend es una SPA de un solo archivo. Los cambios de pantalla son manipulación de DOM.
 - Toda la lógica de autenticación usa `localStorage` para tokens en el cliente.
+- Los iconos de ejercicio se sirven desde `/assets/` — imágenes estáticas en `backend/frontend/assets/`.
 
 ---
 
