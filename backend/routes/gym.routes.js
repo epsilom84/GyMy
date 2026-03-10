@@ -63,7 +63,7 @@ router.get('/catalogo/:id', async (req, res) => {
 
 
 // POST /api/catalogo - Crear nuevo ejercicio en el catálogo (requiere JWT)
-router.post('/catalogo', async (req, res) => {
+router.post('/catalogo', verifyToken, async (req, res) => {
   try {
     const { nombre, grupo_muscular, subgrupo, equipo, tipo, descripcion } = req.body;
     if (!nombre || !grupo_muscular) return res.status(400).json({ ok: false, error: 'nombre y grupo_muscular requeridos' });
@@ -120,7 +120,7 @@ router.get('/sesiones', [
 ], async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
     const offset = (page - 1) * limit;
     const { tipo, desde, hasta, q } = req.query;
     const uid = req.user.id;
