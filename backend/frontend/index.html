@@ -2386,7 +2386,40 @@ const EQUIPO_SVG={
 // Normaliza claves de equipo
 function _normEquipo(e){return e==='mancuerna'?'mancuernas':e==='maquina'?'máquina':e||'';}
 // Devuelve SVG inline del equipamiento; si no existe, fallback a emoji
-const EJ_ICONOS={'sentadilla barra':'/assets/descarga.jpeg'};
+const EJ_ICONOS={
+  'sentadilla barra':'/assets/descarga.jpeg',
+  'sentadilla con barra':'/assets/iconos_tipos_ejercicios/Sentadilla%20con%20barra.gif',
+  'aperturas en m\u00e1quina sentado':'/assets/iconos_tipos_ejercicios/Aperturas%20en%20m%C3%A1quina%20sentado.jpeg',
+  'curl alterno con mancuernas sentado':'/assets/iconos_tipos_ejercicios/Curl%20alterno%20con%20mancuernas%20sentado.png',
+  'curl alterno de b\u00edceps con mancuernas de pie':'/assets/iconos_tipos_ejercicios/Curl%20alterno%20de%20b%C3%ADceps%20con%20mancuernas%20de%20pie.gif',
+  'curl de piernas sentado femoral':'/assets/iconos_tipos_ejercicios/Curl%20de%20piernas%20sentado%20femoral.jpg',
+  'curl predicador con mancuerna (scott)':'/assets/iconos_tipos_ejercicios/Curl%20predicador%20con%20mancuerna%20%28scott%29.jpg',
+  'elevaciones laterales con mancuernas de pie':'/assets/iconos_tipos_ejercicios/Elevaciones%20laterales%20con%20mancuernas%20de%20pie.jpg',
+  'elevaci\u00f3n de talones con barra sentado':'/assets/iconos_tipos_ejercicios/Elevaci%C3%B3n%20de%20talones%20con%20barra%20sentado.jpg',
+  'elevaci\u00f3n lateral en polea una mano':'/assets/iconos_tipos_ejercicios/Elevaci%C3%B3n%20lateral%20en%20polea%20una%20mano.jpg',
+  'extensiones de tr\u00edceps con cuerda':'/assets/iconos_tipos_ejercicios/Extensiones%20de%20tr%C3%ADceps%20con%20cuerda.jpeg',
+  'extensi\u00f3n de cu\u00e1driceps leg extension':'/assets/iconos_tipos_ejercicios/Extensi%C3%B3n%20de%20cu%C3%A1driceps%20Leg%20extension.jpg',
+  'face pull':'/assets/iconos_tipos_ejercicios/Face%20pull.jpeg',
+  'jal\u00f3n al pecho agarre ancho':'/assets/iconos_tipos_ejercicios/Jal%C3%B3n%20al%20pecho%20agarre%20ancho.jpeg',
+  'jal\u00f3n al pecho agarre neutro cerrado':'/assets/iconos_tipos_ejercicios/Jal%C3%B3n%20al%20pecho%20agarre%20neutro%20cerrado.gif',
+  'levantamiento lateral m\u00e1quina':'/assets/iconos_tipos_ejercicios/Levantamiento%20lateral%20m%C3%A1quina.jpeg',
+  'm\u00e1quina de abductores sentado':'/assets/iconos_tipos_ejercicios/M%C3%A1quina%20de%20abductores%20sentado.jpg',
+  'm\u00e1quina de aductores sentado':'/assets/iconos_tipos_ejercicios/M%C3%A1quina%20de%20aductores%20sentado.gif',
+  'peso muerto con barra':'/assets/iconos_tipos_ejercicios/Peso%20muerto%20con%20barra.jpeg',
+  'prensa de piernas inclinado':'/assets/iconos_tipos_ejercicios/Prensa%20de%20piernas%20inclinado.jpeg',
+  'press de hombros con mancuernas sentado':'/assets/iconos_tipos_ejercicios/Press%20de%20hombros%20con%20mancuernas%20sentado.jpg',
+  'press de hombros en m\u00e1quina sentado':'/assets/iconos_tipos_ejercicios/Press%20de%20hombros%20en%20m%C3%A1quina%20sentado.gif',
+  'press de pecho en m\u00e1quina inclinado':'/assets/iconos_tipos_ejercicios/Press%20de%20pecho%20en%20m%C3%A1quina%20inclinado.jpg',
+  'press de pecho sentado en m\u00e1quina':'/assets/iconos_tipos_ejercicios/Press%20de%20pecho%20sentado%20en%20m%C3%A1quina.jpeg',
+  'press militar con barra de pie':'/assets/iconos_tipos_ejercicios/Press%20militar%20con%20barra%20de%20pie.jpg',
+  'press piernas horizontal':'/assets/iconos_tipos_ejercicios/Press%20piernas%20horizontal.webp',
+  'pull down m\u00e1quina':'/assets/iconos_tipos_ejercicios/Pull%20down%20m%C3%A1quina.jpeg',
+  'remo con barra supino yates row':'/assets/iconos_tipos_ejercicios/Remo%20con%20barra%20supino%20Yates%20Row.jpg',
+  'remo en polea baja sentado':'/assets/iconos_tipos_ejercicios/Remo%20en%20polea%20baja%20sentado.jpg',
+  'remo polea unilateral':'/assets/iconos_tipos_ejercicios/Remo%20polea%20unilateral.jpg',
+  'remo m\u00e1quina unilateral':'/assets/iconos_tipos_ejercicios/remo%20m%C3%A1quina%20unilateral.webp',
+  'remo 2 unilateral maquina':'/assets/iconos_tipos_ejercicios/remo%202%20unilateral%20maquina.jpeg',
+};
 function ejIconHtml(nombre,equipo,size){
   const img=EJ_ICONOS[(nombre||'').toLowerCase().trim()];
   const sz=size||24;
