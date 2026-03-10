@@ -322,7 +322,7 @@ input:focus,select:focus{border-color:var(--accent);}
 .wk-btn-start{flex:1;padding:12px;background:var(--purple,#6c47ff);border:none;border-radius:11px;color:#fff;font-family:var(--font-b);font-size:14px;font-weight:700;cursor:pointer;}
 .wk-btn-cancel{flex:1;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:11px;color:var(--text);font-family:var(--font-b);font-size:14px;cursor:pointer;}
 .tipo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:6px;}
-.tipo-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:15px 6px;background:var(--bg3);border:2px solid transparent;border-radius:14px;cursor:pointer;transition:.15s;font-size:12px;font-weight:600;color:var(--text2);}
+.tipo-card{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px 12px;background:var(--bg3);border:2px solid transparent;border-radius:14px;cursor:pointer;transition:.15s;font-size:12px;font-weight:600;color:var(--text2);}
 .tipo-card:active,.tipo-card:hover{border-color:var(--accent);}
 .ej-search{width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font-b);font-size:14px;outline:none;margin-bottom:10px;}
 .ej-scroll{max-height:52vh;overflow-y:auto;}
@@ -568,6 +568,9 @@ input:focus,select:focus{border-color:var(--accent);}
       <div class="card" style="padding:14px 16px;margin-bottom:8px">
         <div class="card-title">Ejercicios del catálogo</div>
         <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Ejercicios guardados en la base de datos, disponibles para todos los usuarios.</div>
+        <div style="display:flex;justify-content:center;margin-bottom:12px">
+          <img src="/assets/musculos.svg" alt="Grupos musculares" width="120" height="214" style="opacity:.85"/>
+        </div>
         <div id="catalogo-list" style="margin-top:4px">
           <div style="font-size:12px;color:var(--text2);text-align:center;padding:10px">Cargando catálogo...</div>
         </div>
@@ -1494,7 +1497,7 @@ async function renderCatalogoList(){
         `<span>${e.em}</span><span>${e.n}</span></div>`).join('')
     ).join('');
     return `<details style="margin-bottom:8px"><summary style="cursor:pointer;font-size:13px;font-weight:600;padding:8px 10px;background:var(--bg3);border-radius:8px;list-style:none;display:flex;justify-content:space-between;align-items:center">`+
-      `<span>${grupoEmoji(grupo)} ${grupo}</span><span style="font-size:11px;color:var(--text2)">${ejs.length} ejercicios</span></summary>`+
+      `<span style="display:inline-flex;align-items:center;gap:8px">${grupoSVGHtml(grupo,22)} ${grupo}</span><span style="font-size:11px;color:var(--text2)">${ejs.length} ejercicios</span></summary>`+
       `<div style="padding:4px 4px 0">${subgruposHTML}</div></details>`;
   }).join('');
 }
@@ -2586,6 +2589,66 @@ const GRUPO_EM={
 };
 function grupoEmoji(g){return GRUPO_EM[g]||'🏃';}
 
+// Colores anatómicos por grupo muscular
+const GRUPO_COLORS={
+  'Pecho':'#ef5350','Espalda':'#42a5f5','Piernas':'#66bb6a',
+  'Hombros':'#ab47bc','Brazos':'#ffa726','Core':'#26c6da','Cardio':'#ec407a',
+};
+
+// Mini SVG del cuerpo humano con el grupo muscular resaltado
+// viewBox 120×180 → frente (cx=30) + espalda (cx=90)
+function grupoSVGHtml(grupo, width){
+  const norm=/^Brazos/.test(grupo)?'Brazos':grupo;
+  const SETS={
+    Pecho:   {fp:1},
+    Espalda: {be:1},
+    Piernas: {fql:1,fqr:1,fcl:1,fcr:1,bg:1,bhl:1,bhr:1,bcl:1,bcr:1},
+    Hombros: {fdl:1,fdr:1,bdl:1,bdr:1},
+    Brazos:  {fbl:1,fbr:1,ffl:1,ffr:1,btl:1,btr:1,bfl:1,bfr:1},
+    Core:    {fc:1},
+    Cardio:  {fp:1,fc:1,be:1,fdl:1,fdr:1,bdl:1,bdr:1,fql:1,fqr:1,bhl:1,bhr:1},
+  };
+  const hi=SETS[norm]||{};
+  const col=GRUPO_COLORS[norm]||'var(--accent)';
+  const d='rgba(128,128,128,.16)';
+  const n='rgba(128,128,128,.10)';
+  const c=id=>hi[id]?col:d;
+  const wAttr=width?`width="${width}"`:'';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 180" ${wAttr} style="flex-shrink:0">
+  <circle cx="30" cy="14" r="10" fill="${n}" stroke="rgba(128,128,128,.25)" stroke-width=".5"/>
+  <rect x="26.5" y="23" width="7" height="6" fill="${n}" rx="2"/>
+  <ellipse cx="15" cy="38" rx="10" ry="7" fill="${c('fdl')}"/>
+  <ellipse cx="45" cy="38" rx="10" ry="7" fill="${c('fdr')}"/>
+  <path d="M20,30 Q30,26 40,30 L41,55 Q30,58 19,55 Z" fill="${c('fp')}"/>
+  <path d="M19,56 Q30,59 41,56 L40,82 Q30,85 20,82 Z" fill="${c('fc')}"/>
+  <rect x="5" y="36" width="10" height="27" fill="${c('fbl')}" rx="4"/>
+  <rect x="45" y="36" width="10" height="27" fill="${c('fbr')}" rx="4"/>
+  <rect x="5" y="65" width="8" height="20" fill="${c('ffl')}" rx="3.5"/>
+  <rect x="47" y="65" width="8" height="20" fill="${c('ffr')}" rx="3.5"/>
+  <path d="M20,83 Q30,86 40,83 L41,96 Q30,99 19,96 Z" fill="${n}"/>
+  <rect x="19" y="96" width="10" height="36" fill="${c('fql')}" rx="4.5"/>
+  <rect x="31" y="96" width="10" height="36" fill="${c('fqr')}" rx="4.5"/>
+  <rect x="20" y="134" width="8.5" height="26" fill="${c('fcl')}" rx="4"/>
+  <rect x="31" y="134" width="8.5" height="26" fill="${c('fcr')}" rx="4"/>
+  <line x1="60" y1="4" x2="60" y2="166" stroke="rgba(128,128,128,.18)" stroke-width=".5" stroke-dasharray="3,2"/>
+  <circle cx="90" cy="14" r="10" fill="${n}" stroke="rgba(128,128,128,.25)" stroke-width=".5"/>
+  <rect x="86.5" y="23" width="7" height="6" fill="${n}" rx="2"/>
+  <ellipse cx="75" cy="38" rx="10" ry="7" fill="${c('bdl')}"/>
+  <ellipse cx="105" cy="38" rx="10" ry="7" fill="${c('bdr')}"/>
+  <path d="M80,30 Q90,26 100,30 L101,82 Q90,85 79,82 Z" fill="${c('be')}"/>
+  <rect x="65" y="36" width="10" height="27" fill="${c('btl')}" rx="4"/>
+  <rect x="105" y="36" width="10" height="27" fill="${c('btr')}" rx="4"/>
+  <rect x="65" y="65" width="8" height="20" fill="${c('bfl')}" rx="3.5"/>
+  <rect x="107" y="65" width="8" height="20" fill="${c('bfr')}" rx="3.5"/>
+  <path d="M80,83 Q90,86 100,83 L101,96 Q90,99 79,96 Z" fill="${c('bg')}"/>
+  <rect x="79" y="96" width="10" height="36" fill="${c('bhl')}" rx="4.5"/>
+  <rect x="91" y="96" width="10" height="36" fill="${c('bhr')}" rx="4.5"/>
+  <rect x="80" y="134" width="8.5" height="26" fill="${c('bcl')}" rx="4"/>
+  <rect x="91" y="134" width="8.5" height="26" fill="${c('bcr')}" rx="4"/>
+  <text x="30" y="175" text-anchor="middle" fill="rgba(128,128,128,.38)" font-size="5.5" font-family="sans-serif">FRENTE</text>
+  <text x="90" y="175" text-anchor="middle" fill="rgba(128,128,128,.38)" font-size="5.5" font-family="sans-serif">ESPALDA</text>
+</svg>`; }
+
 async function wkRenderTipoGrid(){
   const db=await wkGetDBAsync();
   const grid=document.getElementById('wk-tipo-grid');
@@ -2596,7 +2659,7 @@ async function wkRenderTipoGrid(){
     return;
   }
   grid.innerHTML=grupos.map(g=>
-    `<div class="tipo-card" onclick="wkPickTipo('${g}')"><span style="font-size:26px">${grupoEmoji(g)}</span>${g}</div>`
+    `<div class="tipo-card" onclick="wkPickTipo('${g}')">${grupoSVGHtml(g,50)}<span style="margin-top:2px">${g}</span></div>`
   ).join('');
 }
 
