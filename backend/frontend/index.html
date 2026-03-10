@@ -2038,7 +2038,7 @@ function parsearCSV(rawText){
     const grupo=(/^\d+$/.test(grupoRaw)?'':grupoRaw)||detectarGrupo(nombre);
     // Si hay columna set_order → una fila = una serie (agruparemos después)
     const setOrderVal=iSetOrder>=0?parseInt(get(iSetOrder))||0:0;
-    const series=iSetOrder>=0?1:(parseInt(iSeries>=0?get(iSeries):(!hasHeader?get(5):'')||'1')||1);
+    const series=iSetOrder>=0?1:(parseInt((iSeries>=0?get(iSeries):(!hasHeader?get(5):''))||'1')||1);
     const reps  =parseInt(iReps>=0  ?get(iReps)  :(!hasHeader?get(6):'')||'0')||0;
     const peso  =parseFloat(iPeso>=0?get(iPeso)  :(!hasHeader?get(7):'')||'0')||0;
 
@@ -2474,6 +2474,8 @@ function wkIsActive(){return localStorage.getItem('gymy_workout_active')==='1';}
 
 // ── Init workout tab ──
 function wkInit(){
+  // Refrescar historial desde API para preload multi-dispositivo
+  cargarHistorialLocal();
   // Set date
   const d=new Date();
   const dias=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
