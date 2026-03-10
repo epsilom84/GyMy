@@ -101,22 +101,26 @@ input:focus,select:focus{border-color:var(--accent);}
 .streak-card{background:linear-gradient(135deg,rgba(232,255,71,.08),rgba(232,255,71,.02));border:1px solid rgba(232,255,71,.2);}
 
 /* ── PROG CHART ── */
-.prog-chart{display:flex;align-items:flex-end;gap:5px;height:80px;margin-top:8px;}
+.prog-chart{display:flex;align-items:flex-end;gap:5px;height:90px;margin-top:10px;}
 .prog-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
-.prog-bar{width:100%;background:var(--accent);border-radius:4px 4px 0 0;min-height:3px;opacity:.7;}
+.prog-bar{width:100%;background:linear-gradient(180deg,var(--accent) 0%,rgba(232,255,71,.3) 100%);border-radius:5px 5px 0 0;min-height:3px;transition:height .4s cubic-bezier(.4,0,.2,1);}
 .prog-label{font-size:9px;color:var(--text2);text-align:center;}
 
 /* ── SESSIONS ── */
-.session-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg3);border-radius:12px;margin-bottom:7px;cursor:pointer;border:1px solid transparent;transition:.2s;}
-.session-item:hover{border-color:var(--border);background:var(--bg2);}
-.session-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.session-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg3);border-radius:13px;margin-bottom:7px;cursor:pointer;border:1px solid transparent;transition:.18s;}
+.session-item:hover{border-color:var(--border);transform:translateX(2px);}
+.session-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;}
 .session-info{flex:1;min-width:0;}
 .session-tipo{font-weight:600;font-size:14px;}
-.session-meta{font-size:12px;color:var(--text2);margin-top:1px;}
-.session-stars{font-size:11px;color:var(--accent);}
-.tipo-Fuerza{background:rgba(232,255,71,.1);}
-.tipo-Cardio{background:rgba(255,71,71,.1);}
-.tipo-HIIT{background:rgba(255,165,0,.1);}
+.session-meta{font-size:12px;color:var(--text2);margin-top:2px;}
+.session-stars{font-size:11px;color:var(--accent);margin-top:2px;}
+.tipo-Fuerza{background:rgba(232,255,71,.12);box-shadow:0 0 0 1px rgba(232,255,71,.15);}
+.tipo-Cardio{background:rgba(255,80,80,.12);box-shadow:0 0 0 1px rgba(255,80,80,.18);}
+.tipo-HIIT{background:rgba(255,165,0,.12);box-shadow:0 0 0 1px rgba(255,165,0,.18);}
+.tipo-Yoga{background:rgba(100,200,255,.12);box-shadow:0 0 0 1px rgba(100,200,255,.18);}
+.tipo-Pecho,.tipo-Espalda,.tipo-Piernas,.tipo-Hombros,.tipo-Brazos,.tipo-Core{background:rgba(108,71,255,.12);box-shadow:0 0 0 1px rgba(108,71,255,.18);}
+.session-ej-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border-radius:11px;margin-bottom:6px;}
+.session-ej-row .session-info{flex:1;min-width:0;}
 .tipo-Yoga{background:rgba(71,255,178,.1);}
 .tipo-Otro,.tipo-Pecho,.tipo-Espalda,.tipo-Piernas,.tipo-Hombros,.tipo-Brazos{background:rgba(108,71,255,.1);}
 
@@ -160,7 +164,7 @@ input:focus,select:focus{border-color:var(--accent);}
 .ex-selector-item:hover,.ex-selector-item.active{border-color:var(--accent);background:rgba(232,255,71,.05);}
 .ex-selector-item .ex-name{font-weight:600;font-size:14px;}
 .ex-selector-item .ex-stats{font-size:12px;color:var(--text2);margin-top:2px;}
-.chart-container{position:relative;height:200px;margin-bottom:10px;}
+.chart-container{position:relative;height:230px;margin-bottom:10px;}
 .stat-highlight{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
 .stat-hl{background:var(--bg3);border-radius:12px;padding:14px;}
 .stat-hl-val{font-family:var(--font-d);font-size:32px;color:var(--accent);}
@@ -1237,17 +1241,20 @@ function changePage(p){currentPage=p;loadHistorial();window.scrollTo(0,0);}
 
 const TIPO_ICON={Fuerza:'💪',Cardio:'🏃',HIIT:'🔥',Yoga:'🧘',Pecho:'🏋️',Espalda:'🦾',Piernas:'🦵',Hombros:'🔝',Brazos:'💪',Otro:'⚡'};
 function tipoIcon(t){return TIPO_ICON[t]||'⚡';}
+const TIPO_GRUPO_SVG={Fuerza:'Pecho',Cardio:'Piernas (Gemelos)',HIIT:'Core',Yoga:'Core',Pecho:'Pecho',Espalda:'Espalda (Dorsal)',Piernas:'Piernas (Cuádriceps)',Hombros:'Hombros',Brazos:'Brazos Bíceps',Core:'Core'};
+function tipoSVGHtml(tipo,size){const g=TIPO_GRUPO_SVG[tipo];return g?grupoSVGHtml(g,size||28):('<span style="font-size:'+(size||28)*0.65+'px;line-height:1">'+tipoIcon(tipo)+'</span>');}
 // Normaliza tipo: si es numérico (p.ej. "1" de imports antiguos) lo detecta por ejercicios
 function normTipo(s){return /^\d+$/.test(s.tipo||'')?detectarTipoSesion(s.ejercicios||[]):( s.tipo||'Fuerza');}
 function sessionCard(s){
   const tipo=normTipo(s);
-  const stars=s.valoracion?'⭐'.repeat(s.valoracion):'';
+  const stars=s.valoracion?'★'.repeat(s.valoracion)+'☆'.repeat(Math.max(0,5-s.valoracion)):'';
   const meta=[formatFecha(s.fecha),s.duracion_min?s.duracion_min+'min':null,s.calorias?s.calorias+'kcal':null].filter(Boolean).join(' · ');
+  const ejCount=s.ejercicios?.length?'<span style="font-size:11px;color:var(--text2);font-weight:400;margin-left:5px">'+s.ejercicios.length+' ej.</span>':'';
   return '<div class="session-item" onclick="openDetalle('+s.id+')">'+
-    '<div class="session-icon tipo-'+tipo+'">'+tipoIcon(tipo)+'</div>'+
-    '<div class="session-info"><div class="session-tipo">'+tipo+'</div>'+
+    '<div class="session-icon tipo-'+tipo+'">'+tipoSVGHtml(tipo,26)+'</div>'+
+    '<div class="session-info"><div class="session-tipo">'+tipo+ejCount+'</div>'+
     '<div class="session-meta">'+meta+'</div>'+
-    (stars?'<div class="session-stars">'+stars+'</div>':'')+
+    (stars?'<div class="session-stars" style="font-size:12px;letter-spacing:1px">'+stars+'</div>':'')+
     '</div></div>';
 }
 
@@ -1264,7 +1271,7 @@ async function openDetalle(id){
   if(s.notas)html+='<div class="card" style="margin-bottom:14px"><div class="card-title">Notas</div><p style="font-size:14px;line-height:1.65">'+s.notas+'</p></div>';
   if(s.ejercicios?.length){
     html+='<div class="card-title" style="margin-bottom:8px">Ejercicios ('+s.ejercicios.length+')</div>';
-    html+=s.ejercicios.map(e=>'<div class="session-item" style="cursor:default"><div class="session-info"><div class="session-tipo">'+e.nombre+'</div><div class="session-meta">'+[e.series?e.series+' series':null,e.reps?e.reps+' reps':null,e.peso_kg?e.peso_kg+'kg':null].filter(Boolean).join(' · ')+'</div></div></div>').join('');
+    html+=s.ejercicios.map(e=>'<div class="session-ej-row"><div class="session-icon" style="background:var(--bg2);width:38px;height:38px;flex-shrink:0;">'+ejIconHtml(e.nombre,e.equipo,26)+'</div><div class="session-info"><div class="session-tipo">'+e.nombre+'</div><div class="session-meta">'+[e.series?e.series+' series':null,e.reps?e.reps+' reps':null,e.peso_kg?e.peso_kg+'kg':null].filter(Boolean).join(' · ')+'</div></div></div>').join('');
   }
   html+='<div style="display:flex;gap:8px;margin-top:16px">'+
     '<button class="btn btn-secondary" style="flex:1" onclick="borrarSesionConfirm('+s.id+')">🗑 Eliminar</button>'+
@@ -1414,18 +1421,37 @@ function selectStatsEj(nombre){
   const ej=window._statsEjMap[nombre];if(!ej)return;
   document.getElementById('ej-max-kg').textContent=ej.maxKg+'kg';
   document.getElementById('ej-max-vol').textContent=ej.maxVol+'kg';
-  document.getElementById('ej-chart-title').textContent='Peso máximo: '+nombre;
+  document.getElementById('ej-chart-title').textContent='Progresión de peso · '+nombre;
   document.getElementById('stats-ej-detail').style.display='block';
-  // Sort entries by date
   const entries=ej.entries.sort((a,b)=>a.fecha.localeCompare(b.fecha));
-  const labels=entries.map(e=>e.fecha.slice(5));// MM-DD
+  const labels=entries.map(e=>e.fecha.slice(5));
   const kgData=entries.map(e=>e.kg);
   const volData=entries.map(e=>e.vol);
-  const chartDefaults={type:'line',options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#8888a0',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#8888a0'}}}}};
+  const isDark=!document.body.classList.contains('theme-light')&&!document.body.classList.contains('theme-material-light');
+  const gridC=isDark?'rgba(255,255,255,.05)':'rgba(0,0,0,.06)';
+  const tickC=isDark?'#8888a0':'#999';
+  const tooltipBg=isDark?'rgba(18,18,28,.95)':'rgba(255,255,255,.98)';
+  const tooltipBorder=isDark?'rgba(255,255,255,.08)':'rgba(0,0,0,.08)';
+  const tooltipTitleC=isDark?'#fff':'#111';
+  const tooltipBodyC=isDark?'#aaa':'#555';
+  const commonOpts={responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},animation:{duration:600,easing:'easeInOutQuart'},plugins:{legend:{display:false},tooltip:{backgroundColor:tooltipBg,borderColor:tooltipBorder,borderWidth:1,titleColor:tooltipTitleC,bodyColor:tooltipBodyC,padding:12,cornerRadius:10,displayColors:false}},scales:{x:{grid:{color:gridC,drawTicks:false},border:{display:false},ticks:{color:tickC,font:{size:10},maxRotation:0,padding:6}},y:{grid:{color:gridC,drawTicks:false},border:{display:false},ticks:{color:tickC,font:{size:10},padding:8}}}};
+  const mkLine=(ctxEl,color,gradAlpha,yFmt)=>{
+    const ctx=document.getElementById(ctxEl).getContext('2d');
+    const grad=ctx.createLinearGradient(0,0,0,230);
+    grad.addColorStop(0,color.replace(')',','+gradAlpha+')').replace('rgb','rgba'));
+    grad.addColorStop(1,color.replace(')',',0)').replace('rgb','rgba'));
+    return{ctx:document.getElementById(ctxEl),grad,yFmt};
+  };
   if(chartEjPeso)chartEjPeso.destroy();
-  chartEjPeso=new Chart(document.getElementById('chart-ej-peso'),{...chartDefaults,data:{labels,datasets:[{data:kgData,borderColor:'#e8ff47',backgroundColor:'rgba(232,255,71,.08)',tension:.4,fill:true,pointRadius:3,pointBackgroundColor:'#e8ff47'}]}});
+  const pesoCtx=document.getElementById('chart-ej-peso').getContext('2d');
+  const pesoGrad=pesoCtx.createLinearGradient(0,0,0,230);
+  pesoGrad.addColorStop(0,'rgba(232,255,71,.3)');pesoGrad.addColorStop(1,'rgba(232,255,71,0)');
+  chartEjPeso=new Chart(pesoCtx,{type:'line',data:{labels,datasets:[{data:kgData,borderColor:'#e8ff47',backgroundColor:pesoGrad,fill:true,tension:.4,borderWidth:2.5,pointRadius:4,pointHoverRadius:7,pointBackgroundColor:'#e8ff47',pointBorderColor:isDark?'#1a1a2e':'#fff',pointBorderWidth:2}]},options:{...commonOpts,plugins:{...commonOpts.plugins,tooltip:{...commonOpts.plugins.tooltip,callbacks:{label:v=>v.parsed.y+' kg'}}}}});
   if(chartEjVol)chartEjVol.destroy();
-  chartEjVol=new Chart(document.getElementById('chart-ej-vol'),{...chartDefaults,data:{labels,datasets:[{data:volData,borderColor:'#6c47ff',backgroundColor:'rgba(108,71,255,.08)',tension:.4,fill:true,pointRadius:3,pointBackgroundColor:'#6c47ff'}]}});
+  const volCtx=document.getElementById('chart-ej-vol').getContext('2d');
+  const volGrad=volCtx.createLinearGradient(0,0,0,230);
+  volGrad.addColorStop(0,'rgba(108,71,255,.35)');volGrad.addColorStop(1,'rgba(108,71,255,0)');
+  chartEjVol=new Chart(volCtx,{type:'line',data:{labels,datasets:[{data:volData,borderColor:'#6c47ff',backgroundColor:volGrad,fill:true,tension:.4,borderWidth:2.5,pointRadius:4,pointHoverRadius:7,pointBackgroundColor:'#6c47ff',pointBorderColor:isDark?'#1a1a2e':'#fff',pointBorderWidth:2}]},options:{...commonOpts,plugins:{...commonOpts.plugins,tooltip:{...commonOpts.plugins.tooltip,callbacks:{label:v=>v.parsed.y+' kg vol'}}}}});
   renderStatsEjList(Object.values(window._statsEjMap||{}));
 }
 
@@ -1441,7 +1467,21 @@ async function loadStatssDias(){
   document.getElementById('days-filter').innerHTML=dayNames.map((d,i)=>'<div class="day-chip '+(selDays.includes(i)?'active':'')+'" onclick="toggleDayFilter('+i+')">'+d+'</div>').join('');
   // Chart
   if(chartDias)chartDias.destroy();
-  chartDias=new Chart(document.getElementById('chart-dias'),{type:'bar',data:{labels:dayNames,datasets:[{data:counts,backgroundColor:counts.map((_,i)=>selDays.length===0||selDays.includes(i)?'rgba(232,255,71,.7)':'rgba(232,255,71,.15)'),borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#8888a0'}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#8888a0',stepSize:1}}}}});
+  const isDarkD=!document.body.classList.contains('theme-light')&&!document.body.classList.contains('theme-material-light');
+  const gridCD=isDarkD?'rgba(255,255,255,.05)':'rgba(0,0,0,.06)';
+  const tickCD=isDarkD?'#8888a0':'#999';
+  const tooltipBgD=isDarkD?'rgba(18,18,28,.95)':'rgba(255,255,255,.98)';
+  const tooltipBorderD=isDarkD?'rgba(255,255,255,.08)':'rgba(0,0,0,.08)';
+  const diasCtx=document.getElementById('chart-dias').getContext('2d');
+  const maxCount=Math.max(...counts,1);
+  const barColors=counts.map((_,i)=>{
+    if(selDays.length>0&&!selDays.includes(i))return isDarkD?'rgba(232,255,71,.08)':'rgba(100,100,100,.1)';
+    const grad=diasCtx.createLinearGradient(0,0,0,230);
+    grad.addColorStop(0,'rgba(232,255,71,.9)');
+    grad.addColorStop(1,'rgba(232,255,71,.25)');
+    return grad;
+  });
+  chartDias=new Chart(diasCtx,{type:'bar',data:{labels:dayNames,datasets:[{data:counts,backgroundColor:barColors,borderRadius:10,borderSkipped:false,hoverBackgroundColor:counts.map((_,i)=>selDays.length===0||selDays.includes(i)?'rgba(232,255,71,1)':'rgba(232,255,71,.2)')}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:500,easing:'easeInOutQuart'},plugins:{legend:{display:false},tooltip:{backgroundColor:tooltipBgD,borderColor:tooltipBorderD,borderWidth:1,titleColor:isDarkD?'#fff':'#111',bodyColor:isDarkD?'#aaa':'#555',padding:12,cornerRadius:10,displayColors:false,callbacks:{label:c=>c.parsed.y+' sesiones'}}},scales:{x:{grid:{display:false},border:{display:false},ticks:{color:tickCD,font:{size:11},padding:6}},y:{grid:{color:gridCD,drawTicks:false},border:{display:false},ticks:{color:tickCD,font:{size:10},stepSize:1,padding:6}}}}});
   // List filtered sessions
   const filtered=selDays.length?all.filter(s=>{const d=new Date(s.fecha+'T12:00:00');return selDays.includes(d.getDay());}):all.slice(0,20);
   document.getElementById('dias-sesiones').innerHTML=filtered.length?filtered.map(s=>sessionCard(s)).join(''):'';
