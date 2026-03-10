@@ -102,9 +102,12 @@ async function loadEjercicios(sesionId) {
 async function insertEjercicios(client, sesionId, ejercicios) {
   if (!Array.isArray(ejercicios) || !ejercicios.length) return;
   for (const e of ejercicios) {
+    const setsData = e.sets_data
+      ? (typeof e.sets_data === 'string' ? e.sets_data : JSON.stringify(e.sets_data))
+      : null;
     await client.query(
-      'INSERT INTO ejercicios (sesion_id,nombre,series,reps,peso_kg) VALUES ($1,$2,$3,$4,$5)',
-      [sesionId, e.nombre, e.series || null, e.reps || null, e.peso_kg || null]
+      'INSERT INTO ejercicios (sesion_id,nombre,series,reps,peso_kg,sets_data) VALUES ($1,$2,$3,$4,$5,$6)',
+      [sesionId, e.nombre, e.series || null, e.reps || null, e.peso_kg || null, setsData]
     );
   }
 }
