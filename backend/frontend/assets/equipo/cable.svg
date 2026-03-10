@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#888" role="img" aria-label="Cable">
+  <!-- Punto de anclaje superior -->
+  <circle cx="12" cy="1.8" r="1.5"/>
+  <!-- Cable hasta la polea -->
+  <line x1="12" y1="3.3" x2="12" y2="7.5" stroke="#888" stroke-width="1.6" stroke-linecap="round"/>
+  <!-- Polea (aro exterior) -->
+  <circle cx="12" cy="10.5" r="4" fill="none" stroke="#888" stroke-width="1.6"/>
+  <!-- Eje de la polea -->
+  <circle cx="12" cy="10.5" r="1.4"/>
+  <!-- Cable bajando de la polea -->
+  <line x1="12" y1="14.5" x2="12" y2="18.5" stroke="#888" stroke-width="1.6" stroke-linecap="round"/>
+  <!-- Mosquetrón / D-ring inferior -->
+  <path d="M8.5,22.5 L8.5,19.5 Q12,16.8 15.5,19.5 L15.5,22.5"
+        fill="none" stroke="#888" stroke-width="1.6"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="8.5" y1="22.5" x2="15.5" y2="22.5" stroke="#888" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

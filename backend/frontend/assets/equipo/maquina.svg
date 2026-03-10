@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#888" role="img" aria-label="Máquina">
+  <!-- Columna vertical del bastidor -->
+  <rect x="2.5" y="1" width="3" height="22" rx="1.5"/>
+  <!-- Brazo horizontal superior -->
+  <rect x="5.5" y="3" width="11"  height="2.5" rx="1.2"/>
+  <!-- Polea en el extremo del brazo -->
+  <circle cx="16.5" cy="4.25" r="3" fill="none" stroke="#888" stroke-width="1.6"/>
+  <circle cx="16.5" cy="4.25" r="1"/>
+  <!-- Pila de pesos (5 discos) -->
+  <rect x="6"  y="8"    width="5" height="1.8" rx="0.5" opacity="0.85"/>
+  <rect x="6"  y="10.6" width="5" height="1.8" rx="0.5" opacity="0.85"/>
+  <rect x="6"  y="13.2" width="5" height="1.8" rx="0.5" opacity="0.85"/>
+  <rect x="6"  y="15.8" width="5" height="1.8" rx="0.5" opacity="0.85"/>
+  <rect x="6"  y="18.4" width="5" height="1.8" rx="0.5" opacity="0.85"/>
+  <!-- Cable de la polea hasta el agarre -->
+  <line x1="16.5" y1="7.25" x2="14.5" y2="13" stroke="#888" stroke-width="1.2"/>
+  <!-- Barra de agarre / handle -->
+  <rect x="11.5" y="13" width="6" height="2" rx="1"/>
+</svg>
