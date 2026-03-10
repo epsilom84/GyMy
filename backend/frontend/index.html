@@ -1361,19 +1361,12 @@ async function loadStatsEjercicios(){
 }
 
 // ── Stats ejercicio modal ──
-const STATS_GRUPOS={
-  'Pecho':['press pecho','pecho máquina','pec','aperturas','fondos','crossover','push','flexion'],
-  'Espalda':['jalón','jalon','remo','pull','peso muerto','deadlift','espalda','dorsal'],
-  'Piernas':['sentadilla','squat','prensa','press piernas','extensión','curl femoral','leg','gemelo','abducción','aducción','peso muerto'],
-  'Hombros':['press hombros','press militar','elevacion','elevaciones','face pull','arnold','remo máquina'],
-  'Brazos':['curl','bicep','bíceps','tricep','tríceps','martillo','extension tricep','press frances'],
-  'Core':['abdominal','abs','crunch','plancha','plank','oblicuo'],
-  'Cardio':['correr','carrera','bici','cicl','eliptica','cinta','treadmill','running','saltar'],
-};
 function detectarGrupoStats(nombre){
-  const n=nombre.toLowerCase();
-  for(const[g,words]of Object.entries(STATS_GRUPOS)){
-    if(words.some(w=>n.includes(w)))return g;
+  if(_catalogoCache){
+    const n=nombre.toLowerCase();
+    for(const[grupo,ejs]of Object.entries(_catalogoCache)){
+      if(ejs.some(e=>(e.n||'').toLowerCase()===n))return grupo;
+    }
   }
   return 'Otros';
 }
@@ -1381,7 +1374,7 @@ function detectarGrupoStats(nombre){
 function renderStatsGrupoChips(){
   const ejMap=window._statsEjMap||{};
   const grupos=new Set(Object.values(ejMap).map(e=>detectarGrupoStats(e.nombre)));
-  const orden=['Pecho','Espalda','Piernas','Hombros','Brazos','Core','Cardio','Otros'];
+  const orden=[...Object.keys(_catalogoCache||{}),'Otros'];
   const sel=window._statsGrupoSel||'';
   const chips=['<div class="day-chip'+(sel===''?' active':'')+'" onclick="setStatsGrupo(\'\')">Todos</div>'];
   orden.filter(g=>grupos.has(g)).forEach(g=>{
@@ -1553,21 +1546,21 @@ async function renderCatalogoList(){
     el.innerHTML='<div style="font-size:12px;color:var(--text2);text-align:center;padding:10px">No hay ejercicios en el catálogo</div>';
     return;
   }
-  const custom=JSON.parse(localStorage.getItem('gymy_plantillas')||'{}');
   el.innerHTML=grupos.map(grupo=>{
     const ejs=(_catalogoCache||{})[grupo]||[];
     if(!ejs.length)return'';
-    // Agrupar por subgrupo (m)
-    const porSubgrupo={};
-    ejs.forEach(e=>{const sg=e.m||grupo.toUpperCase();if(!porSubgrupo[sg])porSubgrupo[sg]=[];porSubgrupo[sg].push(e);});
-    const subgruposHTML=Object.entries(porSubgrupo).map(([sg,list])=>
-      `<div style="font-size:10px;color:var(--accent);font-weight:700;letter-spacing:.5px;margin:8px 0 4px;padding:0 2px">${sg}</div>`+
-      list.map(e=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bg3);border-radius:7px;margin-bottom:4px;font-size:13px">`+
-        `<span style="display:flex;align-items:center">${ejIconHtml(e.n,e.equipo,18)}</span><span>${e.n}</span></div>`).join('')
-    ).join('');
-    return `<details style="margin-bottom:8px"><summary style="cursor:pointer;font-size:13px;font-weight:600;padding:8px 10px;background:var(--bg3);border-radius:8px;list-style:none;display:flex;justify-content:space-between;align-items:center">`+
-      `<span style="display:inline-flex;align-items:center;gap:8px">${grupoSVGHtml(grupo,22)} ${grupo}</span><span style="font-size:11px;color:var(--text2)">${ejs.length} ejercicios</span></summary>`+
-      `<div style="padding:4px 4px 0">${subgruposHTML}</div></details>`;
+    const grid='<div class="ej-grid" style="padding:8px 0 4px">'+
+      ejs.map(e=>'<div class="ej-card" style="cursor:default">'
+        +'<div class="ej-item-em">'+ejIconHtml(e.n,e.equipo,40)+'</div>'
+        +'<div class="ej-card-n">'+e.n+'</div>'
+        +(e.m&&e.m!==grupo?'<div class="ej-card-m">'+e.m+'</div>':'')
+        +'</div>').join('')
+      +'</div>';
+    return '<details style="margin-bottom:8px">'
+      +'<summary style="cursor:pointer;font-size:13px;font-weight:600;padding:10px 12px;background:var(--bg3);border-radius:10px;list-style:none;display:flex;justify-content:space-between;align-items:center">'
+      +'<span style="display:inline-flex;align-items:center;gap:8px">'+grupoSVGHtml(grupo,22)+' '+grupo+'</span>'
+      +'<span style="font-size:11px;color:var(--text2)">'+ejs.length+' ej.</span></summary>'
+      +'<div style="padding:2px 0 0">'+grid+'</div></details>';
   }).join('');
 }
 
