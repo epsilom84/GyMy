@@ -1403,8 +1403,12 @@ INSTRUCCIONES:
     body.innerHTML='';
     body.appendChild(div);
   }catch(err){
-    body.innerHTML='<div style="color:var(--danger);text-align:center;padding:24px;font-size:13px">'+
-      '⚠️ '+err.message+'</div>';
+    body.innerHTML='<div style="text-align:center;padding:20px 16px">'
+      +'<div style="font-size:32px;margin-bottom:10px">⚠️</div>'
+      +'<div style="color:var(--danger);font-size:13px;font-weight:600;margin-bottom:8px">Error al generar el plan</div>'
+      +'<div style="color:var(--text2);font-size:12px;background:var(--bg2);border-radius:8px;padding:10px 12px;text-align:left;word-break:break-word">'+err.message+'</div>'
+      +'<div style="color:var(--text2);font-size:11px;margin-top:10px;opacity:.6">Revisa los logs de Railway para más detalle</div>'
+      +'</div>';
   }
 }
 
