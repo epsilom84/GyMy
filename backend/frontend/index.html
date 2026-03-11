@@ -106,7 +106,7 @@ input:focus,select:focus{border-color:var(--accent);}
 .prog-bar{width:100%;background:linear-gradient(180deg,var(--accent) 0%,rgba(232,255,71,.3) 100%);border-radius:5px 5px 0 0;min-height:3px;transition:height .4s cubic-bezier(.4,0,.2,1);}
 .prog-label{font-size:9px;color:var(--text2);text-align:center;}
 
-/* ── SESSIONS ── */
+/* ── SESSIONS LIST ── */
 .session-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg3);border-radius:13px;margin-bottom:7px;cursor:pointer;border:1px solid transparent;transition:.18s;}
 .session-item:hover{border-color:var(--border);transform:translateX(2px);}
 .session-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;}
@@ -136,6 +136,22 @@ input:focus,select:focus{border-color:var(--accent);}
 .ej-set-reps{color:var(--text2);font-size:12px;}
 .tipo-Yoga{background:rgba(71,255,178,.1);}
 .tipo-Otro,.tipo-Pecho,.tipo-Espalda,.tipo-Piernas,.tipo-Hombros,.tipo-Brazos{background:rgba(108,71,255,.1);}
+/* ── SC: SESSION CARD (historial listview) ── */
+.sc-card{background:var(--bg3);border:1px solid var(--border);border-radius:13px;margin-bottom:8px;overflow:hidden;}
+.sc-top{display:flex;align-items:center;gap:8px;padding:11px 13px;cursor:pointer;user-select:none;-webkit-user-select:none;}
+.sc-top:active{background:var(--bg2);}
+.sc-grupos{display:flex;gap:4px;flex-wrap:wrap;flex:1;min-width:0;}
+.sc-chip{display:inline-flex;align-items:center;gap:3px;padding:3px 7px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
+.sc-icon-stack{display:flex;gap:2px;flex-shrink:0;}
+.sc-icon-dot{width:9px;height:9px;border-radius:50%;}
+.sc-meta{font-size:11px;color:var(--text2);line-height:1.4;text-align:right;white-space:nowrap;flex-shrink:0;max-width:38%;}
+.sc-chevron{flex-shrink:0;color:var(--text2);transition:transform .22s;}
+.sc-card.expanded .sc-chevron{transform:rotate(180deg);}
+.sc-body{display:none;padding:0 10px 10px;}
+.sc-card.expanded .sc-body{display:block;}
+.sc-fecha{font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.sc-stats-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+.sc-stat{font-size:11px;color:var(--text2);}
 
 /* ── FILTERS ── */
 .filters{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
@@ -419,7 +435,7 @@ input:focus,select:focus{border-color:var(--accent);}
     <div class="page active" id="page-dashboard">
       <div class="section-title">Dashboard</div>
       <div class="section-sub" id="dash-greeting">Tu progreso</div>
-      <div class="coach-card" id="coach-card">
+      <div class="coach-card" id="coach-card" oncontextmenu="return false">
         <div class="coach-avatar-wrap">🏋️‍♀️</div>
         <div class="coach-body">
           <div class="coach-name">COACH SASHA</div>
@@ -1331,17 +1347,85 @@ const TIPO_GRUPO_SVG={Fuerza:'Pecho',Cardio:'Piernas (Gemelos)',HIIT:'Core',Yoga
 function tipoSVGHtml(tipo,size){const g=TIPO_GRUPO_SVG[tipo];return g?grupoSVGHtml(g,size||28):('<span style="font-size:'+(size||28)*0.65+'px;line-height:1">'+tipoIcon(tipo)+'</span>');}
 // Normaliza tipo: si es numérico (p.ej. "1" de imports antiguos) lo detecta por ejercicios
 function normTipo(s){return /^\d+$/.test(s.tipo||'')?detectarTipoSesion(s.ejercicios||[]):( s.tipo||'Fuerza');}
+// ── Colores por grupo muscular ──
+const GRUPO_COLORS={'Piernas':'#3b82f6','Espalda':'#10b981','Pecho':'#ef4444','Hombros':'#f59e0b','Brazos Bíceps':'#8b5cf6','Brazos Tríceps':'#a855f7','Brazos':'#8b5cf6','Core':'#06b6d4'};
+function grupoColor(g){
+  if(!g)return'#6c47ff';
+  const k=Object.keys(GRUPO_COLORS).find(c=>g.toLowerCase().includes(c.toLowerCase().split(' ')[0].toLowerCase()));
+  return GRUPO_COLORS[k]||'#6c47ff';
+}
+// Construye HTML accordion para un ejercicio (usado en list y modal)
+function _ejAccordionHtml(e){
+  let sets=null;
+  const firstWithData=[e].concat(e._rows||[]).find(r=>r.sets_data);
+  if(firstWithData?.sets_data){try{sets=JSON.parse(firstWithData.sets_data);}catch(x){}}
+  if(!sets&&(e._rows||[]).length>1){sets=(e._rows||[]).map(r=>({reps:r.reps,kg:r.peso_kg}));}
+  if(!sets&&e.series>0){sets=Array.from({length:e.series},()=>({reps:e.reps,kg:e.peso_kg}));}
+  const hasSets=sets?.length>0;
+  const equipo=e.equipo_catalogo||e.equipo||null;
+  const setsHtml=hasSets?sets.map((st,i)=>
+    '<div class="ej-set-row"><span class="ej-set-num">'+(i+1)+'</span>'
+    +'<span class="ej-set-weight">'+(st.kg>0?st.kg+'kg':'—')+'</span>'
+    +'<span style="color:var(--text2);font-size:11px">×</span>'
+    +'<span class="ej-set-reps">'+(st.reps>0?st.reps+' reps':'—')+'</span>'
+    +(st.kcal?'<span style="font-size:10px;color:var(--text2);margin-left:auto">'+st.kcal+'kcal</span>':'')
+    +'</div>').join(''):'';
+  return '<div class="ej-group'+(hasSets?'" onclick="event.stopPropagation();this.classList.toggle(\'expanded\')"':'" style="cursor:default"')+'>'
+    +'<div class="session-ej-row" style="margin-bottom:0">'
+    +'<div class="session-icon" style="background:var(--bg2);width:38px;height:38px;flex-shrink:0;">'+ejIconHtml(e.nombre,equipo,26)+'</div>'
+    +'<div class="session-info"><div class="session-tipo">'+e.nombre+'</div>'
+    +'<div class="session-meta">'+[e.series?e.series+' series':null,e.reps?e.reps+' reps':null,e.peso_kg?e.peso_kg+'kg':null].filter(Boolean).join(' · ')+'</div></div>'
+    +(hasSets?'<svg class="ej-expand-arrow" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>':'')
+    +'</div>'+(hasSets?'<div class="ej-sets-collapse">'+setsHtml+'</div>':'')+'</div>';
+}
+function toggleSC(id){
+  const el=document.getElementById('sc-'+id);if(el)el.classList.toggle('expanded');
+}
 function sessionCard(s){
-  const tipo=normTipo(s);
-  const stars=s.valoracion?'★'.repeat(s.valoracion)+'☆'.repeat(Math.max(0,5-s.valoracion)):'';
-  const meta=[formatFecha(s.fecha),s.duracion_min?s.duracion_min+'min':null,s.calorias?s.calorias+'kcal':null].filter(Boolean).join(' · ');
-  const ejCount=s.ejercicios?.length?'<span style="font-size:11px;color:var(--text2);font-weight:400;margin-left:5px">'+s.ejercicios.length+' ej.</span>':'';
-  return '<div class="session-item" onclick="openDetalle('+s.id+')">'+
-    '<div class="session-icon tipo-'+tipo+'">'+tipoSVGHtml(tipo,26)+'</div>'+
-    '<div class="session-info"><div class="session-tipo">'+tipo+ejCount+'</div>'+
-    '<div class="session-meta">'+meta+'</div>'+
-    (stars?'<div class="session-stars" style="font-size:12px;letter-spacing:1px">'+stars+'</div>':'')+
-    '</div></div>';
+  const ejs=s.ejercicios||[];
+  // Grupos únicos desde datos del backend (JOIN con catálogo)
+  const grupos=[...new Set(ejs.map(e=>e.grupo_muscular).filter(Boolean))];
+  const iconStack=grupos.length
+    ?grupos.map(g=>'<span class="sc-icon-dot" style="background:'+grupoColor(g)+'" title="'+g+'"></span>').join('')
+    :'<span class="sc-icon-dot" style="background:#6c47ff"></span>';
+  const gruposChips=grupos.length
+    ?grupos.map(g=>'<span class="sc-chip" style="background:'+grupoColor(g)+'22;color:'+grupoColor(g)+';border:1px solid '+grupoColor(g)+'44">'+g+'</span>').join('')
+    :'<span class="sc-chip" style="background:var(--bg2);color:var(--text2)">'+normTipo(s)+'</span>';
+  // Volumen total calculado desde sets_data si existe
+  let vol=0;
+  ejs.forEach(e=>{
+    let sets=null;if(e.sets_data){try{sets=JSON.parse(e.sets_data);}catch(x){}}
+    if(sets)vol+=sets.reduce((a,st)=>a+(st.kg||0)*(st.reps||0),0);
+    else vol+=(e.peso_kg||0)*(e.reps||0)*(e.series||1);
+  });
+  const statsParts=[
+    ejs.length?ejs.length+' ej.':null,
+    s.duracion_min?s.duracion_min+' min':null,
+    vol>0?Math.round(vol).toLocaleString()+' kg vol':null,
+    s.calorias?s.calorias+' kcal':null,
+  ].filter(Boolean);
+  // Ejercicios agrupados por nombre (retrocompat)
+  const ejIdx={};const ejOrd=[];
+  ejs.forEach(e=>{
+    const k=e.nombre.toLowerCase();
+    if(!ejIdx[k]){ejIdx[k]={...e,_rows:[e]};ejOrd.push(k);}
+    else{ejIdx[k]._rows.push(e);ejIdx[k].series=(ejIdx[k].series||0)+(e.series||1);ejIdx[k].reps=Math.max(ejIdx[k].reps||0,e.reps||0);ejIdx[k].peso_kg=Math.max(ejIdx[k].peso_kg||0,e.peso_kg||0);}
+  });
+  const ejBodyHtml=ejOrd.map(k=>_ejAccordionHtml(ejIdx[k])).join('');
+  const stars=s.valoracion?'<span style="color:var(--accent);font-size:11px">'+('★'.repeat(s.valoracion)+'☆'.repeat(5-s.valoracion))+'</span>':'';
+  return '<div class="sc-card" id="sc-'+s.id+'">'
+    +'<div class="sc-top" onclick="toggleSC('+s.id+')">'
+    +'<div class="sc-icon-stack" style="margin-right:4px">'+iconStack+'</div>'
+    +'<div class="sc-grupos">'+gruposChips+'</div>'
+    +'<div class="sc-meta"><div class="sc-fecha">'+formatFecha(s.fecha)+'</div>'+(statsParts.length?'<div>'+statsParts.join(' · ')+'</div>':'')+(stars?'<div>'+stars+'</div>':'')+'</div>'
+    +'<svg class="sc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>'
+    +'</div>'
+    +'<div class="sc-body">'
+    +ejBodyHtml
+    +'<div style="display:flex;gap:8px;margin-top:10px">'
+    +'<button class="btn btn-secondary" style="flex:1;font-size:12px" onclick="event.stopPropagation();borrarSesionConfirm('+s.id+')">🗑 Eliminar</button>'
+    +'<button class="btn btn-primary" style="flex:2;font-size:12px" onclick="event.stopPropagation();repetirWorkout('+s.id+')">🏋️ Repetir workout</button>'
+    +'</div></div></div>';
 }
 
 // ══════════════════════════════════════════════
@@ -1365,30 +1449,7 @@ async function openDetalle(id){
     });
     const ejList=ejOrd.map(k=>ejIdx[k]);
     html+='<div class="card-title" style="margin-bottom:8px">Ejercicios ('+ejList.length+')</div>';
-    html+=ejList.map(e=>{
-      // Determinar series reales: 1) sets_data de la primera fila, 2) múltiples filas antiguas, 3) sintético
-      let sets=null;
-      const firstWithData=e._rows.find(r=>r.sets_data);
-      if(firstWithData?.sets_data){try{sets=JSON.parse(firstWithData.sets_data);}catch(x){}}
-      if(!sets&&e._rows.length>1){sets=e._rows.map(r=>({reps:r.reps,kg:r.peso_kg}));}
-      if(!sets&&e.series>0){sets=Array.from({length:e.series},()=>({reps:e.reps,kg:e.peso_kg}));}
-      const hasSets=sets?.length>0;
-      const setsHtml=hasSets?sets.map((s,i)=>
-        '<div class="ej-set-row"><span class="ej-set-num">'+(i+1)+'</span>'
-        +'<span class="ej-set-weight">'+(s.kg>0?s.kg+'kg':'—')+'</span>'
-        +'<span style="color:var(--text2);font-size:11px">×</span>'
-        +'<span class="ej-set-reps">'+(s.reps>0?s.reps+' reps':'—')+'</span>'
-        +'</div>').join(''):'';
-      return '<div class="ej-group'+(hasSets?'" onclick="this.classList.toggle(\'expanded\')"':'" style="cursor:default"')+'>'
-        +'<div class="session-ej-row" style="margin-bottom:0">'
-        +'<div class="session-icon" style="background:var(--bg2);width:38px;height:38px;flex-shrink:0;">'+ejIconHtml(e.nombre,e.equipo,26)+'</div>'
-        +'<div class="session-info"><div class="session-tipo">'+e.nombre+'</div>'
-        +'<div class="session-meta">'+[e.series?e.series+' series':null,e.reps?e.reps+' reps':null,e.peso_kg?e.peso_kg+'kg':null].filter(Boolean).join(' · ')+'</div></div>'
-        +(hasSets?'<svg class="ej-expand-arrow" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>':'')
-        +'</div>'
-        +(hasSets?'<div class="ej-sets-collapse">'+setsHtml+'</div>':'')
-        +'</div>';
-    }).join('');
+    html+=ejList.map(e=>_ejAccordionHtml(e)).join('');
   }
   html+='<div style="display:flex;gap:8px;margin-top:16px">'+
     '<button class="btn btn-secondary" style="flex:1" onclick="borrarSesionConfirm('+s.id+')">🗑 Eliminar</button>'+
@@ -1414,8 +1475,16 @@ function repetirWorkout(id){
       const _ejByNombre={};
       (s.ejercicios||[]).forEach(e=>{
         if(!_ejByNombre[e.nombre])_ejByNombre[e.nombre]={em:'🏋️',n:e.nombre,m:e.nombre.toUpperCase(),sets:[]};
+        // Prefer sets_data (individual set kg/reps) over aggregate series/reps/peso_kg
+        if(e.sets_data){
+          let sds;try{sds=JSON.parse(e.sets_data);}catch(ex){sds=null;}
+          if(Array.isArray(sds)&&sds.length){
+            sds.forEach(sd=>_ejByNombre[e.nombre].sets.push({kg:sd.kg||0,reps:sd.reps||10}));
+            return;
+          }
+        }
         const n=e.series||1;
-        for(let i=0;i<n;i++) _ejByNombre[e.nombre].sets.push({kg:e.peso_kg||60,reps:e.reps||10});
+        for(let i=0;i<n;i++) _ejByNombre[e.nombre].sets.push({kg:e.peso_kg||0,reps:e.reps||10});
       });
       const preload = {
         tipo: s.tipo,
@@ -2545,10 +2614,22 @@ async function runImport(){
       try{await loadCatalogo();}catch(e){}
     }
 
-    // 3. Guardar sesiones
-    status.textContent=`Guardando sesiones...`;
+    // 3. Guardar sesiones — cerrar modal ya y procesar en segundo plano
+    closeModal('modal-import-preview');
+    await new Promise(r=>setTimeout(r,50)); // dejar que el modal cierre antes de empezar
+
+    // Chip de progreso flotante
+    let _progEl=document.getElementById('import-progress-chip');
+    if(!_progEl){
+      _progEl=document.createElement('div');
+      _progEl.id='import-progress-chip';
+      _progEl.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:8px 18px;font-size:13px;color:var(--text2);z-index:9999;pointer-events:none;box-shadow:0 2px 12px rgba(0,0,0,.3);';
+      document.body.appendChild(_progEl);
+    }
+
     let imported=0,errors=0;
     for(const s of sesiones){
+      _progEl.textContent=`📥 Importando ${imported+1}/${sesiones.length}...`;
       // Limpiar campos internos
       const sesion={
         fecha:s.fecha,
@@ -2571,11 +2652,11 @@ async function runImport(){
         if(r.data&&r.data.ok)imported++;
         else{errors++;console.warn('Error sesión',s.fecha,r.data);}
       }
-      status.textContent=`Guardando ${imported}/${sesiones.length}...`;
+      await new Promise(r=>setTimeout(r,0)); // ceder hilo para que UI responda
     }
 
+    _progEl.remove();
     updateOfflineBadge();loadDashboard();statsCache=null;currentPage=1;loadHistorial();
-    closeModal('modal-import-preview');
     // Navegar al historial para que el usuario vea los datos importados
     setTimeout(()=>goTab('historial',document.getElementById('tab-historial')),300);
 
@@ -2587,6 +2668,7 @@ async function runImport(){
 
   }catch(err){
     console.error(err);
+    document.getElementById('import-progress-chip')?.remove();
     status.style.color='var(--accent2)';
     status.textContent='Error: '+err.message;
     btn.disabled=false;
