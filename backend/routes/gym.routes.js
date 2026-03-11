@@ -184,7 +184,7 @@ async function insertEjercicios(client, sesionId, ejercicios) {
       : null;
     await client.query(
       'INSERT INTO ejercicios (sesion_id,nombre,series,reps,peso_kg,sets_data) VALUES ($1,$2,$3,$4,$5,$6)',
-      [sesionId, e.nombre, e.series || null, e.reps || null, e.peso_kg || null, setsData]
+      [sesionId, e.nombre, e.series || null, e.reps ?? null, e.peso_kg ?? null, setsData]
     );
   }
 }
