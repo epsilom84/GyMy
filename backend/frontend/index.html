@@ -603,6 +603,10 @@ input:focus,select:focus{border-color:var(--accent);}
         <div style="display:flex;justify-content:center;margin-bottom:12px">
           <img src="/assets/musculos.svg" alt="Grupos musculares" width="120" height="214" style="opacity:.85"/>
         </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+          <button class="btn btn-secondary" style="font-size:13px" onclick="document.getElementById('inp-catalogo-file').click()">📂 Actualizar catálogo desde Excel/CSV</button>
+          <input type="file" id="inp-catalogo-file" accept=".csv,.json" style="display:none" onchange="importCatalogoFile(event)"/>
+        </div>
         <div id="catalogo-list" style="margin-top:4px">
           <div style="font-size:12px;color:var(--text2);text-align:center;padding:10px">Cargando catálogo...</div>
         </div>
@@ -761,6 +765,21 @@ input:focus,select:focus{border-color:var(--accent);}
     <div style="display:flex;gap:8px">
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-import-plantillas')">Cancelar</button>
       <button class="btn btn-primary" style="flex:1" id="btn-confirm-import-plantillas" onclick="confirmarImportPlantillas()">Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal confirmación importar catálogo -->
+<div class="modal-overlay center" id="modal-import-catalogo">
+  <div class="modal center-dialog" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title">⚠️ Actualizar catálogo global</div>
+      <button class="close-btn" onclick="closeModal('modal-import-catalogo')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+    </div>
+    <div id="import-catalogo-body" style="max-height:320px;overflow-y:auto;margin-bottom:12px"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-import-catalogo')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1" id="btn-confirm-import-catalogo" onclick="confirmarImportCatalogo()">Actualizar catálogo</button>
     </div>
   </div>
 </div>
@@ -1767,6 +1786,45 @@ async function confirmarImportPlantillas(){
     showToast(data.error||'Error al importar','error');
   }
   _importPlantillasParsed=[];
+}
+
+let _importCatalogoParsed=[];
+function importCatalogoFile(event){
+  const file=event.target.files[0];if(!file)return;
+  event.target.value='';
+  const reader=new FileReader();
+  reader.onload=(ev)=>{
+    const parsed=_parsePlantillasFile(ev.target.result);
+    if(!parsed.length)return showToast('No se encontraron ejercicios en el archivo','error');
+    _importCatalogoParsed=parsed;
+    const byGrupo={};
+    parsed.forEach(e=>{if(!byGrupo[e.grupo_muscular])byGrupo[e.grupo_muscular]=[];byGrupo[e.grupo_muscular].push(e.nombre);});
+    const body=document.getElementById('import-catalogo-body');
+    body.innerHTML=
+      '<div style="font-size:13px;margin-bottom:10px;color:var(--danger,#e53935)">⚠️ Se reemplazarán <strong>TODOS</strong> los ejercicios del catálogo actual para todos los usuarios.</div>'+
+      '<div style="font-size:13px;margin-bottom:10px">Nuevo catálogo: <strong>'+parsed.length+'</strong> ejercicios en <strong>'+Object.keys(byGrupo).length+'</strong> grupos:</div>'+
+      Object.entries(byGrupo).map(([grupo,ejs])=>
+        '<div style="margin-bottom:8px"><div style="font-size:12px;font-weight:600;color:var(--accent)">'+grupoEmoji(grupo)+' '+grupo+' ('+ejs.length+')</div></div>'
+      ).join('');
+    openModal('modal-import-catalogo');
+  };
+  reader.readAsText(file,'utf-8');
+}
+async function confirmarImportCatalogo(){
+  if(!_importCatalogoParsed.length)return;
+  const btn=document.getElementById('btn-confirm-import-catalogo');
+  btn.disabled=true;btn.textContent='Actualizando...';
+  const{data}=await apiCall('POST','/catalogo/import',{ejercicios:_importCatalogoParsed});
+  btn.disabled=false;btn.textContent='Actualizar catálogo';
+  closeModal('modal-import-catalogo');
+  if(data.ok){
+    _catalogoCache=null;
+    loadCatalogo().then(()=>renderCatalogoList());
+    showToast('Catálogo actualizado: '+(data.insertados||0)+' ejercicios','success');
+  } else {
+    showToast(data.error||'Error al actualizar catálogo','error');
+  }
+  _importCatalogoParsed=[];
 }
 
 function confirmEliminarPlantillas(){
