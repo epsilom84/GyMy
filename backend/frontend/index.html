@@ -2339,7 +2339,7 @@ function detectarGrupo(nombreEj){
   // Buscar en catálogo cacheado
   if(_catalogoCache){
     for(const[grupo,ejercicios]of Object.entries(_catalogoCache)){
-      if(ejercicios.some(e=>e.nombre.toLowerCase().includes(n)||n.includes(e.nombre.toLowerCase())))return grupo;
+      if(ejercicios.some(e=>{const en=(e.n||e.nombre||'').toLowerCase();return en.includes(n)||n.includes(en);}))return grupo;
     }
   }
   return 'Fuerza';
