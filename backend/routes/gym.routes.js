@@ -1,4 +1,6 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const { body, query, validationResult } = require('express-validator');
 const { pool, queryOne, queryAll, withTransaction } = require('../database/init');
 const verifyToken = require('../middleware/verifyToken');
@@ -122,6 +124,39 @@ router.patch('/catalogo/:id', verifyToken, async (req, res) => {
     if (!row) return res.status(404).json({ ok: false, error: 'Ejercicio no encontrado' });
     res.json({ ok: true, id: row.id });
   } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// POST /api/catalogo/import — Reemplaza todo el catálogo desde un array de ejercicios (requiere JWT)
+router.post('/catalogo/import', verifyToken, async (req, res) => {
+  try {
+    const { ejercicios } = req.body;
+    if (!Array.isArray(ejercicios) || ejercicios.length === 0)
+      return res.status(400).json({ ok: false, error: 'ejercicios debe ser un array no vacío' });
+
+    const validos = ejercicios.filter(e => e.nombre && e.grupo_muscular);
+    if (validos.length === 0)
+      return res.status(400).json({ ok: false, error: 'Ningún ejercicio tiene nombre y grupo_muscular' });
+
+    await withTransaction(async (client) => {
+      await client.query(`DELETE FROM ejercicios_catalogo`);
+      for (const e of validos) {
+        await client.query(
+          `INSERT INTO ejercicios_catalogo (nombre, grupo_muscular, subgrupo, equipo, tipo, descripcion, activo)
+           VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (nombre) DO NOTHING`,
+          [e.nombre, e.grupo_muscular, e.subgrupo||null, e.equipo||null, e.tipo||'fuerza', e.descripcion||null, e.activo !== false]
+        );
+      }
+    });
+
+    // Persistir en JSON para sobrevivir reinicios del servidor
+    const seedFile = path.join(__dirname, '../frontend/assets/plantillas_ejercicios.json');
+    fs.writeFileSync(seedFile, JSON.stringify(validos, null, 2), 'utf8');
+
+    const grupos = [...new Set(validos.map(e => e.grupo_muscular))].sort();
+    res.json({ ok: true, insertados: validos.length, grupos });
+  } catch(e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 router.use(verifyToken);
