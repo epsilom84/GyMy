@@ -448,11 +448,14 @@ router.get('/ejercicios/historial', async (req, res) => {
     const { nombre } = req.query;
     if (!nombre) return res.status(400).json({ ok: false, error: 'Nombre requerido' });
     const rows = await queryAll(`
-      SELECT e.nombre, e.peso_kg, e.reps, e.series, s.fecha
+      SELECT e.nombre, e.peso_kg, e.reps, e.series, e.sets_data,
+             s.fecha::text, s.id AS sesion_id
       FROM ejercicios e
-      JOIN sesiones s ON s.id=e.sesion_id
-      WHERE s.user_id=$1 AND e.nombre ILIKE $2
-      ORDER BY s.fecha ASC`, [req.user.id, '%'+nombre+'%']);
+      JOIN sesiones s ON s.id = e.sesion_id
+      WHERE s.user_id = $1
+        AND LOWER(e.nombre) = LOWER($2)
+      ORDER BY s.fecha DESC, s.id DESC
+      LIMIT 50`, [req.user.id, nombre]);
     res.json({ ok: true, historial: rows });
   } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
 });
