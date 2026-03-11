@@ -2337,8 +2337,8 @@ function detectarGrupo(nombreEj){
     if(kws.some(k=>n.includes(k)))return grupo;
   }
   // Buscar en catálogo cacheado
-  if(window._catalogoCache){
-    for(const[grupo,ejercicios]of Object.entries(window._catalogoCache)){
+  if(_catalogoCache){
+    for(const[grupo,ejercicios]of Object.entries(_catalogoCache)){
       if(ejercicios.some(e=>e.nombre.toLowerCase().includes(n)||n.includes(e.nombre.toLowerCase())))return grupo;
     }
   }
@@ -2674,14 +2674,14 @@ function _chooseGrupoMerge(importGrupo,catalogGrupo){
 
 // ── Grupo muscular: validación y asignación manual ───────────────────────────
 function _isValidCatalogGroup(grupo){
-  if(!grupo||!window._catalogoCache)return false;
+  if(!grupo||!_catalogoCache)return false;
   const gl=grupo.toLowerCase().trim();
-  return Object.keys(window._catalogoCache).some(g=>g.toLowerCase()===gl);
+  return Object.keys(_catalogoCache).some(g=>g.toLowerCase()===gl);
 }
 function _normalizeCatalogGroup(grupo){
-  if(!grupo||!window._catalogoCache)return null;
+  if(!grupo||!_catalogoCache)return null;
   const gl=grupo.toLowerCase().trim();
-  return Object.keys(window._catalogoCache).find(g=>g.toLowerCase()===gl)||null;
+  return Object.keys(_catalogoCache).find(g=>g.toLowerCase()===gl)||null;
 }
 function _askGrupos(ejercicios){
   return new Promise(res=>{
@@ -2699,7 +2699,7 @@ function _askNextGrupo(){
   }
   const ej=window._grupoQueue.shift();
   const rem=window._grupoQueue.length;
-  const grupos=Object.keys(window._catalogoCache||{}).sort();
+  const grupos=Object.keys(_catalogoCache||{}).sort();
   const gruposHtml=grupos.map(g=>{
     const col=GRUPO_COLORS[_normGrupoSimple(g)]||'var(--accent)';
     return '<button class="btn btn-secondary" style="text-align:left;padding:10px 14px;display:flex;align-items:center;gap:8px" onclick="_chooseGrupo('+JSON.stringify(ej.nombre)+','+JSON.stringify(g)+')">'
