@@ -3010,33 +3010,70 @@ async function wkGetDBAsync(){
   return wkGetDB();
 }
 function wkGetPreloadMode(){return localStorage.getItem('gymy_preload')||'ultimo';}
+
+// Versión síncrona (solo localStorage) — usada para hints en el selector de ejercicios
 function wkGetPreload(nombre){
   const mode=wkGetPreloadMode();
-  const h=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]').filter(e=>e.nombre===nombre);
+  const h=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]')
+    .filter(e=>e.nombre===nombre);
   if(!h.length)return null;
-
-  // Normalize entry → {sets:[{kg,reps}], vol}
-  // Soporta formato viejo {kg,reps,ts} y nuevo {sets:[],ts}
   function normalize(entry){
     if(entry.sets&&entry.sets.length){
       const sets=entry.sets.map(s=>({kg:Number(s.kg)||0,reps:Number(s.reps)||0}));
+      return{sets,vol:sets.reduce((a,s)=>a+s.kg*s.reps,0)};
+    }
+    const kg=Number(entry.kg)||0,reps=Number(entry.reps)||0;
+    return{sets:[{kg,reps}],vol:kg*reps};
+  }
+  if(mode==='ultimo')return{sets:normalize(h[h.length-1]).sets};
+  let best=null,bestVol=-1;
+  h.forEach(entry=>{const n=normalize(entry);if(n.vol>bestVol){bestVol=n.vol;best=n;}});
+  return best?{sets:best.sets}:null;
+}
+
+// Versión async — consulta la BD directamente, incluye ejercicios importados
+// Volumen de un bloque = suma de (reps × kg) de todas las series del mismo ejercicio en esa sesión
+async function wkGetPreloadFromDB(nombre){
+  const mode=wkGetPreloadMode();
+  try{
+    const{data}=await apiCall('GET','/ejercicios/historial?nombre='+encodeURIComponent(nombre));
+    if(!data.ok||!data.historial||!data.historial.length)return null;
+
+    // Convertir cada fila de BD en {sets:[{kg,reps}], vol}
+    function rowToBlock(row){
+      let sets=null;
+      if(row.sets_data){
+        try{
+          const sd=typeof row.sets_data==='string'?JSON.parse(row.sets_data):row.sets_data;
+          sets=sd.map(s=>({kg:Number(s.kg??s.peso_kg??0),reps:Number(s.reps??0)}));
+        }catch(x){sets=null;}
+      }
+      if(!sets){
+        // Sin sets_data (importado o legacy): series×(reps,kg) repetidos
+        const n=Number(row.series)||1;
+        const kg=Number(row.peso_kg)||0;
+        const reps=Number(row.reps)||0;
+        sets=Array.from({length:n},()=>({kg,reps}));
+      }
       const vol=sets.reduce((a,s)=>a+s.kg*s.reps,0);
       return{sets,vol};
     }
-    const kg=Number(entry.kg)||0, reps=Number(entry.reps)||0;
-    return{sets:[{kg,reps}],vol:kg*reps};
-  }
 
-  if(mode==='ultimo'){
-    return{sets:normalize(h[h.length-1]).sets};
+    if(mode==='ultimo'){
+      // historial viene ORDER BY fecha DESC → el primero es el más reciente
+      return{sets:rowToBlock(data.historial[0]).sets};
+    }
+    // mode==='maximo': bloque con mayor volumen total
+    let best=null,bestVol=-1;
+    data.historial.forEach(row=>{
+      const b=rowToBlock(row);
+      if(b.vol>bestVol){bestVol=b.vol;best=b;}
+    });
+    return best?{sets:best.sets}:null;
+  }catch(err){
+    console.warn('[GyMy] wkGetPreloadFromDB error:',err.message);
+    return null;
   }
-  // mode === 'maximo': sesión con MAYOR VOLUMEN TOTAL (suma kg*reps de todas las series)
-  let best=null, bestVol=-1;
-  h.forEach(entry=>{
-    const n=normalize(entry);
-    if(n.vol>bestVol){bestVol=n.vol;best=n;}
-  });
-  return best?{sets:best.sets}:null;
 }
 function wkSaveLocalHistorial(exs){
   // exs is wkExs array: [{n, sets:[{kg,reps,done},...]}]
@@ -3336,19 +3373,34 @@ function wkFilterEj(){
   }));
   wkRenderEjList(all,true);
 }
-function wkAddEx(e){
+async function wkAddEx(e){
   wkHide('wk-ov-ej');
   const id=wkEid++;
-  const pre=wkGetPreload(e.n);
+  // Añadir placeholder con datos de localStorage (rápido) mientras carga BD
+  const localPre0=wkGetPreload(e.n);
+  const placeholderSets=localPre0&&localPre0.sets.length
+    ?localPre0.sets.map(s=>({kg:s.kg,reps:s.reps,done:false,pre:true}))
+    :[{kg:60,reps:10,done:false,pre:false}];
+  const placeholder={id,em:e.em,equipo:e.equipo||null,n:e.n,m:e.m,sets:placeholderSets};
+  wkExs.push(placeholder);
+  wkRender();
+  setTimeout(()=>document.getElementById('wk-ex-'+id)?.scrollIntoView({behavior:'smooth',block:'nearest'}),80);
+
+  // Consultar BD para obtener precarga real (nativa + importada)
   let sets;
+  const pre=await wkGetPreloadFromDB(e.n);
   if(pre&&pre.sets.length){
     sets=pre.sets.map(s=>({kg:s.kg,reps:s.reps,done:false,pre:true}));
   }else{
-    sets=[{kg:60,reps:10,done:false,pre:false}];
+    // Fallback: localStorage (por si offline o sin historial en BD)
+    const localPre=wkGetPreload(e.n);
+    sets=localPre&&localPre.sets.length
+      ?localPre.sets.map(s=>({kg:s.kg,reps:s.reps,done:false,pre:true}))
+      :[{kg:60,reps:10,done:false,pre:false}];
   }
-  wkExs.push({id,em:e.em,equipo:e.equipo||null,n:e.n,m:e.m,sets});
-  wkRender();
-  setTimeout(()=>document.getElementById('wk-ex-'+id)?.scrollIntoView({behavior:'smooth',block:'nearest'}),100);
+  // Reemplazar placeholder con datos reales
+  const idx=wkExs.findIndex(ex=>ex.id===id);
+  if(idx>=0){wkExs[idx].sets=sets;wkRender();}
 }
 
 // ── Crear nuevo ejercicio desde el selector de workout ──────────────────────
