@@ -574,6 +574,7 @@ input:focus,select:focus{border-color:var(--accent);}
           </select>
         </div>
         <p style="font-size:11px;color:var(--text2);margin-top:10px">Los datos se guardan localmente en este dispositivo.</p>
+        <button class="btn btn-secondary" style="width:100%;margin-top:10px;font-size:13px" onclick="guardarPerfilFisicoEnBD()">☁️ Sincronizar con tu cuenta</button>
       </div>
 
       <div class="profile-section-title">Configuración</div>
@@ -1019,6 +1020,10 @@ function initApp(){
   // Precargar catálogo de ejercicios y plantillas personales desde BD
   loadCatalogo().then(()=>console.log('[Catálogo] Cargado:',Object.keys(_catalogoCache||{}).length,'grupos'));
   loadPlantillas().then(()=>console.log('[Plantillas] Cargadas:',(_plantillasCache||[]).length,'ejercicios'));
+  // Cargar perfil físico para cálculo de kcal: localStorage inmediato + BD en background
+  const _pd=JSON.parse(localStorage.getItem('gymy_profile_data')||'{}');
+  window._wkUserPerfil={edad:parseInt(_pd.edad)||null,genero:_pd.genero||null,peso:parseFloat(_pd.peso)||null};
+  apiCall('GET','/auth/me').then(r=>{if(r.data&&r.data.ok)window._wkUserPerfil=r.data.usuario;}).catch(()=>{});
   // Restore workout tab if active
   const wtab = document.getElementById('tab-workout');
   if(wtab) wtab.style.display = wkIsActive() ? 'flex' : 'none';
@@ -1926,6 +1931,8 @@ function saveProfileData(){
     if(el)data[f]=el.value;
   });
   localStorage.setItem('gymy_profile_data',JSON.stringify(data));
+  // Actualizar perfil en memoria para cálculo inmediato de kcal
+  window._wkUserPerfil=Object.assign(window._wkUserPerfil||{},data);
 }
 function loadProfileData(){
   const data=JSON.parse(localStorage.getItem('gymy_profile_data')||'{}');
@@ -1934,6 +1941,22 @@ function loadProfileData(){
     const el=document.getElementById('p-'+f);
     if(el&&data[f]!==undefined)el.value=data[f];
   });
+}
+async function guardarPerfilFisicoEnBD(){
+  const pd=JSON.parse(localStorage.getItem('gymy_profile_data')||'{}');
+  const genMap={'hombre':'M','mujer':'F','otro':'O'};
+  const body={
+    edad:parseInt(pd.edad)||null,
+    genero:genMap[pd.genero]||pd.genero||null,
+    peso_corporal:parseFloat(pd.peso)||null,
+  };
+  const r=await apiCall('PUT','/auth/me',body);
+  if(r.data&&r.data.ok){
+    window._wkUserPerfil=Object.assign(window._wkUserPerfil||{},body);
+    showToast('Datos físicos sincronizados con tu cuenta ✓','success');
+  }else{
+    showToast((r.data&&r.data.error)||'Error al sincronizar','error');
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -3256,18 +3279,42 @@ function wkStep(exId,si,field,delta){
   if(row)row.querySelectorAll('.stepper').forEach(st=>st.classList.remove('preloaded'));
   wkRefreshStats();wkSaveState();
 }
+function calcKcalSerie(kg,reps,grupoMuscular,restSecs){
+  // Factor por grupo muscular (compuestos gastan más energía)
+  const MET={'Piernas':1.00,'Espalda':0.90,'Pecho':0.85,'Hombros':0.75,'Brazos':0.65,'Core':0.70};
+  const grupoBase=(grupoMuscular||'').split(' ')[0];
+  const metFactor=MET[grupoBase]||0.80;
+  // Volumen de trabajo como componente principal
+  const volKcal=kg*reps*0.1*metFactor;
+  // Descanso corto = mayor demanda metabólica (EPOC)
+  const restFactor=restSecs<60?1.15:restSecs>180?0.88:1.0;
+  // Datos del usuario (cargados tras login, o desde localStorage como fallback)
+  const u=window._wkUserPerfil||{};
+  const edad=u.edad||30;
+  const genero=u.genero||'M';
+  const pesoCorp=u.peso_corporal||u.peso||75;
+  // Factor género (acepta 'F'/'mujer' de BD/localStorage respectivamente)
+  const genFactor=(genero==='F'||genero==='mujer')?0.85:1.0;
+  // Factor edad (~3% menos por década a partir de 30)
+  const ageFactor=edad<30?1.05:edad<40?1.0:edad<50?0.95:0.88;
+  // Factor peso corporal normalizado a 75 kg
+  const bwFactor=Math.sqrt(pesoCorp/75);
+  return Math.max(1,Math.round(volKcal*restFactor*genFactor*ageFactor*bwFactor));
+}
 function wkToggleDone(exId,si){
   const ex=wkExs.find(e=>e.id===exId);if(!ex)return;
   ex.sets[si].done=!ex.sets[si].done;
   if(ex.sets[si].done){
     ex.sets[si].pre=false;
+    const restDef=parseInt(localStorage.getItem('gymy_rest_secs')||'90');
+    ex.sets[si].kcal=calcKcalSerie(ex.sets[si].kg,ex.sets[si].reps,ex.m,restDef);
     wkStartRestTimer();
     const hist=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]').filter(h=>h.nombre===ex.n);
     const prKg=hist.length?Math.max(...hist.map(h=>h.kg)):0;
     const isPR=prKg>0&&ex.sets[si].kg>prKg;
     if(isPR)showToast('🏆 Nuevo PR en '+ex.n+'!','success');
-    else showToast('Serie completada ✓');
-  } else { wkSkipRest(); }
+    else showToast('Serie completada ✓ +'+ex.sets[si].kcal+'kcal');
+  } else { delete ex.sets[si].kcal; wkSkipRest(); }
   wkReRenderCard(ex);wkRefreshStats();wkSaveState();
 }
 function wkAddSet(exId){
@@ -3289,9 +3336,8 @@ function wkReRenderCard(ex){
 }
 
 function wkRefreshStats(){
-  let vol=0,ser=0;
-  wkExs.forEach(ex=>ex.sets.forEach(s=>{if(s.done){vol+=s.kg*s.reps;ser++;}}));
-  const kcal=Math.round(ser*5+wkSecs/60*4);
+  let vol=0,ser=0,kcal=0;
+  wkExs.forEach(ex=>ex.sets.forEach(s=>{if(s.done){vol+=s.kg*s.reps;ser++;kcal+=(s.kcal||0);}}));
   const m=String(Math.floor(wkSecs/60)).padStart(2,'0');
   const s=String(wkSecs%60).padStart(2,'0');
   document.getElementById('wkb-dur').textContent=m+':'+s;
@@ -3368,16 +3414,16 @@ async function wkDoSave(){
   const fab=document.getElementById('wk-fab-ok');
   fab.classList.add('saving');
   fab.innerHTML='<svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-dasharray="28" stroke-dashoffset="8"/></svg>';
-  // Una fila por ejercicio con sets_data para guardar cada serie real
+  // Una fila por ejercicio con sets_data para guardar cada serie real (incluye kcal por serie)
   const ejercicios=wkExs.filter(ex=>ex.sets.some(s=>s.done)).map(ex=>{
     const done=ex.sets.filter(s=>s.done);
     return{nombre:ex.n,series:done.length,
       reps:done.reduce((m,s)=>Math.max(m,s.reps),0),
       peso_kg:done.reduce((m,s)=>Math.max(m,s.kg),0),
-      sets_data:JSON.stringify(done.map(s=>({reps:s.reps,kg:s.kg})))};
+      sets_data:JSON.stringify(done.map(s=>({reps:s.reps,kg:s.kg,kcal:s.kcal||0})))};
   });
   const totalVol=ejercicios.reduce((a,e)=>a+(e.peso_kg||0)*(e.reps||0)*(e.series||1),0);
-  const kcal=0; // kcal bar removed
+  const kcal=wkExs.flatMap(ex=>ex.sets.filter(s=>s.done)).reduce((t,s)=>t+(s.kcal||0),0);
   const sesion={fecha:new Date().toISOString().split('T')[0],tipo:wkCurTipo||'Fuerza',
     duracion_min:Math.max(1,Math.round(wkSecs/60)),calorias:kcal,
     notas:'Volumen: '+totalVol+'kg',ejercicios};
