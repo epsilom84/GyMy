@@ -491,14 +491,14 @@ router.post('/ai/import', async (req, res) => {
   }
 });
 
-// ── GET /api/plantillas — genéricas + propias del usuario ──────────────────
+// ── GET /api/plantillas — propias del usuario ──────────────────────────────
 router.get('/plantillas', async (req, res) => {
   try {
     const rows = await queryAll(
       `SELECT id, nombre, grupo_muscular, subgrupo, equipo, tipo, user_id,
-              (user_id = $1) AS propia
+              TRUE AS propia
        FROM plantillas_ejercicios
-       WHERE activo = TRUE AND (user_id IS NULL OR user_id = $1)
+       WHERE activo = TRUE AND user_id = $1
        ORDER BY grupo_muscular, nombre`,
       [req.user.id]
     );
