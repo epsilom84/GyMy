@@ -172,7 +172,13 @@ const validateSesion = [
 
 // ── Helper: cargar ejercicios de una sesión ────────────────
 async function loadEjercicios(sesionId) {
-  return queryAll('SELECT * FROM ejercicios WHERE sesion_id=$1 ORDER BY id', [sesionId]);
+  return queryAll(
+    `SELECT e.*, ec.grupo_muscular, ec.subgrupo, ec.equipo AS equipo_catalogo
+     FROM ejercicios e
+     LEFT JOIN ejercicios_catalogo ec ON LOWER(ec.nombre) = LOWER(e.nombre)
+     WHERE e.sesion_id=$1 ORDER BY e.id`,
+    [sesionId]
+  );
 }
 
 // ── Helper: insertar ejercicios en transacción ─────────────
