@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#888" role="img" aria-label="Barra">
+  <!-- Placa grande izquierda -->
+  <rect x="0"   y="6.5" width="4"   height="11" rx="2"/>
+  <!-- Collar izquierdo -->
+  <rect x="4"   y="9.5" width="2.5" height="5"  rx="0.8"/>
+  <!-- Barra central -->
+  <rect x="6.5" y="11"  width="11"  height="2"  rx="1"/>
+  <!-- Collar derecho -->
+  <rect x="17.5" y="9.5" width="2.5" height="5"  rx="0.8"/>
+  <!-- Placa grande derecha -->
+  <rect x="20"  y="6.5" width="4"   height="11" rx="2"/>
+</svg>

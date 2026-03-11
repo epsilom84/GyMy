@@ -36,11 +36,14 @@ gymy/
     │   ├── auth.routes.js     ← /api/auth/*
     │   └── gym.routes.js      ← /api/catalogo/* (PÚBLICO, antes de verifyToken) + /api/* (JWT)
     └── frontend/
-        ├── index.html         ← SPA completa (~2700 líneas)
+        ├── index.html         ← SPA completa (~3130 líneas)
         ├── actividad.html     ← Vista workout activo
         ├── api.js             ← Cliente HTTP: apiCall(method, endpoint, body)
         └── assets/
-            └── plantillas_ejercicios.json ← Seed de plantillas genéricas (JSON)
+            ├── musculos.svg
+            ├── equipo/        ← SVGs de equipamiento
+            ├── iconos_tipos_ejercicios/
+            └── descarga.jpeg  ← Icono personalizado: Sentadilla Barra
 ```
 
 ---
@@ -105,7 +108,7 @@ INDEX: (sesion_id)
 id SERIAL PK, nombre TEXT, grupo_muscular TEXT, subgrupo TEXT,
 equipo TEXT, tipo TEXT, descripcion TEXT, activo BOOLEAN, created_at TIMESTAMPTZ
 ```
-Se crea y puebla automáticamente en `init.js` al arrancar el servidor (66 ejercicios seed).
+Se borra y re-puebla automáticamente en `init.js` al arrancar el servidor desde `plantillas_ejercicios.json` (268 ejercicios).
 
 **`plantillas_ejercicios`**
 ```sql
@@ -206,8 +209,24 @@ wkGetDBAsync()                     // Igual que wkGetDB() pero espera a que amba
 formatFecha(f)                     // Convierte DATE a "07 mar 2026"
 showToast(msg, type)               // Notificación flotante
 tipoIcon(t)                        // Emoji para tipo de sesión/grupo muscular
-onHistSearch()                     // Debounce 320ms → resetea página 1 → loadHistorial()
+ejIconHtml(nombre, equipo, size)   // Icono del ejercicio: imagen personalizada si existe en EJ_ICONOS,
+                                   // si no, SVG de equipo vía equipoSVGHtml()
+equipoSVGHtml(equipo, size)        // SVG inline del equipamiento (barra, mancuerna, máquina…)
 ```
+
+### Iconos personalizados por ejercicio (`EJ_ICONOS`)
+
+```js
+const EJ_ICONOS = {
+  'sentadilla barra': '/assets/descarga.jpeg',
+  // añadir más: 'nombre ejercicio en minúsculas': '/assets/imagen.ext'
+};
+```
+
+Para añadir un icono a otro ejercicio:
+1. Pon la imagen en `backend/frontend/assets/`
+2. Añade la entrada en `EJ_ICONOS` (nombre en minúsculas, sin tildes no importa)
+3. `ejIconHtml` lo usará automáticamente en el selector de workout, tarjeta activa y catálogo de perfil
 
 ### ⚠️ Trampas conocidas
 
@@ -236,10 +255,10 @@ _plantillasLoading // Promise en vuelo o null
 - `stats` — Progresión por ejercicio + distribución por días
 - `perfil` — Datos personales + catálogo BD + plantillas personales + configuración + temas
 
-### Grupos musculares (catálogo base en BD, 66 ejercicios)
+### Grupos musculares (catálogo en BD, 268 ejercicios desde Excel)
 ```
-Brazos Bíceps (5), Brazos Tríceps (4), Cardio (3), Core (6),
-Espalda (7), Hombros (8), Pecho (3), Piernas (9)
+Brazos Bíceps, Brazos Tríceps, Core, Espalda (Dorsal/Lumbar/Trapecio),
+Hombros, Pecho, Piernas (Cuádriceps/Femoral/Gemelos/Glúteo)
 ```
 El selector de grupos del workout se genera dinámicamente desde `wkGetDB()`.
 
@@ -318,6 +337,7 @@ URL activa en ~60 segundos: https://gymy-production.up.railway.app/
 - **Sin frameworks CSS**. CSS custom properties para temas (variables `--bg`, `--accent`, etc.).
 - El frontend es una SPA de un solo archivo. Los cambios de pantalla son manipulación de DOM.
 - Toda la lógica de autenticación usa `localStorage` para tokens en el cliente.
+- Los iconos de ejercicio se sirven desde `/assets/` — imágenes estáticas en `backend/frontend/assets/`.
 
 ---
 

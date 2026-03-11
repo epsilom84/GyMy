@@ -29,8 +29,7 @@ gymy/
         ├── index.html      ← SPA completa (toda la app en un archivo)
         ├── actividad.html  ← Vista workout activo
         ├── api.js          ← Cliente HTTP
-        └── assets/
-            └── plantillas_ejercicios.json ← Seed ejercicios genéricos
+        └── assets/         ← Imágenes estáticas (SVGs de equipo, iconos ejercicios)
 ```
 
 ---
@@ -85,6 +84,7 @@ node server.js
 - **Timer de descanso**: se activa automáticamente al marcar ✓ en una serie
 - **Detector de PR** en tiempo real
 - **Botón "+"** en el selector de ejercicios para crear un ejercicio nuevo y añadirlo al catálogo personal directamente desde el workout
+- **Iconos personalizados** por ejercicio (imagen desde `/assets/`) — actualmente: Sentadilla Barra
 - Tab "Workout" persiste en la barra de navegación hasta guardar o descartar
 
 ### 📋 Historial
@@ -143,29 +143,19 @@ Formatos compatibles (entre otros):
 
 ---
 
-## 💪 Catálogo de ejercicios
+## 💪 Catálogo de ejercicios (268 ejercicios en BD)
 
-### Base (`ejercicios_catalogo`) — 66 ejercicios, visibles a todos
-
-| Grupo | Nº | Ejemplos |
-|---|---|---|
-| Hombros | 8 | Press Mancuernas, Elevaciones Laterales, Face Pull, Press Barra/Máquina |
-| Espalda | 7 | Jalón Cerrado/Amplio Cable, Remo Cable/Barra/Máquina, Pull Down |
-| Piernas | 9 | Extensión Máquina, Prensa, Curl Femoral, Peso Muerto, Sentadilla, Abducción |
-| Pecho | 3 | Press Máquina Frontal/Inclinado, Aperturas Máquina |
-| Brazos Bíceps | 5 | Curl Mancuernas, Curl Scott, Curl Martillo, Curl Alterno |
-| Brazos Tríceps | 4 | Press Cuerda Cable, Extensión Polea, Press Barra, Fondos |
-| Core | 6 | Plancha, Crunch, Rueda Abdominal, Elevación Piernas, Oblicuos |
-| Cardio | 3 | Cinta, Bicicleta, Elíptica |
-
-### Plantillas (`plantillas_ejercicios`) — ejercicios adicionales en BD
-
-| Tipo | Descripción |
+| Grupo | Subgrupos |
 |---|---|
-| **Genéricas** (`user_id = NULL`) | Visibles a todos. Seed desde `assets/plantillas_ejercicios.json` al arrancar si la tabla está vacía. |
-| **Personales** (`user_id = X`) | Solo visibles al usuario que las crea. Se añaden desde Perfil o desde el "+" del workout. |
+| Hombros | Deltoides anterior/lateral/posterior |
+| Espalda | Dorsal, Lumbar, Trapecio |
+| Piernas | Cuádriceps, Femoral, Gemelos, Glúteo |
+| Pecho | Pectoral |
+| Brazos Bíceps | Bíceps |
+| Brazos Tríceps | Tríceps |
+| Core | Recto abdominal |
 
-El selector de ejercicios del workout fusiona las tres fuentes: catálogo base + plantillas genéricas + plantillas del usuario.
+> El catálogo se borra y re-puebla automáticamente al arrancar el servidor desde `plantillas_ejercicios.json`. La importación de historial puede añadir ejercicios nuevos al catálogo.
 
 ---
 

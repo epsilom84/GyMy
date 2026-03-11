@@ -1,12 +1,1878 @@
 [
-  { "nombre": "Aperturas Cable Alto", "grupo_muscular": "Pecho", "subgrupo": "Pectoral mayor", "equipo": "cable", "tipo": "fuerza" },
-  { "nombre": "Press Inclinado Mancuernas", "grupo_muscular": "Pecho", "subgrupo": "Pectoral superior", "equipo": "mancuernas", "tipo": "fuerza" },
-  { "nombre": "Pull Over Mancuerna", "grupo_muscular": "Pecho", "subgrupo": "Pectoral mayor", "equipo": "mancuernas", "tipo": "fuerza" },
-  { "nombre": "Remo Pendlay", "grupo_muscular": "Espalda", "subgrupo": "Dorsal medio", "equipo": "barra", "tipo": "fuerza" },
-  { "nombre": "Face Pull Cuerda", "grupo_muscular": "Hombros", "subgrupo": "Deltoides posterior", "equipo": "cable", "tipo": "fuerza" },
-  { "nombre": "Curl Araña", "grupo_muscular": "Brazos", "subgrupo": "Bíceps", "equipo": "barra", "tipo": "fuerza" },
-  { "nombre": "Extensión Tríceps Tumbado Mancuerna", "grupo_muscular": "Brazos", "subgrupo": "Tríceps", "equipo": "mancuernas", "tipo": "fuerza" },
-  { "nombre": "Plancha Lateral", "grupo_muscular": "Core", "subgrupo": "Oblicuos", "equipo": "peso_corporal", "tipo": "fuerza" },
-  { "nombre": "Hip Thrust Barra", "grupo_muscular": "Piernas", "subgrupo": "Glúteo", "equipo": "barra", "tipo": "fuerza" },
-  { "nombre": "Sentadilla Goblet", "grupo_muscular": "Piernas", "subgrupo": "Cuádriceps", "equipo": "mancuernas", "tipo": "fuerza" }
+  {
+    "nombre": "Curl de piernas acostado femoral",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Femoral",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl de piernas de pie femoral",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Femoral",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl de piernas en polea de pie",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Femoral",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl de piernas sentado femoral",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Femoral",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación de talones con barra de pie",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Gemelos",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación de talones con barra sentado",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Gemelos",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación de talones en máquina de pie",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Gemelos",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación de talones en máquina sentado",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Gemelos",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación de talones en máquina Smith de pie",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Gemelos",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Sentadilla frontal con barra",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Sentadilla frontal en máquina Smith",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Skipping alto",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Subidas al banco con barra",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "StepUps",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Subidas al banco con mancuernas",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Zancadas estocadas con barra",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Zancadas estocadas con mancuernas",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press piernas horizontal",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Prensa de piernas pies separados",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Sentadilla Hack con barra",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Sentadilla Hack en máquina Smith",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Sentadilla en máquina inclinado",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Sentadilla con barra",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Sentadilla en máquina de palanca",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Abducción de cadera en polea",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Aducción de cadera en polea",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación lateral de piernas acostado",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Extensión de cuádriceps",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Leg extension",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Máquina de abductores sentado",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Máquina de aductores sentado",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Peso muerto con barra",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Peso muerto con mancuernas",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Peso muerto en polea baja",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Prensa de piernas inclinado",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Sentadilla de rodillas con barra",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Glúteo",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Peso muerto Sumo",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Glúteo",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Pull Through en polea",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Glúteo",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Aleteo de piernas tijeras",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Glúteo",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Buenos días con barra de pie",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Glúteo",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Buenos días en máquina Smith",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Glúteo",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación de pelvis piernas flexionadas tumbado",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Glúteo",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Extensión de cadera arrodillado",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Glúteo",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Extensión de cadera en máquina",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Glúteo",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Patada de glúteo arrodillado",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Glúteo",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Patada de glúteo en polea Cable",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Glúteo",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Kickback",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Glúteo",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Remo polea unilateral",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Lumbar",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Buenos días con barra sentado",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Lumbar",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Estiramiento del gato",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Lumbar",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Extensiones lumbares en máquina sentado",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Lumbar",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Extensiones lumbares en suelo",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Lumbar",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Superman",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Lumbar",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Hiperextensiones en máquina",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Lumbar",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Hiperextensiones en banco plano",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Lumbar",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Remo en polea baja sentado",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Remo en punta TBar Row",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Remo foca con barra Seal Row",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Remo foca con mancuernas Seal",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Row",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Pull down máquina",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "remo 2 unilateral maquina",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "remo máquina unilateral",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Jalón al pecho supino cerrado",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Jalón en máquina de palanca",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Jalón tras nuca",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Remo con barra inclinado",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Remo con barra supino Yates Row",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Remo con mancuernas inclinado",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Remo en multipower Smith",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Remo en máquina de palanca sentado",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Remo en polea baja de pie",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Dominadas agarre prono ancho",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Dominadas agarre prono medio",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Dominadas asistidas agarre ancho",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Dominadas asistidas supinas anchas",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Dominadas asistidas supinas",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Dominadas asistidas en máquina pronas",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Dominadas supinas",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Chinups",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Dominadas supinas agarre ancho",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Jalón al pecho agarre ancho",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Jalón al pecho agarre neutro cerrado",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Dorsal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Rueda abdominal con barra rodillas",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "SitUp piernas elevadas",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "SitUp piernas flexionadas",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "SitUp con giro piernas elevadas",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "SitUp con giro piernas flexionadas",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "SitUp declinado",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Toque de punta de pies",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Toque de talones alterno",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Plancha frontal sobre antebrazos",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Plancha lateral con elevación de cadera",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Pullover de pie en polea alta jo",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación de rodillas silla romana",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación de rodillas suspendido",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Encogimiento de piernas",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Flexión lateral con barra",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Flexión lateral con mancuerna",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Flexión lateral en banco de hiperextensión",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Flexión lateral en polea baja",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Giros de torso con barra",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Navaja VUps",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Crunch en polea alta sentado",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Crunch inverso",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Crunch lateral acostado",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Crunch lateral con piernas apoyadas",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Crunch lateral en máquina",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación de pelvis piernas elevadas tumbado",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación de piernas acostado",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación de piernas silla romana",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación de piernas suspendido",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Abdominales intensos",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Crunch piernas elevadas",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Crunch piernas flexionadas",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Crunch bicicleta",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Crunch bicicleta con giro",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Crunch con piernas apoyadas",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Crunch declinado",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Crunch en máquina sentado",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Crunch en polea alta de pie",
+    "grupo_muscular": "Core",
+    "subgrupo": "Recto abdominal",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Dominadas pronas agarre cerrado",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Dominadas supinas Chinups",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Dominadas supinas agarre cerrado",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Remo al mentón con barra de pie",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Remo al mentón con mancuernas de pie",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Remo al mentón en máquina Smith",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Remo al mentón en polea baja de pie",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl martillo cruzado Crossbody",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl martillo predicador Scott",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl predicador con barra Z Scott",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl predicador con mancuerna",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl predicador en máquina Scott",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl predicador en polea Scott",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Dominadas agarre prono medio a",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl en polea baja",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl en polea banco inclinado",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl en polea sobre banco",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl mancuernas banco inclinado",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl martillo alterno de pie",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl martillo alterno sentado",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl martillo con cuerda polea",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl martillo con mancuernas de pie",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl martillo con mancuernas sentado",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl concentrado de bíceps sentado",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl concentrado en polea",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl de bíceps a una mano",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl de bíceps con barra de pie",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl de bíceps con barra Z",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl de bíceps con mancuernas de pie",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl de bíceps con mancuernas sentado",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl de bíceps en máquina",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl de bíceps en polea alta",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curls",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl en polea acostado",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl Zottman",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl alterno con mancuernas sentado",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl alterno de bíceps con mancuernas de pie",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl araña con barra Spider",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl araña con mancuernas Spider",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl dao Curl barra Z agarre ancho",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl barra Z agarre cerrado",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl con barra agarre ancho",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl con barra agarre cerrado",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Curl con barra banco inclinado",
+    "grupo_muscular": "Brazos Bíceps",
+    "subgrupo": "Bíceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press francés declinado",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press francés inclinado",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press francés agarre inverso barra",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press francés con barra Z",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press francés en polea banco inclinado",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press francés en polea baja",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press francés sentado con barra Z",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca plano con mancuernas",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca plano en máquina Smith",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de pecho sentado en máquina",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de tríceps en máquina sentado",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press cerrado Smith inclinado",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca agarre cerrado",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca agarre cerrado en máquina Smith",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca con barra declinado",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca con barra inclinado",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca con mancuernas declinado",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca con mancuernas inclinado",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca en máquina Smith declinado",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca en máquina Smith inclinado e",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca plano con barra",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Flexiones diamante agarre cerrado",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Fondos agarre ancho",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Fondos asistidos en máquina",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Fondos en banco pies elevados",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Fondos en paralelas",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Patada de tríceps con mancuerna",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Patada de tríceps en polea baja",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press banca agarre cerrado declinado",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press banca agarre cerrado inclinado",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press cerrado Smith declinado",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Extensiones de tríceps con cuerda",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Extensiones de tríceps en polea alta barra",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Extensión de tríceps banco inclinado",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Extensión de tríceps agarre inverso",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Extensión de tríceps con mancuerna a dos manos",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Extensión de tríceps con mancuerna una mano",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Extensión de tríceps concentrada en polea",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Extensión de tríceps en polea arrodillado",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Extensión de tríceps sobre la cabeza en polea",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Extensión tríceps sobre cabeza en polea alta",
+    "grupo_muscular": "Brazos Tríceps",
+    "subgrupo": "Tríceps",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de pecho en máquina",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Pullover con barra EZ",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Pullover con barra en banco plano",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Pullover con mancuerna en banco plano",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Pullover con polea en banco plano",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Pullover de pie en polea alta",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Pecho máquina inclinado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca en máquina Smith inclinado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca en máquina Smith agarre ancho declinado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca en máquina Smith agarre ancho inclinado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca plano con barra agarre ancho",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca plano con mancuernas agarre martillo",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca plano en máquina Smith agarre ancho",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca con barra agarre ancho declinado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca con barra agarre ancho inclinado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca con mancuernas agarre martillo declinado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca con mancuernas agarre martillo inclinado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca en máquina declinado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de banca en máquina inclinado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Cruce de poleas de pie",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Flexiones agarre ancho",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Flexiones agarre ancho declinado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Fondos en paralelas inclinado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Fondos en paralelas agarre ancho inclinado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Mariposa en máquina sentado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Aperturas con mancuernas declinado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Aperturas con mancuernas",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Aperturas con mancuernas con giro declinado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Aperturas con mancuernas con giro inclinado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Aperturas con mancuernas con giro plano",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Aperturas con polea en banco a declinado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Aperturas con polea en banco inclinado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Aperturas con polea en banco plano",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Aperturas en máquina sentado",
+    "grupo_muscular": "Pecho",
+    "subgrupo": "Pectoral",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Aperturas planas con mancuernas",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Pájaros en máquina acostado",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Pájaros en máquina sentado",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Pájaros Elevaciones posteriores de pie",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Levantamiento lateral máquina",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de hombros con mancuernas sentado",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de hombros en máquina sentado",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press de hombros en máquina Smith sentado",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press militar con barra de pie",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Press tras nuca con barra de pie",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Pájaros con mancuernas banco",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevaciones laterales con mancuernas de pie",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevaciones laterales en máquina sentado e",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación frontal con barra de pie",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación frontal con disco de pie",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación frontal con mancuernas de pie",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación frontal en polea una mano",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación frontal en polea con cuerda",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Elevación lateral en polea una mano",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "cable",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Face pull",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Flexiones verticales Handstand",
+    "grupo_muscular": "Hombros",
+    "subgrupo": "Deltoides",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Pushups",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Trapecio",
+    "equipo": "peso_corporal",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Encogimientos en máquina sentado",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Trapecio",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Encogimientos en máquina Smith de pie",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Trapecio",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Encogimientos tras espalda en máquina Smith de pie",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Trapecio",
+    "equipo": "máquina",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Encogimientos con barra de pie",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Trapecio",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Encogimientos con barra tras espalda de pie",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Trapecio",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Encogimientos con mancuernas de pie",
+    "grupo_muscular": "Espalda",
+    "subgrupo": "Trapecio",
+    "equipo": "mancuernas",
+    "tipo": "fuerza"
+  }
 ]

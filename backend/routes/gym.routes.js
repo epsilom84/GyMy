@@ -63,7 +63,7 @@ router.get('/catalogo/:id', async (req, res) => {
 
 
 // POST /api/catalogo - Crear nuevo ejercicio en el catálogo (requiere JWT)
-router.post('/catalogo', async (req, res) => {
+router.post('/catalogo', verifyToken, async (req, res) => {
   try {
     const { nombre, grupo_muscular, subgrupo, equipo, tipo, descripcion } = req.body;
     if (!nombre || !grupo_muscular) return res.status(400).json({ ok: false, error: 'nombre y grupo_muscular requeridos' });
@@ -102,9 +102,12 @@ async function loadEjercicios(sesionId) {
 async function insertEjercicios(client, sesionId, ejercicios) {
   if (!Array.isArray(ejercicios) || !ejercicios.length) return;
   for (const e of ejercicios) {
+    const setsData = e.sets_data
+      ? (typeof e.sets_data === 'string' ? e.sets_data : JSON.stringify(e.sets_data))
+      : null;
     await client.query(
-      'INSERT INTO ejercicios (sesion_id,nombre,series,reps,peso_kg) VALUES ($1,$2,$3,$4,$5)',
-      [sesionId, e.nombre, e.series || null, e.reps || null, e.peso_kg || null]
+      'INSERT INTO ejercicios (sesion_id,nombre,series,reps,peso_kg,sets_data) VALUES ($1,$2,$3,$4,$5,$6)',
+      [sesionId, e.nombre, e.series || null, e.reps || null, e.peso_kg || null, setsData]
     );
   }
 }
@@ -120,7 +123,7 @@ router.get('/sesiones', [
 ], async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
     const offset = (page - 1) * limit;
     const { tipo, desde, hasta, q } = req.query;
     const uid = req.user.id;

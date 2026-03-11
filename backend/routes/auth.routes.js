@@ -3,10 +3,19 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const { queryOne, queryAll } = require('../database/init');
 const verifyToken = require('../middleware/verifyToken');
 const router = express.Router();
+
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 3,
+  message: { ok: false, error: 'Demasiados intentos. Espera 1 hora.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // ── Email ──────────────────────────────────────────────────
 function getMailer() {
@@ -99,7 +108,7 @@ router.get('/me', verifyToken, async (req, res) => {
 });
 
 // ── FORGOT PASSWORD ───────────────────────────────────────
-router.post('/forgot-password', [body('email').isEmail().normalizeEmail()], async (req, res) => {
+router.post('/forgot-password', forgotPasswordLimiter, [body('email').isEmail().normalizeEmail()], async (req, res) => {
   try {
     const { email } = req.body;
     const user = await queryOne('SELECT * FROM users WHERE email=$1', [email]);
