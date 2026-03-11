@@ -511,18 +511,6 @@ input:focus,select:focus{border-color:var(--accent);}
           <button class="stats-type-btn" id="dias-metric-cal" onclick="setDiasMetric('cal')">Calorías</button>
         </div>
         <div class="card">
-          <div class="card-title">Filtrar por día</div>
-          <div class="days-grid" id="days-filter"></div>
-        </div>
-        <div class="card" id="dias-months-card">
-          <div class="card-title">Filtrar por mes</div>
-          <div class="days-grid" id="months-filter"></div>
-        </div>
-        <div class="card" id="dias-years-card" style="display:none">
-          <div class="card-title">Filtrar por año</div>
-          <div class="days-grid" id="years-filter"></div>
-        </div>
-        <div class="card">
           <div class="card-title" id="dias-chart-title">Volumen por sesión (kg)</div>
           <div class="chart-container"><canvas id="chart-dias"></canvas></div>
         </div>
@@ -1745,72 +1733,39 @@ function _setupChartLongPress(canvasId,entries){
 async function loadStatssDias(){
   const{data}=await getSesiones({limit:500});
   if(!data.ok)return;
-  const all=data.sesiones||[];
-  window._statsDiasAll=all;
-  const years=[...new Set(all.map(s=>s.fecha.slice(0,4)))].sort();
-  window._statsDiasYears=years;
-  if(!window._selectedDays)window._selectedDays=[];
-  if(!window._selectedMonths)window._selectedMonths=[];
-  if(!window._selectedYears)window._selectedYears=[];
+  window._statsDiasAll=data.sesiones||[];
   if(!window._diasMetric)window._diasMetric='vol';
-  _renderDiasFilters(years);
   _renderDiasChart();
 }
 
-function _renderDiasFilters(years){
-  const dayNames=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-  const mNames=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  years=years||window._statsDiasYears||[];
-  const selDays=window._selectedDays||[];
-  const selMonths=window._selectedMonths||[];
-  const selYears=window._selectedYears||[];
-  document.getElementById('days-filter').innerHTML=dayNames.map((d,i)=>'<div class="day-chip'+(selDays.includes(i)?' active':'')+'" onclick="toggleDayFilter('+i+')">'+d+'</div>').join('');
-  const mEl=document.getElementById('months-filter');
-  if(mEl)mEl.innerHTML=mNames.map((m,i)=>'<div class="day-chip'+(selMonths.includes(i)?' active':'')+'" onclick="toggleMonthFilter('+i+')">'+m+'</div>').join('');
-  const yEl=document.getElementById('years-filter');
-  const yCard=document.getElementById('dias-years-card');
-  if(yEl&&years.length>1){
-    yEl.innerHTML=years.map(y=>'<div class="day-chip'+(selYears.includes(y)?' active':'')+'" onclick="toggleYearFilter(\''+y+'\')">'+y+'</div>').join('');
-    if(yCard)yCard.style.display='block';
-  }else if(yCard)yCard.style.display='none';
-}
-
 function _renderDiasChart(){
-  const all=window._statsDiasAll||[];
-  const selDays=window._selectedDays||[];
-  const selMonths=window._selectedMonths||[];
-  const selYears=window._selectedYears||[];
+  const all=(window._statsDiasAll||[]).slice().sort((a,b)=>a.fecha.localeCompare(b.fecha));
   const metric=window._diasMetric||'vol';
-  let filtered=all.filter(s=>{
-    const d=new Date(s.fecha+'T12:00:00');
-    if(selDays.length&&!selDays.includes(d.getDay()))return false;
-    if(selMonths.length&&!selMonths.includes(d.getMonth()))return false;
-    if(selYears.length&&!selYears.includes(s.fecha.slice(0,4)))return false;
-    return true;
-  }).sort((a,b)=>a.fecha.localeCompare(b.fecha));
-  const metricData=filtered.map(s=>{
+  const metricData=all.map(s=>{
     if(metric==='cal')return s.calorias||0;
     return(s.ejercicios||[]).reduce((sum,e)=>sum+(e.peso_kg||0)*(e.reps||1)*(e.series||1),0);
   });
-  const labels=filtered.map((s,i)=>{
+  const labels=all.map((s,i)=>{
     const yr=s.fecha.slice(0,4);
-    return(i===0||yr!==filtered[i-1].fecha.slice(0,4))?yr:'';
+    return(i===0||yr!==all[i-1].fecha.slice(0,4))?yr:'';
   });
   const titleEl=document.getElementById('dias-chart-title');
-  if(titleEl)titleEl.textContent=metric==='cal'?'Calorías por sesión':'Volumen por sesión (kg)';
+  if(titleEl)titleEl.textContent=metric==='cal'?'Calorías a lo largo del tiempo':'Volumen a lo largo del tiempo (kg)';
   const volBtn=document.getElementById('dias-metric-vol');
   const calBtn=document.getElementById('dias-metric-cal');
   if(volBtn)volBtn.classList.toggle('active',metric==='vol');
   if(calBtn)calBtn.classList.toggle('active',metric==='cal');
   if(chartDias)chartDias.destroy();
   const isDarkD=!document.body.classList.contains('theme-light')&&!document.body.classList.contains('theme-material-light');
+  const accentColor=isDarkD?'rgba(232,255,71,1)':'rgba(100,180,255,1)';
+  const accentFill=isDarkD?'rgba(232,255,71,.15)':'rgba(100,180,255,.15)';
   const gridCD=isDarkD?'rgba(255,255,255,.05)':'rgba(0,0,0,.06)';
   const tickCD=isDarkD?'#8888a0':'#999';
   const tooltipBgD=isDarkD?'rgba(18,18,28,.95)':'rgba(255,255,255,.98)';
   const tooltipBorderD=isDarkD?'rgba(255,255,255,.08)':'rgba(0,0,0,.08)';
   const diasCtx=document.getElementById('chart-dias').getContext('2d');
-  chartDias=new Chart(diasCtx,{type:'bar',data:{labels,datasets:[{data:metricData,backgroundColor:isDarkD?'rgba(232,255,71,.75)':'rgba(100,180,255,.75)',borderRadius:6,borderSkipped:false,hoverBackgroundColor:isDarkD?'rgba(232,255,71,1)':'rgba(100,180,255,1)'}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:500,easing:'easeInOutQuart'},plugins:{legend:{display:false},tooltip:{backgroundColor:tooltipBgD,borderColor:tooltipBorderD,borderWidth:1,titleColor:isDarkD?'#fff':'#111',bodyColor:isDarkD?'#aaa':'#555',padding:12,cornerRadius:10,displayColors:false,callbacks:{title:ctx=>{const s=filtered[ctx[0].dataIndex];return s?formatFecha(s.fecha):'';},label:ctx=>ctx.parsed.y+(metric==='cal'?' kcal':' kg vol')}}},scales:{x:{grid:{display:false},border:{display:false},ticks:{color:tickCD,font:{size:10},maxRotation:0,padding:4}},y:{grid:{color:gridCD,drawTicks:false},border:{display:false},ticks:{color:tickCD,font:{size:10},padding:6}}}}});
-  document.getElementById('dias-sesiones').innerHTML=filtered.length?filtered.slice().reverse().slice(0,20).map(s=>sessionCard(s)).join(''):'';
+  chartDias=new Chart(diasCtx,{type:'line',data:{labels,datasets:[{data:metricData,borderColor:accentColor,backgroundColor:accentFill,borderWidth:2,pointRadius:2,pointHoverRadius:5,fill:true,tension:0.3}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:500,easing:'easeInOutQuart'},plugins:{legend:{display:false},tooltip:{backgroundColor:tooltipBgD,borderColor:tooltipBorderD,borderWidth:1,titleColor:isDarkD?'#fff':'#111',bodyColor:isDarkD?'#aaa':'#555',padding:12,cornerRadius:10,displayColors:false,callbacks:{title:ctx=>{const s=all[ctx[0].dataIndex];return s?formatFecha(s.fecha):'';},label:ctx=>ctx.parsed.y+(metric==='cal'?' kcal':' kg vol')}}},scales:{x:{grid:{display:false},border:{display:false},ticks:{color:tickCD,font:{size:10},maxRotation:0,padding:4}},y:{grid:{color:gridCD,drawTicks:false},border:{display:false},ticks:{color:tickCD,font:{size:10},padding:6}}}}});
+  document.getElementById('dias-sesiones').innerHTML=all.length?all.slice().reverse().slice(0,20).map(s=>sessionCard(s)).join(''):'';
 }
 
 function setDiasMetric(m){
@@ -1818,29 +1773,7 @@ function setDiasMetric(m){
   _renderDiasChart();
 }
 
-function toggleDayFilter(i){
-  window._selectedDays=window._selectedDays||[];
-  const idx=window._selectedDays.indexOf(i);
-  if(idx>=0)window._selectedDays.splice(idx,1);else window._selectedDays.push(i);
-  _renderDiasFilters();
-  _renderDiasChart();
-}
 
-function toggleMonthFilter(i){
-  window._selectedMonths=window._selectedMonths||[];
-  const idx=window._selectedMonths.indexOf(i);
-  if(idx>=0)window._selectedMonths.splice(idx,1);else window._selectedMonths.push(i);
-  _renderDiasFilters();
-  _renderDiasChart();
-}
-
-function toggleYearFilter(y){
-  window._selectedYears=window._selectedYears||[];
-  const idx=window._selectedYears.indexOf(y);
-  if(idx>=0)window._selectedYears.splice(idx,1);else window._selectedYears.push(y);
-  _renderDiasFilters();
-  _renderDiasChart();
-}
 
 // ══════════════════════════════════════════════
 // PERFIL - SETTINGS
