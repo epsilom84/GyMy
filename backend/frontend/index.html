@@ -1357,7 +1357,7 @@ async function openDetalle(id){
       const hasSets=sets?.length>0;
       const setsHtml=hasSets?sets.map((s,i)=>
         '<div class="ej-set-row"><span class="ej-set-num">'+(i+1)+'</span>'
-        +'<span class="ej-set-weight">'+(s.kg>0?s.kg+'kg':'—')+'</span>'
+        +'<span class="ej-set-weight">'+((s.kg||s.peso_kg)>0?(s.kg||s.peso_kg)+'kg':'—')+'</span>'
         +'<span style="color:var(--text2);font-size:11px">×</span>'
         +'<span class="ej-set-reps">'+(s.reps>0?s.reps+' reps':'—')+'</span>'
         +'</div>').join(''):'';
@@ -1412,7 +1412,8 @@ function repetirWorkout(id){
         let sets=null;
         if(e.sets_data){try{sets=JSON.parse(e.sets_data);}catch(x){}}
         if(sets?.length){
-          sets.forEach(s=>ejMap[key].sets.push({kg:s.kg||0,reps:s.reps||0}));
+          // Compatibilidad: nativo guarda {kg,reps}, CSV antiguo guardaba {peso_kg,reps}
+          sets.forEach(s=>ejMap[key].sets.push({kg:s.kg!=null?s.kg:(s.peso_kg!=null?s.peso_kg:0),reps:s.reps||0}));
         }else{
           // Fallback: N series iguales (formato antiguo / CSV import)
           const n=e.series||1;
@@ -2249,7 +2250,7 @@ function parsearCSV(rawText){
         orden.push(k);
       } else {
         bloques[k].series++;
-        bloques[k]._sets.push({reps:e.reps,peso_kg:e.peso_kg});
+        bloques[k]._sets.push({reps:e.reps,kg:e.peso_kg});
         if(e.reps>bloques[k].reps)bloques[k].reps=e.reps;
         if(e.peso_kg>bloques[k].peso_kg)bloques[k].peso_kg=e.peso_kg;
       }
