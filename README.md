@@ -1,6 +1,6 @@
 # 🏋️ GyMy
 
-**App web personal de registro de entrenamientos.** Autenticación por usuario, historial completo, estadísticas de progreso, workout activo con timer y detector de PR, catálogo de ejercicios desde BD, plantillas personales, soporte offline y temas visuales.
+**App web personal de registro de entrenamientos.** Autenticación por usuario, historial completo, estadísticas de progreso, workout activo con timer y detector de PR, catálogo de 268 ejercicios desde BD, plantillas personales, coach IA, soporte offline y temas visuales.
 
 🔗 **Producción**: https://gymy-production.up.railway.app/
 
@@ -54,7 +54,7 @@ node server.js
 | `JWT_EXPIRES_IN` | Duración token (ej: `15m`) |
 | `NODE_ENV` | `production` o `development` |
 | `PORT` | Puerto (Railway lo sobreescribe) |
-| `ANTHROPIC_API_KEY` | Para importación IA de sesiones |
+| `ANTHROPIC_API_KEY` | Para la Coach Sasha (plan de entrenamiento IA) |
 
 ---
 
@@ -64,6 +64,8 @@ node server.js
 2. En Railway: **Root Directory** → `backend`
 3. Añadir las variables de entorno de la tabla anterior
 4. Railway crea `DATABASE_URL` automáticamente si añades un PostgreSQL plugin
+
+> El servidor configura `trust proxy = 1` para que `express-rate-limit` funcione correctamente detrás del proxy de Railway.
 
 ---
 
@@ -76,7 +78,7 @@ node server.js
 ### 🏠 Dashboard
 - Estadísticas: sesiones totales, racha, horas, sesiones esta semana
 - Gráfica de progreso últimas 8 semanas + lista de sesiones recientes
-- Fechas en formato legible (ej: `07 mar 2026`)
+- **Coach Sasha**: frases motivacionales basadas en estadísticas reales; pulsación larga genera un plan de entrenamiento personalizado vía API de Claude (requiere `ANTHROPIC_API_KEY`)
 
 ### 🏋️ Workout activo
 - Selecciona grupo muscular → ejercicio del **catálogo desde BD** → registra series
@@ -90,10 +92,11 @@ node server.js
 ### 📋 Historial
 - **Buscador en tiempo real** contra toda la BD: busca en tipo, notas, nombres de ejercicios y fechas (ISO, DD/MM/YYYY y formato español `07 mar 2026`)
 - Filtros por tipo de sesión
+- Cards de sesión → pulsas → se abre **modal con el detalle completo**: fecha, duración, calorías, valoración, notas y ejercicios con series expandibles
+- **Repetir Workout**: recarga ejercicios y pesos de una sesión anterior directamente al workout activo
 - **Exportar CSV**: descarga todo el historial en formato propio
 - **Importar historial**: carga sesiones desde archivo externo (ver formatos abajo)
 - **Eliminar todo el historial**: borra todas las sesiones con confirmación
-- **Repetir Workout**: recarga ejercicios y pesos de una sesión anterior
 
 #### Importación de historial
 
@@ -121,13 +124,23 @@ Formatos compatibles (entre otros):
 
 ### 👤 Perfil
 - Datos personales: edad, género, altura, peso, nivel de actividad, objetivo
-- **Catálogo completo**: 66 ejercicios base agrupados por músculo (acordeones)
+- **Catálogo completo**: 268 ejercicios agrupados por músculo (acordeones)
 - **Mis ejercicios personalizados**: guardados en BD, solo visibles para el usuario
   - Añadir individualmente con selector de grupo muscular dinámico
   - **Importar desde archivo** (JSON, CSV o texto plano) con inferencia de grupo muscular y preview antes de confirmar
   - Eliminar uno a uno o todos
 - Configuración: tema visual, modo preload de series, sync offline
 - Cerrar sesión
+
+---
+
+## 🤖 Coach Sasha (IA)
+
+Asistente de entrenamiento integrado en el Dashboard:
+
+- **Frases dinámicas**: basadas en estadísticas reales (racha, horas, PR, grupo favorito…)
+- **Plan de entrenamiento personalizado**: pulsación larga sobre la coach → genera un plan semanal adaptado al historial del usuario usando la API de Claude (modelo Haiku)
+- Requiere `ANTHROPIC_API_KEY` configurada en Railway
 
 ---
 
@@ -173,7 +186,7 @@ Formatos compatibles (entre otros):
 - Contraseñas hasheadas con **bcrypt**
 - **JWT**: access token (15 min) + refresh token (persistente)
 - Datos aislados por usuario con `user_id` en PostgreSQL
-- Rate limiting: 30 req/15min en auth, 120 req/min en el resto
+- Rate limiting: 30 req/15min en auth, 120 req/min en el resto (`trust proxy = 1` para Railway)
 - Endpoints `/api/catalogo/*` públicos (sin JWT)
 
 ---
@@ -188,5 +201,6 @@ Formatos compatibles (entre otros):
 | Auth | JWT · bcrypt |
 | Deploy | Railway + GitHub (auto-deploy) |
 | Gráficas | Chart.js 4 (CDN) |
+| IA | API de Claude (Anthropic) — Haiku |
 
 > Para detalles técnicos completos (API, schema DB, convenciones de código), ver **[CLAUDE.md](./CLAUDE.md)**.
