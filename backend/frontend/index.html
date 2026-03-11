@@ -344,8 +344,8 @@ input:focus,select:focus{border-color:var(--accent);}
 .ej-search{width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font-b);font-size:14px;outline:none;margin-bottom:10px;box-sizing:border-box;}
 .ej-new-btn{width:100%;padding:10px 14px;background:var(--bg3);border:1.5px dashed var(--accent);border-radius:11px;color:var(--accent);font-family:var(--font-b);font-size:13px;font-weight:600;cursor:pointer;text-align:left;margin-bottom:8px;box-sizing:border-box;}
 .ej-scroll{max-height:52vh;overflow-y:auto;padding-right:2px;}
-.ej-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.ej-card{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 6px 10px;background:var(--bg3);border:2px solid transparent;border-radius:14px;cursor:pointer;transition:.15s;text-align:center;}
+.ej-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;}
+.ej-card{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px 6px;background:var(--bg3);border:2px solid transparent;border-radius:14px;cursor:pointer;transition:.15s;text-align:center;}
 .ej-card:active,.ej-card:hover{border-color:var(--accent);}
 .ej-card-n{font-weight:600;font-size:11px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;}
 .ej-card-hint{font-size:10px;color:var(--accent2);font-weight:700;}
@@ -1595,7 +1595,7 @@ async function renderCatalogoList(){
     if(!ejs.length)return'';
     const grid='<div class="ej-grid" style="padding:8px 0 4px">'+
       ejs.map(e=>'<div class="ej-card" style="cursor:default">'
-        +'<div class="ej-item-em">'+ejIconHtml(e.n,e.equipo,40)+'</div>'
+        +'<div class="ej-item-em">'+ejIconHtml(e.n,e.equipo,70)+'</div>'
         +'<div class="ej-card-n">'+e.n+'</div>'
         +(e.m&&e.m!==grupo?'<div class="ej-card-m">'+e.m+'</div>':'')
         +'</div>').join('')
@@ -2995,7 +2995,7 @@ function wkRenderEjList(list,showGroup){
     })():'';
     const safeE=JSON.stringify({em:e.em,equipo:e.equipo||null,n:e.n,m:e.m}).replace(/'/g,"&#39;");
     return '<div class="ej-card" onclick=\'wkAddEx('+safeE+')\'>'
-      +'<div class="ej-item-em">'+ejIconHtml(e.n,e.equipo,44)+'</div>'
+      +'<div class="ej-item-em">'+ejIconHtml(e.n,e.equipo,70)+'</div>'
       +'<div class="ej-card-n">'+e.n+'</div>'
       +(hint?'<div class="ej-card-hint">'+hint+'</div>':'')
       +(showGroup?'<div class="ej-card-m">'+e.m+'</div>':'')
