@@ -6,6 +6,7 @@
 <title>GyMy</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{
   --bg:#0a0a0f;--bg2:#13131a;--bg3:#1c1c27;--border:#2a2a3a;
@@ -458,7 +459,7 @@ input:focus,select:focus{border-color:var(--accent);}
         <button class="hist-btn" onclick="exportHistorialCSV()">📤 Exportar CSV</button>
         <label class="hist-btn" style="cursor:pointer;flex:1;justify-content:center">
           📥 Importar Historial
-          <input type="file" id="hist-csv-import" accept=".csv,.txt,.tsv" style="display:none" onchange="importHistorialCSV(event)"/>
+          <input type="file" id="hist-csv-import" accept=".csv,.txt,.tsv,.xlsx,.xls" style="display:none" onchange="importHistorialCSV(event)"/>
         </label>
         <button class="hist-btn" style="color:var(--accent2);border-color:var(--accent2)" onclick="confirmarEliminarHistorial()">🗑️</button>
       </div>
@@ -2313,480 +2314,348 @@ async function exportHistorialCSV(){
 }
 
 // ══════════════════════════════════════════════
-// IMPORTAR HISTORIAL CON IA
+// IMPORTAR HISTORIAL
 // ══════════════════════════════════════════════
 function importHistorialCSV(event){
   const file=event.target.files[0];if(!file)return;
-  // Accept any text file or CSV
-  const reader=new FileReader();
-  reader.onload=async(e)=>{
-    const rawText=e.target.result;
-    if(!rawText.trim()){showToast('Archivo vacío','error');return;}
-    // Show preview modal with AI analysis option
-    openImportPreview(rawText,file.name);
-  };
-  reader.readAsText(file);
   event.target.value='';
+  if(/\.xlsx?$/i.test(file.name)){
+    _readExcel(file);
+  } else {
+    const reader=new FileReader();
+    reader.onload=(e)=>{
+      const raw=e.target.result;
+      if(!raw.trim()){showToast('Archivo vacío','error');return;}
+      openImportPreview(raw,file.name);
+    };
+    reader.readAsText(file,'UTF-8');
+  }
+}
+function _readExcel(file){
+  if(typeof XLSX==='undefined'){showToast('Librería Excel no disponible','error');return;}
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const csv=XLSX.utils.sheet_to_csv(ws,{FS:',',RS:'\n'});
+      if(!csv.trim()){showToast('Excel vacío','error');return;}
+      openImportPreview(csv,file.name);
+    }catch(err){showToast('Error leyendo Excel: '+err.message,'error');}
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 function openImportPreview(rawText,filename){
-  const lines=rawText.split('\n').filter(l=>l.trim()).length;
-
-  // Parsear para mostrar preview real
   let sesiones=[];
-  try{sesiones=parsearCSV(rawText);}catch(e){}
+  try{sesiones=parsearCSV(rawText);}catch(e){console.warn('parsearCSV error:',e);}
 
-  // Construir resumen de sesiones
   let resumenHtml='';
   if(sesiones.length){
     const totalEj=sesiones.reduce((a,s)=>a+(s.ejercicios||[]).length,0);
     const totalSeries=sesiones.reduce((a,s)=>(s.ejercicios||[]).reduce((b,e)=>b+(e.series||1),a),0);
-    resumenHtml+=
-      '<div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:12px">'+
-      '<div style="font-size:13px;font-weight:600;color:var(--accent3);margin-bottom:8px">'+
-      '✓ '+sesiones.length+' sesión(es) · '+totalEj+' ejercicio(s) · '+totalSeries+' serie(s)</div>';
-    // Listar cada sesión con sus ejercicios
+    resumenHtml='<div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:12px">'
+      +'<div style="font-size:13px;font-weight:600;color:var(--accent3);margin-bottom:8px">'
+      +'✓ '+sesiones.length+' sesión(es) · '+totalEj+' ejercicio(s) · '+totalSeries+' serie(s)</div>';
     sesiones.slice(0,5).forEach(s=>{
-      const ejList=(s.ejercicios||[]).slice(0,4).map(e=>
-        '<span style="color:var(--text2)">'+e.nombre+
-        ' <span style="color:var(--text);font-weight:600">'+e.series+'×'+e.reps+
-        (e.peso_kg?' — '+e.peso_kg+'kg':'')+'</span></span>'
-      ).join('<br>');
-      const masEj=(s.ejercicios||[]).length>4?'<br><span style="color:var(--text2);font-size:11px">+'+((s.ejercicios||[]).length-4)+' más...</span>':'';
-      resumenHtml+=
-        '<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">'+
-        '<div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px">'+
-        '📅 '+formatFecha(s.fecha)+(s.tipo?' · '+s.tipo:'')+
-        '</div>'+
-        '<div style="font-size:11px;line-height:1.7;padding-left:8px">'+ejList+masEj+'</div>'+
-        '</div>';
+      const ejList=(s.ejercicios||[]).slice(0,4).map(e=>{
+        const peso=e.peso_kg?(' — '+e.peso_kg+'kg'):'';
+        return '<span style="color:var(--text2)">'+e.nombre
+          +' <span style="color:var(--text);font-weight:600">'+e.series+'×'+e.reps+peso+'</span></span>';
+      }).join('<br>');
+      const masEj=(s.ejercicios||[]).length>4
+        ?'<br><span style="color:var(--text2);font-size:11px">+'+(s.ejercicios.length-4)+' más...</span>':'';
+      resumenHtml+='<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">'
+        +'<div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px">'
+        +'📅 '+formatFecha(s.fecha)+(s.tipo?' · '+s.tipo:'')+'</div>'
+        +'<div style="font-size:11px;line-height:1.7;padding-left:8px">'+ejList+masEj+'</div></div>';
     });
-    if(sesiones.length>5){
-      resumenHtml+='<div style="font-size:12px;color:var(--text2);text-align:center">...y '+(sesiones.length-5)+' sesión(es) más</div>';
-    }
+    if(sesiones.length>5)resumenHtml+='<div style="font-size:12px;color:var(--text2);text-align:center">...y '+(sesiones.length-5)+' sesión(es) más</div>';
     resumenHtml+='</div>';
   } else {
-    resumenHtml='<div style="color:var(--accent2);font-size:13px;margin-bottom:12px">⚠️ No se detectaron sesiones válidas. Comprueba el formato del archivo.</div>';
+    resumenHtml='<div style="color:var(--accent2);font-size:13px;margin-bottom:12px">⚠️ No se detectaron sesiones válidas. Comprueba el formato.</div>';
   }
 
-  const modalHtml=
-    '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">'+
-    '<strong style="color:var(--text)">'+filename+'</strong> · '+lines+' líneas</div>'+
-    resumenHtml+
-    '<div id="import-status" style="margin-top:4px;font-size:13px;min-height:20px;color:var(--accent3)"></div>'+
-    '<div style="display:flex;gap:8px;margin-top:14px">'+
-    '<button class="c-btn-cancel" onclick="closeModal(\'modal-import-preview\')">Cancelar</button>'+
-    '<button class="c-btn-primary" id="btn-run-import" onclick="runImport()" '+(sesiones.length?'':'disabled')+'>📥 Importar</button>'+
-    '</div>';
-  document.getElementById('import-preview-body').innerHTML=modalHtml;
+  document.getElementById('import-preview-body').innerHTML=
+    '<div style="font-size:12px;color:var(--text2);margin-bottom:10px"><strong style="color:var(--text)">'+filename+'</strong></div>'
+    +resumenHtml
+    +'<div id="import-status" style="margin-top:4px;font-size:13px;min-height:20px;color:var(--accent3)"></div>'
+    +'<div style="display:flex;gap:8px;margin-top:14px">'
+    +'<button class="c-btn-cancel" onclick="closeModal(\'modal-import-preview\')">Cancelar</button>'
+    +'<button class="c-btn-primary" id="btn-run-import" onclick="runImport()" '+(sesiones.length?'':'disabled="disabled"')+'>📥 Importar</button>'
+    +'</div>';
   window._importRawText=rawText;
-  window._importFilename=filename;
   openModal('modal-import-preview');
 }
 
 // ── DETECCIÓN DE GRUPO MUSCULAR ──────────────────────────────────────────────
 const GRUPOS_KEYWORDS={
-  'Pecho':['press pecho','pec deck','aperturas pecho','crossover','push up','flexiones pecho','pecho','chest','bench press','incline press'],
-  'Espalda':['jalón','pulldown','pull-down','dominadas','remo','espalda','peso muerto','deadlift','lat pull','seated row','back'],
-  'Piernas':['sentadilla','squat','prensa','leg press','extensión cuad','curl femoral','leg curl','gemelos','calf','abducción','aducción','piernas','legs','lunges','zancadas','hip thrust'],
-  'Hombros':['press hombros','press militar','overhead press','elevaciones lat','elevacion frontal','face pull','arnold','hombros','shoulder','deltoid'],
-  'Brazos Bíceps':['curl bíceps','curl biceps','curl martillo','hammer curl','curl scott','preacher curl','bicep','bícep'],
-  'Brazos Tríceps':['press tríceps','tricep','trícep','extensión tríceps','fondos tríceps','skull crusher','pushdown'],
-  'Core':['abdominales','abs','crunch','plancha','plank','oblicuos','core','sit up','russian twist','rueda abdominal'],
-  'Cardio':['correr','carrera','bici','ciclismo','eliptica','cinta','treadmill','running','cardio','remo cardio','rowing','nadar','natación','saltar']
+  'Pecho':['press pecho','pec deck','aperturas pecho','crossover','push up','flexiones pecho','pecho','chest','bench press','incline press','fly'],
+  'Espalda':['jalón','pulldown','pull-down','dominadas','remo','espalda','peso muerto','deadlift','lat pull','seated row','back','pull up','chin up'],
+  'Piernas':['sentadilla','squat','prensa','leg press','extensión cuad','curl femoral','leg curl','gemelos','calf','abducción','aducción','piernas','legs','lunges','zancadas','hip thrust','rdl','romanian'],
+  'Hombros':['press hombros','press militar','overhead press','elevaciones lat','elevacion frontal','face pull','arnold','hombros','shoulder','deltoid','lateral raise'],
+  'Brazos Bíceps':['curl bíceps','curl biceps','curl martillo','hammer curl','curl scott','preacher curl','bicep','bícep','biceps curl'],
+  'Brazos Tríceps':['press tríceps','tricep','trícep','extensión tríceps','fondos tríceps','skull crusher','pushdown','dips','triceps'],
+  'Core':['abdominales','abs','crunch','plancha','plank','oblicuos','core','sit up','russian twist','rueda abdominal','hanging leg','dragon flag'],
+  'Cardio':['correr','carrera','bici','ciclismo','eliptica','cinta','treadmill','running','cardio','remo cardio','rowing','nadar','natación','saltar','jump rope','comba']
 };
-
 function detectarGrupo(nombreEj){
-  const n=nombreEj.toLowerCase().trim();
+  const n=(nombreEj||'').toLowerCase().trim();
   for(const[grupo,kws]of Object.entries(GRUPOS_KEYWORDS)){
     if(kws.some(k=>n.includes(k)))return grupo;
   }
-  // Buscar en catálogo cacheado
   if(_catalogoCache){
     for(const[grupo,ejercicios]of Object.entries(_catalogoCache)){
-      if(ejercicios.some(e=>{const en=(e.n||e.nombre||'').toLowerCase();return en.includes(n)||n.includes(en);}))return grupo;
+      if(ejercicios.some(e=>{const en=(e.n||e.nombre||'').toLowerCase();return en===n||en.includes(n)||n.includes(en);}))return grupo;
     }
   }
   return 'Fuerza';
 }
-
 function detectarTipoSesion(ejercicios){
   if(!ejercicios||!ejercicios.length)return'Fuerza';
   const grupos={};
-  ejercicios.forEach(e=>{
-    const g=e.grupo_muscular||detectarGrupo(e.nombre);
-    grupos[g]=(grupos[g]||0)+1;
-  });
+  ejercicios.forEach(e=>{const g=e.grupo_muscular||detectarGrupo(e.nombre);grupos[g]=(grupos[g]||0)+1;});
   const top=Object.entries(grupos).sort((a,b)=>b[1]-a[1])[0];
   const g=top?top[0]:'Fuerza';
-  // Mapear grupo → tipo sesión
   const mapa={'Pecho':'Pecho','Espalda':'Espalda','Piernas':'Piernas','Hombros':'Hombros',
-    'Brazos Bíceps':'Brazos','Brazos Tríceps':'Brazos','Core':'Core',
-    'Cardio':'Cardio','Fuerza':'Fuerza'};
+    'Brazos Bíceps':'Brazos','Brazos Tríceps':'Brazos','Core':'Core','Cardio':'Cardio'};
   return mapa[g]||g;
 }
 
-// ── PARSEO CSV INTELIGENTE ───────────────────────────────────────────────────
+// ── PARSEO CSV ───────────────────────────────────────────────────────────────
+// Normaliza una cadena de fecha a YYYY-MM-DD. Devuelve '' si no puede.
+function _normFecha(raw){
+  if(!raw)return'';
+  let s=String(raw).replace(/["']/g,'').trim();
+  // Quitar componente horario: "2024-01-15 10:30:00" → "2024-01-15"
+  s=s.replace(/[T ]\d{1,2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{1,2}:?\d{0,2})?$/,'').trim();
+  // ISO: YYYY-MM-DD o YYYY/MM/DD
+  let m=s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+  if(m)return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+  // DD/MM/YYYY o DD-MM-YYYY o DD.MM.YYYY
+  m=s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+  if(m)return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  // MM/DD/YY o MM-DD-YY
+  m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})$/);
+  if(m)return'20'+m[3]+'-'+m[1].padStart(2,'0')+'-'+m[2].padStart(2,'0');
+  return'';
+}
+// Parsea un número con coma o punto decimal. Devuelve 0 si no es número.
+function _numF(s){return parseFloat(String(s||'').replace(',','.'))||0;}
+// Parsea reps: acepta "10", "10-12", "10x3", etc. Devuelve el primer número.
+function _numI(s){const m=String(s||'').match(/\d+/);return m?parseInt(m[0]):0;}
+// Extrae minutos de duraciones como "60 min", "1:30:00", "45", "60m"
+function _parseDuracion(s){
+  if(!s)return 0;
+  s=String(s).trim();
+  const hm=s.match(/^(\d+):(\d{2})(?::\d{2})?$/);
+  if(hm)return parseInt(hm[1])*60+parseInt(hm[2]);
+  const solo=s.match(/^(\d+)\s*(?:min|m|minutos?)?$/i);
+  if(solo)return parseInt(solo[1]);
+  return 0;
+}
+// Parsea una línea CSV respetando campos entre comillas
+function _parseLine(line,sep){
+  const r=[];let cur='';let inQ=false;
+  for(const c of line){
+    if(c==='"'){inQ=!inQ;}
+    else if(c===sep&&!inQ){r.push(cur.trim());cur='';}
+    else cur+=c;
+  }
+  r.push(cur.trim());
+  return r.map(v=>v.replace(/^["']|["']$/g,'').trim());
+}
+
 function parsearCSV(rawText){
-  const lines=rawText.split(/\r?\n|\r/).map(l=>l.trim()).filter(l=>l);
+  const lines=rawText.split(/\r?\n|\r/).map(l=>l.trim()).filter(l=>l&&!/^,+$/.test(l));
   if(!lines.length)return[];
 
-  // Detectar separador (tab, punto y coma, pipe, coma)
-  const sep=['\t',';','|',','].find(s=>lines[0].includes(s))||',';
-
-  function parseLine(line){
-    const result=[];let cur='';let inQ=false;
-    for(const c of line){
-      if(c==='"'){inQ=!inQ;}
-      else if(c===sep&&!inQ){result.push(cur.trim());cur='';}
-      else cur+=c;
-    }
-    result.push(cur.trim());
-    return result;
+  // ── Intento texto libre (sin separadores estructurados) ──────────────────
+  const firstLine=lines[0];
+  const hasSep=['\t',';','|',','].some(s=>firstLine.includes(s));
+  if(!hasSep){
+    return _parsearTextoLibre(lines);
   }
 
-  // Detectar cabecera
-  const header=parseLine(lines[0]).map(h=>h.toLowerCase().replace(/['"]/g,'').trim());
-  const hasHeader=header.some(h=>['fecha','date','ejercicio','exercise','nombre','name','grupo','group'].includes(h));
-  const dataLines=hasHeader?lines.slice(1):lines;
+  // ── CSV estructurado ──────────────────────────────────────────────────────
+  const sep=['\t',';','|',','].find(s=>firstLine.includes(s));
+  const header=_parseLine(lines[0],sep).map(h=>h.toLowerCase().replace(/[()°\s]+/g,'_').replace(/_+/g,'_'));
+  const dataLines=lines.slice(1);
 
-  // Mapear columnas por nombre
-  function colIdx(names){return names.map(n=>header.indexOf(n)).find(i=>i>=0)??-1;}
-  const iDate  =colIdx(['fecha','date','día','dia','day','timestamp','datetime']);
-  const iTime  =colIdx(['hora','time','timestamp','datetime','hour']);
-  const iTipo  =colIdx(['tipo','type','categoria','category','workout type','session type']);
-  const iNombre=colIdx(['ejercicio','exercise','nombre','name','movement']);
-  const iGrupo =colIdx(['grupo','group','grupo muscular','muscle group','body part','muscle']);
-  const iSeries  =colIdx(['series','sets']);
-  const iSetOrder=colIdx(['set order','set_order','set num','set_num','numero serie','número serie','set']);
-  const iReps  =colIdx(['reps','repeticiones','repetitions','rep']);
-  const iPeso  =colIdx(['peso','weight','peso_kg','kg','lbs','load']);
-  const iWorkout =colIdx(['workout name','workout','entrenamiento','sesion','sesión']);
-  const iDur   =colIdx(['duracion','duration','duracion_min','minutes','tiempo']);
-  const iCal   =colIdx(['calorias','calories','kcal','cal']);
-  const iNotas =colIdx(['notas','notes','nota','note','comments','comentarios']);
-  const iOrigen=colIdx(['app','origen','source','from','aplicacion']);
+  // Helper: busca el primer índice de columna que coincida con algún alias
+  function col(...aliases){
+    for(const a of aliases){
+      const i=header.findIndex(h=>h===a||h.includes(a));
+      if(i>=0)return i;
+    }
+    return -1;
+  }
+  function get(cols,idx,def=''){return idx>=0&&idx<cols.length?(cols[idx]||def):def;}
 
-  // Si no hay cabecera, usar posiciones fijas del formato propio
-  // fecha,tipo,duracion_min,calorias,ejercicio,series,reps,peso_kg,notas
+  // ── Detectar formato GyMy propio (fecha,tipo,duracion_min,calorias,valoracion,notas) ──
+  const isGyMy=header[0]==='fecha'&&header[1]==='tipo'&&header.includes('duracion_min');
+  if(isGyMy){
+    const iF=0,iT=1,iD=col('duracion_min'),iC=col('calorias'),iV=col('valoracion'),iN=col('notas');
+    return dataLines.map(line=>{
+      const c=_parseLine(line,sep);
+      const fecha=_normFecha(get(c,iF));
+      if(!fecha)return null;
+      return{fecha,tipo:get(c,iT)||'Fuerza',duracion_min:_numI(get(c,iD)),
+        calorias:_numI(get(c,iC)),valoracion:_numI(get(c,iV)),
+        notas:get(c,iN)||'Importado GyMy',ejercicios:[]};
+    }).filter(Boolean);
+  }
+
+  // ── Columnas estándar para Hevy/Strong/genérico ──────────────────────────
+  const iDate =col('date','fecha','día','dia','timestamp','datetime','workout_date');
+  const iWname=col('workout_name','workout','entrenamiento','sesion','session_name','training');
+  const iEname=col('exercise_name','exercise','ejercicio','nombre','movement','name');
+  const iSet  =col('set_order','set_num','numero_serie','set');
+  const iReps =col('reps','repeticiones','repetitions','rep');
+  const iPeso =col('weight','peso','weight_(kg)','weight_kg','kg','lbs','load','weight_(lbs)');
+  const iDur  =col('duration','duracion','duracion_min','minutes','tiempo','duration_(seconds)','seconds');
+  const iTipo =col('type','tipo','category','categoria');
+  const iCal  =col('calories','calorias','kcal','cal');
+  const iNotas=col('notes','notas','nota','comments','workout_notes');
+  // Detectar si el peso está en lbs (Hevy puede exportar en lbs)
+  const pesoEnLbs=header.some(h=>h.includes('lbs')&&!h.includes('kg'));
+
   const byFecha={};
-
   dataLines.forEach(line=>{
-    if(!line.trim())return;
-    const cols=hasHeader?parseLine(line):[...parseLine(line)];
+    const c=_parseLine(line,sep);
+    if(c.length<2)return;
 
-    function get(idx,fallback=''){
-      if(idx<0||idx>=cols.length)return fallback;
-      return (cols[idx]||'').replace(/^["']|["']$/g,'').trim();
-    }
+    const fecha=_normFecha(get(c,iDate));
+    if(!fecha)return;
 
-    // Fecha
-    let fecha='';
-    if(iDate>=0){
-      fecha=get(iDate);
+    let peso=_numF(get(c,iPeso));
+    if(pesoEnLbs&&peso>0)peso=Math.round(peso*0.4536*10)/10;
+
+    const reps=_numI(get(c,iReps));
+    const ejNombre=(get(c,iEname)||'').replace(/[()]/g,'').replace(/\s+/g,' ').trim();
+    const workoutName=get(c,iWname)||'';
+    const tipoRaw=get(c,iTipo)||workoutName;
+    const durRaw=get(c,iDur);
+    const dur=_parseDuracion(durRaw);
+    const cal=_numI(get(c,iCal));
+    const notas=get(c,iNotas)||'';
+    const setOrder=iSet>=0?(_numI(get(c,iSet))||0):0;
+
+    if(!byFecha[fecha]){
+      byFecha[fecha]={fecha,tipo:tipoRaw&&!/^\d+$/.test(tipoRaw)?tipoRaw:'',
+        duracion_min:dur,calorias:cal,notas:notas||'Importado',ejercicios:[]};
     } else {
-      fecha=get(0); // posición fija (sin cabecera) o cabecera sin columna fecha reconocida
-    }
-    // Normalizar fecha: acepta YYYY-MM-DD, DD/MM/YYYY, MM/DD/YYYY, timestamps
-    if(fecha){
-      fecha=fecha.replace(/["']/g,'').trim();
-      fecha=fecha.replace(/[T\s]\d{1,2}:\d{2}.*$/,'').trim(); // quita componente horario
-      // ISO con tiempo: tomar solo fecha
-      if(/\d{4}-\d{2}-\d{2}/.test(fecha))fecha=fecha.match(/\d{4}-\d{2}-\d{2}/)[0];
-      // DD/MM/YYYY o DD-MM-YYYY o DD.MM.YYYY
-      else if(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/.test(fecha)){
-        const[,d,m,y]=fecha.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
-        fecha=`${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
-      }
-      // MM/DD/YYYY
-      else if(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.test(fecha)){
-        const[,m,d,y]=fecha.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-        const year=y.length===2?'20'+y:y;
-        fecha=`${year}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
-      }
-      if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha))fecha='';
-    }
-    if(!fecha)fecha=new Date().toISOString().split('T')[0];
-
-    // Hora (para info, la incluimos en notas)
-    const _timeRe=/\d\d:\d\d/;
-    const hora=iTime>=0?get(iTime):(iDate>=0&&get(iDate).includes(':'))?(_timeRe.exec(get(iDate))||[''])[0]:'';
-
-    // Tipo sesión y métricas de sesión (leídas antes del check de nombre)
-    const workoutName=iWorkout>=0?get(iWorkout):'';
-    const tipoRaw=iTipo>=0?get(iTipo):workoutName||(!hasHeader?get(1):'');
-    // Ignorar valores puramente numéricos (ej: "1") que no son tipos de sesión
-    const tipoFila=/^\d+$/.test(tipoRaw)?'':tipoRaw;
-    const dur   =parseInt(iDur>=0   ?get(iDur)   :(!hasHeader?get(2):'')||'0')||0;
-    const cal   =parseInt(iCal>=0   ?get(iCal)   :(!hasHeader?get(3):'')||'0')||0;
-    const origenApp=iOrigen>=0?get(iOrigen):'';
-
-    // Agrupar por fecha SIEMPRE (aunque la fila no tenga ejercicio)
-    const key=fecha;
-    // Convertir hora HH:MM:SS a minutos desde medianoche (para calcular duración)
-    function horaAMin(h){if(!h)return -1;const p=h.split(':').map(Number);return p[0]*60+(p[1]||0);}
-    const horaMin=horaAMin(hora);
-    if(!byFecha[key]){
-      byFecha[key]={
-        fecha,
-        tipo:tipoFila||'',
-        duracion_min:dur,
-        calorias:cal,
-        notas:'',
-        _origen:origenApp,
-        _hora:hora,
-        _horaIni:horaMin,
-        _horaFin:horaMin,
-        ejercicios:[]
-      };
-    } else {
-      // Acumular duración, calorías y rango horario
-      if(dur>byFecha[key].duracion_min)byFecha[key].duracion_min=dur;
-      if(cal>byFecha[key].calorias)byFecha[key].calorias=cal;
-      if(horaMin>=0){
-        if(byFecha[key]._horaIni<0||horaMin<byFecha[key]._horaIni)byFecha[key]._horaIni=horaMin;
-        if(horaMin>byFecha[key]._horaFin)byFecha[key]._horaFin=horaMin;
-      }
+      if(dur>byFecha[fecha].duracion_min)byFecha[fecha].duracion_min=dur;
+      if(cal>byFecha[fecha].calorias)byFecha[fecha].calorias=cal;
+      if(notas&&!byFecha[fecha].notas)byFecha[fecha].notas=notas;
     }
 
-    // Solo añadir ejercicio si hay nombre
-    const nombre=(iNombre>=0?get(iNombre):(!hasHeader?get(4):'')).replace(/[()]/g,'').replace(/\s+/g,' ').trim();
-    if(!nombre)return;
+    if(!ejNombre)return;
 
-    const grupoRaw=iGrupo>=0?get(iGrupo):'';
-    // Ignorar grupo numérico (ej: "1") y detectarlo por nombre del ejercicio
-    const grupo=(/^\d+$/.test(grupoRaw)?'':grupoRaw)||detectarGrupo(nombre);
-    // Si hay columna set_order → una fila = una serie (agruparemos después)
-    const setOrderVal=iSetOrder>=0?parseInt(get(iSetOrder))||0:0;
-    const series=iSetOrder>=0?1:(parseInt((iSeries>=0?get(iSeries):(!hasHeader?get(5):''))||'1')||1);
-    const reps  =parseInt(iReps>=0  ?get(iReps)  :(!hasHeader?get(6):'')||'0')||0;
-    const peso  =parseFloat(iPeso>=0?get(iPeso)  :(!hasHeader?get(7):'')||'0')||0;
-
-    byFecha[key].ejercicios.push({
-      nombre,
-      grupo_muscular:grupo,
-      series,
-      reps,
-      peso_kg:peso,
-      _hora:hora,
-      _setOrder:setOrderVal
+    byFecha[fecha].ejercicios.push({
+      nombre:ejNombre,
+      grupo_muscular:detectarGrupo(ejNombre),
+      reps,peso_kg:peso,
+      _setOrder:setOrder
     });
   });
 
-  // Post-proceso 1: agrupar series del mismo ejercicio en un bloque de series
-  // Aplica cuando hay filas duplicadas (una fila por serie, formato Hevy/Strong/etc.)
+  // Post-proceso: agrupar series y rellenar tipo
   Object.values(byFecha).forEach(s=>{
-    const nombres=s.ejercicios.map(e=>e.nombre.toLowerCase());
-    const hayDuplicados=nombres.length!==new Set(nombres).size;
-    const haySetOrder=s.ejercicios.some(e=>e._setOrder>0);
-    if(!hayDuplicados&&!haySetOrder)return; // ya viene agrupado
-    // Agrupar preservando orden de aparición
-    const bloques={};const orden=[];
-    s.ejercicios.forEach(e=>{
-      const k=e.nombre.toLowerCase();
-      if(!bloques[k]){
-        bloques[k]={nombre:e.nombre,grupo_muscular:e.grupo_muscular,
-          series:1,reps:e.reps,peso_kg:e.peso_kg,_hora:e._hora,_sets:[{reps:e.reps,peso_kg:e.peso_kg}]};
-        orden.push(k);
-      } else {
-        bloques[k].series++;
-        bloques[k]._sets.push({reps:e.reps,kg:e.peso_kg});
-        if(e.reps>bloques[k].reps)bloques[k].reps=e.reps;
-        if(e.peso_kg>bloques[k].peso_kg)bloques[k].peso_kg=e.peso_kg;
-      }
-    });
-    s.ejercicios=orden.map(k=>{const b=bloques[k];if(b._sets?.length)b.sets_data=JSON.stringify(b._sets);delete b._sets;return b;});
-  });
-
-  // Post-proceso 2: detectar tipo sesión si no está
-  Object.values(byFecha).forEach(s=>{
+    s.ejercicios=_agruparSeries(s.ejercicios);
     if(!s.tipo)s.tipo=detectarTipoSesion(s.ejercicios);
-    // Calcular duración desde timestamps si no viene en el CSV
-    if(!s.duracion_min&&s._horaIni>=0&&s._horaFin>s._horaIni){
-      s.duracion_min=Math.round(s._horaFin-s._horaIni)+10; // +10 min por último ejercicio
-    }
-    // Construir nota de origen
-    const origenStr=s._origen?` [${s._origen}]`:'';
-    const horaStr=s._hora?` ${s._hora}`:'';
-    s.notas=`Importado de app externa${origenStr}${horaStr}`.trim();
-    if(s.ejercicios.length){
-      const grupos=[...new Set(s.ejercicios.map(e=>e.grupo_muscular))].join(', ');
-      s.notas+=` · ${grupos}`;
-    }
+    delete s._hora;
   });
 
   return Object.values(byFecha);
 }
 
-// ── CREAR EJERCICIOS NUEVOS EN EL CATÁLOGO ───────────────────────────────────
-async function crearEnCatalogo(ejerciciosNuevos){
-  const token=localStorage.getItem('gymy_access');
-  let creados=0;
-  for(const ej of ejerciciosNuevos){
-    try{
-      const r=await fetch('/api/catalogo',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-        body:JSON.stringify({
-          nombre:ej.nombre,
-          grupo_muscular:ej.grupo_muscular,
-          subgrupo:ej.grupo_muscular,
-          equipo:'Libre',
-          tipo:ej.grupo_muscular==='Cardio'?'Cardio':'Fuerza',
-          descripcion:'Importado de app externa'
-        })
+// Agrupa ejercicios que son la misma entrada (una fila por serie → un objeto con series contadas)
+function _agruparSeries(ejercicios){
+  if(!ejercicios.length)return[];
+  const bloques={};const orden=[];
+  ejercicios.forEach(e=>{
+    const k=e.nombre.toLowerCase().trim();
+    if(!bloques[k]){
+      bloques[k]={nombre:e.nombre,grupo_muscular:e.grupo_muscular,
+        series:1,reps:e.reps,peso_kg:e.peso_kg};
+      orden.push(k);
+    } else {
+      bloques[k].series++;
+      if(e.reps>bloques[k].reps)bloques[k].reps=e.reps;
+      if(e.peso_kg>bloques[k].peso_kg)bloques[k].peso_kg=e.peso_kg;
+    }
+  });
+  return orden.map(k=>bloques[k]);
+}
+
+// Parsea texto libre como notas de entreno escritas a mano
+function _parsearTextoLibre(lines){
+  const sesiones=[];let current=null;
+  const fechaRe=/^(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?/;
+  const ejRe=/^(.+?)[\s:]+(\d+)\s*[x×*]\s*(\d+)(?:\s*[-@]\s*([\d.,]+)\s*kg?)?/i;
+
+  lines.forEach(line=>{
+    const mf=line.match(fechaRe);
+    if(mf){
+      const d=mf[1].padStart(2,'0');
+      const mo=mf[2].padStart(2,'0');
+      const y=mf[3]?(mf[3].length===2?'20'+mf[3]:mf[3]):''+new Date().getFullYear();
+      const fecha=`${y}-${mo}-${d}`;
+      current={fecha,tipo:'Fuerza',duracion_min:0,calorias:0,notas:'Importado',ejercicios:[]};
+      sesiones.push(current);
+      return;
+    }
+    if(!current){
+      current={fecha:new Date().toISOString().slice(0,10),tipo:'Fuerza',duracion_min:0,calorias:0,notas:'Importado',ejercicios:[]};
+      sesiones.push(current);
+    }
+    const me=line.match(ejRe);
+    if(me){
+      const nombre=me[1].trim();
+      current.ejercicios.push({
+        nombre,grupo_muscular:detectarGrupo(nombre),
+        series:parseInt(me[2]),reps:parseInt(me[3]),peso_kg:_numF(me[4])
       });
-      const d=await r.json();
-      if(d.ok&&d.created)creados++;
-    }catch(e){console.warn('Error creando en catálogo:',ej.nombre,e);}
+    }
+  });
+  sesiones.forEach(s=>{if(!s.tipo||s.tipo==='Fuerza')s.tipo=detectarTipoSesion(s.ejercicios);});
+  return sesiones.filter(s=>s.ejercicios.length>0||lines.length<5);
+}
+
+// ── AUTO-CREAR EJERCICIOS EN CATÁLOGO ────────────────────────────────────────
+async function _autoCrearEjercicios(sesiones){
+  if(!_catalogoCache)await loadCatalogo();
+  const catalogNamesLow=new Set(
+    Object.values(_catalogoCache||{}).flat().map(e=>(e.n||e.nombre||'').toLowerCase())
+  );
+  const token=localStorage.getItem('gymy_access');
+  const vistos=new Set();let creados=0;
+  for(const s of sesiones){
+    for(const e of(s.ejercicios||[])){
+      const key=e.nombre.toLowerCase();
+      if(vistos.has(key)||catalogNamesLow.has(key)){vistos.add(key);continue;}
+      vistos.add(key);
+      try{
+        const r=await fetch('/api/catalogo',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+          body:JSON.stringify({
+            nombre:e.nombre,
+            grupo_muscular:e.grupo_muscular||'Fuerza',
+            subgrupo:e.grupo_muscular||'Fuerza',
+            equipo:'Libre',
+            tipo:(e.grupo_muscular||'')===('Cardio')?'Cardio':'Fuerza',
+            descripcion:'Importado'
+          })
+        });
+        const d=await r.json();
+        if(d.ok&&d.created){creados++;catalogNamesLow.add(key);}
+      }catch(err){console.warn('No se pudo crear ejercicio:',e.nombre,err);}
+    }
   }
+  if(creados>0){try{await loadCatalogo();}catch(e){}}
   return creados;
-}
-
-// ── IMPORT: similitud de ejercicios y grupos ─────────────────────────────────
-function levenshtein(a,b){
-  const m=a.length,n=b.length;
-  const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i?j?0:i:j));
-  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)
-    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
-  return dp[m][n];
-}
-function _normEjN(s){return(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim();}
-function _ejSimilar(a,b){
-  const na=_normEjN(a),nb=_normEjN(b);
-  if(na===nb)return 1;
-  if(na.includes(nb)||nb.includes(na))return 0.85;
-  if(levenshtein(na,nb)<=5)return 0.7;
-  const ta=na.split(' ').filter(t=>t.length>2);
-  const tb=nb.split(' ').filter(t=>t.length>2);
-  if(!ta.length||!tb.length)return 0;
-  const common=ta.filter(t=>tb.includes(t));
-  return common.length/Math.max(ta.length,tb.length);
-}
-function _findImportCandidates(importName,catalogNames){
-  return catalogNames.filter(cn=>_ejSimilar(importName,cn)>=0.4).slice(0,3);
-}
-function _grupoSimilar(a,b){
-  const na=_normEjN(a),nb=_normEjN(b);
-  if(na===nb)return true;
-  return levenshtein(na,nb)<=3;
-}
-function _findGrupoCandidates(importGrupo,catalogGrupos){
-  return catalogGrupos.filter(g=>_grupoSimilar(importGrupo,g));
-}
-function _askMerges(candidates){
-  return new Promise(res=>{
-    window._mergeQueue=[...candidates];
-    window._mergeMap={};
-    window._mergeDone=res;
-    _askNextMerge();
-  });
-}
-function _askNextMerge(){
-  if(!window._mergeQueue.length){
-    closeModal('modal-merge-ej');
-    if(window._mergeDone){window._mergeDone(window._mergeMap);window._mergeDone=null;}
-    return;
-  }
-  const{importName,matches}=window._mergeQueue.shift();
-  const rem=window._mergeQueue.length;
-  document.getElementById('modal-merge-ej').querySelector('.modal-title').textContent='Ejercicio similar encontrado';
-  document.getElementById('merge-ej-body').innerHTML=
-    '<div style="margin:12px 0 14px;font-size:14px;line-height:1.55">El ejercicio <strong style="color:var(--accent)">'+importName+'</strong> no está en el catálogo.<br><span style="color:var(--text2);font-size:12px">¿Es el mismo que alguno de estos?</span></div>'+
-    '<div style="display:flex;flex-direction:column;gap:7px">'+
-    matches.map(m=>'<button class="btn btn-secondary" style="text-align:left;padding:11px 14px" onclick="_chooseMerge('+JSON.stringify(importName)+','+JSON.stringify(m)+')"><strong>'+m+'</strong></button>').join('')+
-    '<button class="btn" style="margin-top:3px;background:var(--bg3);border:1px solid var(--border);color:var(--text2)" onclick="_chooseMerge('+JSON.stringify(importName)+',null)">No, importar como nuevo ejercicio</button>'+
-    '</div>'+
-    (rem?'<div style="font-size:11px;color:var(--text2);margin-top:12px;text-align:right">'+rem+' ejercicio(s) más</div>':'');
-  openModal('modal-merge-ej');
-}
-function _chooseMerge(importName,catalogName){
-  if(catalogName)window._mergeMap[importName.toLowerCase()]=catalogName;
-  _askNextMerge();
-}
-function _askGrupoMerges(candidates){
-  return new Promise(res=>{
-    window._grupoQueue=[...candidates];
-    window._grupoMap={};
-    window._grupoDone=res;
-    _askNextGrupoMerge();
-  });
-}
-function _askNextGrupoMerge(){
-  if(!window._grupoQueue.length){
-    closeModal('modal-merge-grupo');
-    if(window._grupoDone){window._grupoDone(window._grupoMap);window._grupoDone=null;}
-    return;
-  }
-  const{importGrupo,matches,catalogGrupos}=window._grupoQueue.shift();
-  const rem=window._grupoQueue.length;
-  const hasSimilar=matches.length>0;
-  document.getElementById('merge-grupo-body').innerHTML=
-    '<div style="margin:12px 0 14px;font-size:14px;line-height:1.55">El grupo <strong style="color:var(--accent)">'+importGrupo+'</strong> no está en el catálogo.'+
-    (hasSimilar?'<br><span style="color:var(--text2);font-size:12px">¿Es el mismo que alguno de estos?</span>':
-    '<br><span style="color:var(--text2);font-size:12px">Elige a qué grupo muscular asignarlo:</span>')+'</div>'+
-    '<div style="display:flex;flex-direction:column;gap:7px">'+
-    (hasSimilar?matches:catalogGrupos).map(g=>'<button class="btn btn-secondary" style="text-align:left;padding:11px 14px" onclick="_chooseGrupoMerge('+JSON.stringify(importGrupo)+','+JSON.stringify(g)+')"><strong>'+g+'</strong></button>').join('')+
-    (hasSimilar?'<button class="btn" style="margin-top:3px;background:var(--bg3);border:1px solid var(--border);color:var(--text2)" onclick="_chooseGrupoMerge('+JSON.stringify(importGrupo)+',null)">Mantener nombre original</button>':'')+
-    '</div>'+
-    (rem?'<div style="font-size:11px;color:var(--text2);margin-top:12px;text-align:right">'+rem+' grupo(s) más</div>':'');
-  openModal('modal-merge-grupo');
-}
-function _chooseGrupoMerge(importGrupo,catalogGrupo){
-  if(catalogGrupo)window._grupoMap[importGrupo.toLowerCase()]=catalogGrupo;
-  _askNextGrupoMerge();
-}
-
-// ── Grupo muscular: validación y asignación manual ───────────────────────────
-function _isValidCatalogGroup(grupo){
-  if(!grupo||!_catalogoCache)return false;
-  const gl=grupo.toLowerCase().trim();
-  return Object.keys(_catalogoCache).some(g=>g.toLowerCase()===gl);
-}
-function _normalizeCatalogGroup(grupo){
-  if(!grupo||!_catalogoCache)return null;
-  const gl=grupo.toLowerCase().trim();
-  return Object.keys(_catalogoCache).find(g=>g.toLowerCase()===gl)||null;
-}
-function _askGrupos(ejercicios){
-  return new Promise(res=>{
-    window._grupoQueue=[...ejercicios];
-    window._grupoMap={};
-    window._grupoDone=res;
-    _askNextGrupo();
-  });
-}
-function _askNextGrupo(){
-  if(!window._grupoQueue.length){
-    closeModal('modal-merge-ej');
-    if(window._grupoDone){window._grupoDone(window._grupoMap);window._grupoDone=null;}
-    return;
-  }
-  const ej=window._grupoQueue.shift();
-  const rem=window._grupoQueue.length;
-  const grupos=Object.keys(_catalogoCache||{}).sort();
-  const gruposHtml=grupos.map(g=>{
-    const col=GRUPO_COLORS[_normGrupoSimple(g)]||'var(--accent)';
-    return '<button class="btn btn-secondary" style="text-align:left;padding:10px 14px;display:flex;align-items:center;gap:8px" onclick="_chooseGrupo('+JSON.stringify(ej.nombre)+','+JSON.stringify(g)+')">'
-      +'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+col+';flex-shrink:0"></span>'
-      +'<span>'+g+'</span>'
-      +'</button>';
-  }).join('');
-  document.getElementById('modal-merge-ej').querySelector('.modal-title').textContent='Asignar grupo muscular';
-  document.getElementById('merge-ej-body').innerHTML=
-    '<div style="margin:12px 0 14px;font-size:14px;line-height:1.55">'
-    +'<strong style="color:var(--accent)">'+ej.nombre+'</strong>'
-    +'<br><span style="color:var(--text2);font-size:12px">¿A qué grupo muscular pertenece?</span>'
-    +'</div>'
-    +'<div style="display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;padding-right:2px">'
-    +gruposHtml
-    +'</div>'
-    +(rem?'<div style="font-size:11px;color:var(--text2);margin-top:12px;text-align:right">'+rem+' ejercicio(s) más</div>':'');
-  openModal('modal-merge-ej');
-}
-function _chooseGrupo(importName,grupo){
-  window._grupoMap[importName.toLowerCase()]=grupo;
-  _askNextGrupo();
 }
 
 // ── MAIN IMPORT ──────────────────────────────────────────────────────────────
@@ -2795,128 +2664,41 @@ async function runImport(){
   if(!rawText)return;
   const btn=document.getElementById('btn-run-import');
   const status=document.getElementById('import-status');
-  btn.disabled=true;
-  btn.textContent='Procesando...';
-  status.textContent='Analizando CSV...';
+  btn.disabled=true;btn.textContent='Procesando...';
 
   try{
-    // 1. Parsear CSV
+    status.textContent='Analizando archivo...';
     const sesiones=parsearCSV(rawText);
-    if(!sesiones.length){status.style.color='var(--accent2)';status.textContent='No se encontraron sesiones válidas';btn.disabled=false;btn.textContent='📥 Importar';return;}
-    status.textContent=`✓ ${sesiones.length} sesión(es) detectada(s). Verificando ejercicios...`;
-
-    // 2. Matching de grupos musculares
-    const catalogoActual=window._catalogoCache||{};
-    const catalogGrupos=Object.keys(catalogoActual);
-    const gruposImportados=[...new Set(sesiones.flatMap(s=>(s.ejercicios||[]).map(e=>e.grupo_muscular||'')).filter(Boolean))];
-    const grupoConflictos=[];
-    gruposImportados.forEach(g=>{
-      const gLow=g.toLowerCase();
-      if(catalogGrupos.some(cg=>cg.toLowerCase()===gLow))return;
-      const matches=_findGrupoCandidates(g,catalogGrupos);
-      grupoConflictos.push({importGrupo:g,matches,catalogGrupos});
-    });
-    let grupoMap={};
-    if(grupoConflictos.length){
-      status.textContent=grupoConflictos.length+' grupo(s) muscular(es) por mapear...';
-      grupoMap=await _askGrupoMerges(grupoConflictos);
-    }
-    if(Object.keys(grupoMap).length){
-      sesiones.forEach(s=>{
-        s.ejercicios=(s.ejercicios||[]).map(e=>{
-          const mapped=grupoMap[(e.grupo_muscular||'').toLowerCase()];
-          return mapped?{...e,grupo_muscular:mapped}:e;
-        });
-      });
+    if(!sesiones.length){
+      status.style.color='var(--accent2)';
+      status.textContent='No se encontraron sesiones válidas';
+      btn.disabled=false;btn.textContent='📥 Importar';
+      return;
     }
 
-    // 3. Detectar ejercicios nuevos y resolver similitudes
-    const catalogNames=Object.values(catalogoActual).flat().map(e=>e.n||e.nombre||'');
-    const catalogNamesLower=catalogNames.map(n=>n.toLowerCase());
-    const ejerciciosNuevos=[];
-    const vistos=new Set();
-    sesiones.forEach(s=>{
-      (s.ejercicios||[]).forEach(e=>{
-        const key=e.nombre.toLowerCase();
-        if(!vistos.has(key)&&!catalogNamesLower.includes(key)){
-          vistos.add(key);
-          ejerciciosNuevos.push(e);
-        }
-      });
-    });
-
-    // Separar: con candidatos similares en catálogo vs. sin candidatos
-    const conCandidatos=[],sinCandidatos=[];
-    ejerciciosNuevos.forEach(e=>{
-      const matches=_findImportCandidates(e.nombre,catalogNames);
-      if(matches.length)conCandidatos.push({importName:e.nombre,matches});
-      else sinCandidatos.push(e);
-    });
-
-    // Preguntar uno a uno los que tienen similares
-    let nameMap={};
-    if(conCandidatos.length){
-      status.textContent=conCandidatos.length+' ejercicio(s) con nombre similar encontrado(s). Revisando...';
-      nameMap=await _askMerges(conCandidatos);
+    const totalEj=sesiones.reduce((a,s)=>a+(s.ejercicios||[]).length,0);
+    if(totalEj>0){
+      status.textContent='Registrando ejercicios nuevos en catálogo...';
+      const creados=await _autoCrearEjercicios(sesiones);
+      if(creados>0)status.textContent=creados+' ejercicio(s) añadidos al catálogo.';
     }
 
-    // Aplicar renombrado en sesiones
-    if(Object.keys(nameMap).length){
-      sesiones.forEach(s=>{
-        s.ejercicios=s.ejercicios.map(e=>{
-          const mapped=nameMap[e.nombre.toLowerCase()];
-          return mapped?{...e,nombre:mapped}:e;
-        });
-      });
-    }
-
-    // Solo crear ejercicios que no se mapearon a uno existente
-    const ejParaCrear=[...sinCandidatos,...ejerciciosNuevos.filter(e=>!nameMap[e.nombre.toLowerCase()])];
-
-    // Asegurar que el catálogo está cargado antes de validar grupos
-    await loadCatalogo();
-    // Resolver grupos musculares: normalizar los que coincidan con catálogo, preguntar los desconocidos
-    const ejGrupoDesc=ejParaCrear.filter(e=>!_isValidCatalogGroup(e.grupo_muscular));
-    let grupoResMap={};
-    if(ejGrupoDesc.length){
-      status.textContent=ejGrupoDesc.length+' ejercicio(s) necesitan grupo muscular...';
-      grupoResMap=await _askGrupos(ejGrupoDesc);
-    }
-    function _applyGrupo(e){
-      const sel=grupoResMap[e.nombre.toLowerCase()];
-      if(sel)return{...e,grupo_muscular:sel};
-      const norm=_normalizeCatalogGroup(e.grupo_muscular);
-      return norm?{...e,grupo_muscular:norm}:e;
-    }
-    const ejParaCrearFinal=ejParaCrear.map(_applyGrupo);
-    // Actualizar grupos en sesiones también (para detectarTipoSesion correcto)
-    sesiones.forEach(s=>{s.ejercicios=s.ejercicios.map(e=>_applyGrupo(e));});
-
-    let creados=0;
-    if(ejParaCrearFinal.length&&navigator.onLine){
-      status.textContent=`Añadiendo ${ejParaCrearFinal.length} ejercicio(s) nuevo(s) al catálogo...`;
-      creados=await crearEnCatalogo(ejParaCrearFinal);
-      try{await loadCatalogo();}catch(e){}
-    }
-
-    // 3. Guardar sesiones
-    status.textContent=`Guardando sesiones...`;
+    status.textContent='Guardando sesiones...';
     let imported=0,errors=0;
     for(const s of sesiones){
-      // Limpiar campos internos
+      if(!s.fecha||!/^\d{4}-\d{2}-\d{2}$/.test(s.fecha))continue;
       const sesion={
         fecha:s.fecha,
-        tipo:s.tipo,
+        tipo:s.tipo||'Fuerza',
         duracion_min:s.duracion_min||null,
         calorias:s.calorias||0,
-        notas:s.notas,
+        notas:s.notas||'Importado',
         importado:true,
         ejercicios:(s.ejercicios||[]).map(e=>({
           nombre:e.nombre,
           series:e.series||1,
           reps:e.reps||0,
-          peso_kg:e.peso_kg||0,
-          sets_data:e.sets_data||null
+          peso_kg:e.peso_kg||0
         }))
       };
       if(!navigator.onLine){guardarOffline(sesion);imported++;}
@@ -2925,76 +2707,25 @@ async function runImport(){
         if(r.data&&r.data.ok)imported++;
         else{errors++;console.warn('Error sesión',s.fecha,r.data);}
       }
-      status.textContent=`Guardando ${imported}/${sesiones.length}...`;
+      status.textContent='Guardando '+imported+'/'+sesiones.length+'...';
     }
 
-    updateOfflineBadge();loadDashboard();statsCache=null;currentPage=1;loadHistorial();
     closeModal('modal-import-preview');
-    // Navegar al historial para que el usuario vea los datos importados
+    updateOfflineBadge();loadDashboard();statsCache=null;currentPage=1;loadHistorial();
     setTimeout(()=>goTab('historial',document.getElementById('tab-historial')),300);
 
-    let msg=`${imported} sesión(es) importada(s)`;
-    if(imported>0){const fechas=sesiones.slice(0,3).map(s=>s.fecha).join(', ');msg+=` (${fechas}${sesiones.length>3?'…':''})`;}
-    if(creados>0)msg+=` · ${creados} ejercicio(s) nuevo(s) en catálogo`;
-    if(errors>0)msg+=` · ${errors} error(es)`;
+    let msg=imported+' sesión(es) importada(s)';
+    if(errors>0)msg+=' · '+errors+' error(es)';
     showToast(msg+(navigator.onLine?'':' (offline)'),'success');
 
   }catch(err){
-    console.error(err);
+    console.error('runImport error:',err);
     status.style.color='var(--accent2)';
     status.textContent='Error: '+err.message;
-    btn.disabled=false;
-    btn.textContent='📥 Importar';
+    btn.disabled=false;btn.textContent='📥 Importar';
   }
 }
-
-// Mantener compatibilidad con el botón IA (ahora llama al mismo import)
 async function runAIImport(){return runImport();}
-
-async function importSesiones(sesiones,status,btn){
-  let imported=0,errors=0;
-  for(const s of sesiones){
-    if(!s.fecha)continue;
-    s.fecha=s.fecha.toString().slice(0,10);
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(s.fecha))continue;
-    s.notas=((s.notas||'').replace('Importado desde app externa','').trim()+' · Importado de app externa').replace(/^\s*·\s*/,'');
-    if(s.ejercicios)s.ejercicios=s.ejercicios.map(e=>({
-      nombre:e.nombre||'Ejercicio',
-      series:Number(e.series)||1,
-      reps:Number(e.reps)||0,
-      peso_kg:Number(e.peso_kg)||0
-    }));
-    if(!navigator.onLine){guardarOffline(s);imported++;}
-    else{
-      const r=await crearSesion(s);
-      if(r.data&&r.data.ok)imported++;
-      else{errors++;console.warn('Error guardando sesión',s.fecha,r.data);}
-    }
-    if(status)status.textContent='Guardando... '+imported+'/'+sesiones.length;
-  }
-  updateOfflineBadge();loadDashboard();
-  closeModal('modal-import-preview');
-  if(!navigator.onLine)showToast(imported+' sesiones guardadas offline','success');
-  else showToast(imported+' sesiones importadas'+(errors?' ('+errors+' errores)':'')+' ✓','success');
-}
-
-async function importSesionesBasico(rawText,status,btn){
-  const lines=rawText.split('\n').filter(l=>l.trim());
-  const start=lines[0]&&lines[0].toLowerCase().includes('fecha')?1:0;
-  const byFecha={};
-  lines.slice(start).forEach(line=>{
-    const cols=line.split(',').map(c=>c.replace(/^"|"$/g,'').trim());
-    const[fecha,tipo,durMin,cal,ejercicio,series,reps,pesoKg,notas]=cols;
-    if(!fecha||!fecha.match(/\d{4}-\d{2}-\d{2}/))return;
-    if(!byFecha[fecha])byFecha[fecha]={fecha,tipo:tipo||'Fuerza',
-      duracion_min:parseInt(durMin)||30,calorias:parseInt(cal)||0,
-      notas:'Importado de app externa',ejercicios:[]};
-    if(ejercicio)byFecha[fecha].ejercicios.push({
-      nombre:ejercicio,series:parseInt(series)||1,reps:parseInt(reps)||0,peso_kg:parseFloat(pesoKg)||0
-    });
-  });
-  await importSesiones(Object.values(byFecha),status,btn);
-}
 
 // ══════════════════════════════════════════════
 // TOAST
@@ -3958,23 +3689,5 @@ function wkCancelStart(){
   </div>
 </div>
 
-<!-- Modal merge ejercicio import -->
-<div class="modal-overlay center" id="modal-merge-ej">
-  <div class="modal center-dialog" style="max-width:380px">
-    <div class="modal-header">
-      <div class="modal-title">Ejercicio similar encontrado</div>
-    </div>
-    <div id="merge-ej-body" style="padding:0 16px 16px"></div>
-  </div>
-</div>
-<!-- Modal: merge grupos musculares -->
-<div class="modal-overlay center" id="modal-merge-grupo">
-  <div class="modal center-dialog" style="max-width:380px">
-    <div class="modal-header">
-      <div class="modal-title">Grupo muscular desconocido</div>
-    </div>
-    <div id="merge-grupo-body" style="padding:0 16px 16px"></div>
-  </div>
-</div>
 </body>
 </html>
