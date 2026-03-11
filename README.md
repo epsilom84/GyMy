@@ -1,6 +1,6 @@
 # 🏋️ GyMy
 
-**App web personal de registro de entrenamientos.** Autenticación por usuario, historial completo, estadísticas de progreso, workout activo con timer y detector de PR, catálogo de ejercicios desde BD, soporte offline y temas visuales.
+**App web personal de registro de entrenamientos.** Autenticación por usuario, historial completo, estadísticas de progreso, workout activo con timer y detector de PR, catálogo de ejercicios desde BD, plantillas personales, soporte offline y temas visuales.
 
 🔗 **Producción**: https://gymy-production.up.railway.app/
 
@@ -18,13 +18,13 @@ gymy/
     ├── package.json
     ├── .env.example        ← Variables de entorno de ejemplo
     ├── database/
-    │   ├── init.js         ← Pool PostgreSQL + schema + seed catálogo (66 ejercicios)
+    │   ├── init.js         ← Pool PostgreSQL + schema + seeds
     │   └── migrate_ejercicios_catalogo.js ← Script standalone catálogo
     ├── middleware/
     │   └── verifyToken.js
     ├── routes/
     │   ├── auth.routes.js  ← /api/auth/*
-    │   └── gym.routes.js   ← /api/catalogo/* (público) + /api/* (JWT requerido)
+    │   └── gym.routes.js   ← /api/catalogo/* (público) + /api/* (JWT)
     └── frontend/
         ├── index.html      ← SPA completa (toda la app en un archivo)
         ├── actividad.html  ← Vista workout activo
@@ -80,15 +80,16 @@ node server.js
 
 ### 🏋️ Workout activo
 - Selecciona grupo muscular → ejercicio del **catálogo desde BD** → registra series
-- **Preload de pesos**: carga el último peso usado o el de máximo volumen
+- **Preload de series**: precarga todas las series del último entrenamiento o del de máximo volumen
 - **Timer de descanso**: se activa automáticamente al marcar ✓ en una serie
 - **Detector de PR** en tiempo real
+- **Botón "+"** en el selector de ejercicios para crear un ejercicio nuevo y añadirlo al catálogo personal directamente desde el workout
 - **Iconos personalizados** por ejercicio (imagen desde `/assets/`) — actualmente: Sentadilla Barra
 - Tab "Workout" persiste en la barra de navegación hasta guardar o descartar
-- Puedes navegar a otras pantallas sin perder el workout
 
 ### 📋 Historial
-- Búsqueda y filtros por tipo de sesión
+- **Buscador en tiempo real** contra toda la BD: busca en tipo, notas, nombres de ejercicios y fechas (ISO, DD/MM/YYYY y formato español `07 mar 2026`)
+- Filtros por tipo de sesión
 - **Exportar CSV**: descarga todo el historial en formato propio
 - **Importar historial**: carga sesiones desde archivo externo (ver formatos abajo)
 - **Eliminar todo el historial**: borra todas las sesiones con confirmación
@@ -106,7 +107,6 @@ El importador detecta automáticamente el formato del archivo:
 | Series | Detecta columna `Set`/`Set Order` para contar series por ejercicio |
 | Duración | Lee columna `Duration`; si está vacía, calcula desde timestamps de inicio/fin |
 | Tipo de sesión | Detectado automáticamente por nombre de ejercicio si la columna es numérica |
-| Grupo muscular | Detectado por nombre cuando la columna contiene valores no textuales |
 | Catálogo | Añade automáticamente ejercicios nuevos al catálogo de la BD |
 
 Formatos compatibles (entre otros):
@@ -121,9 +121,12 @@ Formatos compatibles (entre otros):
 
 ### 👤 Perfil
 - Datos personales: edad, género, altura, peso, nivel de actividad, objetivo
-- **Catálogo completo**: ejercicios de BD agrupados por músculo (acordeones)
-- Mis ejercicios personalizados (localStorage)
-- Configuración: tema visual, preload automático, plantillas, sync offline
+- **Catálogo completo**: 66 ejercicios base agrupados por músculo (acordeones)
+- **Mis ejercicios personalizados**: guardados en BD, solo visibles para el usuario
+  - Añadir individualmente con selector de grupo muscular dinámico
+  - **Importar desde archivo** (JSON, CSV o texto plano) con inferencia de grupo muscular y preview antes de confirmar
+  - Eliminar uno a uno o todos
+- Configuración: tema visual, modo preload de series, sync offline
 - Cerrar sesión
 
 ---

@@ -28,7 +28,7 @@ gymy/
     ├── .env.example           ← Variables de entorno de ejemplo
     ├── .gitignore
     ├── database/
-    │   ├── init.js            ← Pool PostgreSQL + CREATE TABLE IF NOT EXISTS + seed 66 ejercicios
+    │   ├── init.js            ← Pool PostgreSQL + CREATE TABLE IF NOT EXISTS + seeds
     │   └── migrate_ejercicios_catalogo.js ← Script standalone para crear/poblar catálogo
     ├── middleware/
     │   └── verifyToken.js     ← JWT middleware (req.user.id)
@@ -110,7 +110,20 @@ equipo TEXT, tipo TEXT, descripcion TEXT, activo BOOLEAN, created_at TIMESTAMPTZ
 ```
 Se borra y re-puebla automáticamente en `init.js` al arrancar el servidor desde `plantillas_ejercicios.json` (268 ejercicios).
 
+**`plantillas_ejercicios`**
+```sql
+id SERIAL PK, nombre TEXT, grupo_muscular TEXT, subgrupo TEXT,
+equipo TEXT, tipo TEXT DEFAULT 'fuerza',
+user_id INTEGER FK→users ON DELETE CASCADE,  -- NULL = genérica (todos), valor = personal
+activo BOOLEAN DEFAULT TRUE, created_at TIMESTAMPTZ
+INDEX: (user_id), (grupo_muscular)
+```
+- `user_id IS NULL` → plantilla genérica, visible a todos los usuarios
+- `user_id = X` → plantilla personal, solo visible al usuario X
+- Seed automático desde `assets/plantillas_ejercicios.json` al arrancar si la tabla genérica está vacía
+
 ### Helper functions (database/init.js)
+- `pool` → instancia del pool de conexiones (exportada)
 - `queryOne(text, params)` → primera fila o null
 - `queryAll(text, params)` → array de filas
 - `withTransaction(fn)` → ejecuta fn(client) con BEGIN/COMMIT/ROLLBACK
@@ -140,6 +153,7 @@ Rate limit auth: 30 req / 15 min.
 | GET | `/catalogo` | Todos los ejercicios agrupados por `grupo_muscular` |
 | GET | `/catalogo/grupos` | Lista de grupos musculares disponibles |
 | GET | `/catalogo/:id` | Detalle de un ejercicio |
+| POST | `/catalogo` | Crear ejercicio en catálogo (usado por importación) |
 
 > ⚠️ Estas rutas están declaradas **antes** de `router.use(verifyToken)` en `gym.routes.js`. No moverlas.
 
@@ -147,24 +161,39 @@ Rate limit auth: 30 req / 15 min.
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/sesiones` | Lista sesiones (filtros: tipo, fecha, limit, offset) |
+| GET | `/sesiones` | Lista sesiones (filtros: `tipo`, `desde`, `hasta`, `q`, `page`, `limit`) |
 | GET | `/sesiones/stats` | Estadísticas globales del usuario |
 | GET | `/sesiones/:id` | Detalle de una sesión |
 | POST | `/sesiones` | Crear sesión |
 | PUT | `/sesiones/:id` | Actualizar sesión |
-| DELETE | `/sesiones/:id` | Borrar sesión |
+| DELETE | `/sesiones` | Borrar **todo** el historial del usuario |
+| DELETE | `/sesiones/:id` | Borrar sesión individual |
 | POST | `/sesiones/sync` | Sync batch de sesiones offline |
 | GET | `/sesiones/export/csv` | Exportar todo el historial como CSV |
 | GET | `/ejercicios/historial` | Historial por ejercicio (stats + progresión) |
-| POST | `/ai/import` | Importar sesiones con IA (Anthropic API) |
+| POST | `/ai/import` | Proxy hacia Anthropic API (importación IA) |
+| GET | `/plantillas` | Plantillas genéricas + personales del usuario |
+| POST | `/plantillas` | Crear plantilla personal |
+| POST | `/plantillas/bulk` | Crear varias plantillas personales de una vez |
+| DELETE | `/plantillas/:id` | Eliminar plantilla personal (solo propia) |
+| DELETE | `/plantillas` | Eliminar **todas** las plantillas personales del usuario |
 
 Rate limit general: 120 req / min.
+
+#### Búsqueda en `GET /api/sesiones?q=...`
+
+El parámetro `q` busca simultáneamente en:
+- `tipo` de sesión (ILIKE)
+- `notas` (ILIKE)
+- Fecha en formato español `DD mes YYYY` (ej: `07 mar 2026`) via CASE en SQL
+- Fecha en `YYYY-MM-DD` y `DD/MM/YYYY`
+- Nombre de cualquier ejercicio de la sesión (subquery EXISTS)
 
 ---
 
 ## Frontend — index.html
 
-Archivo único ~2300 líneas con toda la lógica. **No separes en archivos** a menos que se pida explícitamente.
+Archivo único ~2700 líneas con toda la lógica. **No separes en archivos** a menos que se pida explícitamente.
 
 ### Funciones clave
 
@@ -173,7 +202,10 @@ apiCall(method, endpoint, body)   // Cliente HTTP en api.js. endpoint es relativ
                                    // ⚠️ NO usar para /api/catalogo → usar fetch('/api/catalogo') directo
 
 loadCatalogo()                     // Carga catálogo desde /api/catalogo, cachea en _catalogoCache
-wkGetDBAsync()                     // Devuelve catálogo (async, espera si no está cargado)
+loadPlantillas()                   // Carga plantillas desde /api/plantillas, cachea en _plantillasCache
+invalidatePlantillas()             // Invalida _plantillasCache para forzar recarga
+wkGetDB()                          // Fusiona _catalogoCache + _plantillasCache + localStorage → objeto {grupo:[ejercicios]}
+wkGetDBAsync()                     // Igual que wkGetDB() pero espera a que ambas cachés estén cargadas
 formatFecha(f)                     // Convierte DATE a "07 mar 2026"
 showToast(msg, type)               // Notificación flotante
 tipoIcon(t)                        // Emoji para tipo de sesión/grupo muscular
@@ -202,21 +234,56 @@ Para añadir un icono a otro ejercicio:
 - Para endpoints públicos sin auth usar `fetch('/api/catalogo', ...)` directamente
 - Los emojis y caracteres especiales (ñ, á, etc.) se corrompen si se hace `btoa()` desde el navegador sin `encodeURIComponent`
 - Las fechas de la BD vienen como ISO completo (`2026-03-07T00:00:00.000Z`) → usar `formatFecha()` para mostrarlas
+- `wkGetDB()` es síncrono y devuelve lo que haya en caché en ese momento; usar `wkGetDBAsync()` si hay riesgo de que las cachés no estén listas
+
+### Caché del catálogo y plantillas
+
+```js
+_catalogoCache     // null | {grupo: [{em, n, m, id}]}  — de /api/catalogo
+_plantillasCache   // null | [{id, nombre, grupo_muscular, ..., propia}]  — de /api/plantillas
+_catalogoLoading   // Promise en vuelo o null
+_plantillasLoading // Promise en vuelo o null
+```
+
+`wkGetDB()` fusiona las tres fuentes en orden: catálogo base → plantillas BD → localStorage (compat).
 
 ### Pantallas (vistas gestionadas con `data-screen`)
 - `login` / `register` / `forgot` — Auth
 - `dashboard` — Stats resumen + gráfica 8 semanas + últimas sesiones
-- `workout` — Workout activo (timer descanso, PR detector, preload pesos, catálogo desde BD)
-- `history` — Historial con búsqueda, filtros, export/import CSV
+- `workout` — Workout activo (timer descanso, PR detector, preload series completas, catálogo desde BD, "+" para crear ejercicio)
+- `historial` — Historial con buscador tiempo real (toda la BD), filtros por tipo, export/import CSV
 - `stats` — Progresión por ejercicio + distribución por días
-- `profile` — Datos personales + catálogo BD + configuración + temas
+- `perfil` — Datos personales + catálogo BD + plantillas personales + configuración + temas
 
 ### Grupos musculares (catálogo en BD, 268 ejercicios desde Excel)
 ```
 Brazos Bíceps, Brazos Tríceps, Core, Espalda (Dorsal/Lumbar/Trapecio),
 Hombros, Pecho, Piernas (Cuádriceps/Femoral/Gemelos/Glúteo)
 ```
-El selector de grupos del workout se genera dinámicamente desde `_catalogoCache`.
+El selector de grupos del workout se genera dinámicamente desde `wkGetDB()`.
+
+### Plantillas de ejercicios — flujo
+
+```
+Workout → selector de grupo → selector de ejercicio
+  ├─ ejercicios del catálogo base (ejercicios_catalogo)
+  ├─ plantillas genéricas de BD (user_id IS NULL)
+  ├─ plantillas personales del usuario (user_id = X)
+  ├─ ejercicios en localStorage (compat legacy)
+  └─ "➕ Crear nuevo ejercicio" → modal → POST /api/plantillas → añade al workout
+
+Perfil → Mis ejercicios personalizados
+  ├─ "➕ Añadir ejercicio" → modal → POST /api/plantillas
+  ├─ "📂 Importar desde archivo" → parseo (JSON/CSV/txt) → preview → POST /api/plantillas/bulk
+  └─ "🗑 Eliminar mis personalizados" → DELETE /api/plantillas
+```
+
+### Búsqueda en historial
+
+- Input con debounce 320 ms → `onHistSearch()` → `loadHistorial()` con `?q=...`
+- El backend busca en tipo, notas, fecha (3 formatos) y nombres de ejercicios (subquery)
+- Resetea a página 1 con cada nueva búsqueda
+- Muestra "Sin resultados para X" si no hay coincidencias
 
 ### Temas disponibles
 `dark` (defecto), `light`, `choni`, `material-dark`, `material-light`
@@ -236,8 +303,6 @@ URL activa en ~60 segundos: https://gymy-production.up.railway.app/
 ```
 
 ### ⚠️ Subir archivos via GitHub API (cuando no hay red en bash)
-
-El PAT expira ~14 mar 2026: `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`
 
 ```js
 // Desde el navegador (en gymy-production.up.railway.app o github.com):
@@ -285,6 +350,9 @@ El PAT expira ~14 mar 2026: `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`
 - ❌ No mover las rutas `/api/catalogo/*` después de `router.use(verifyToken)`
 - ❌ No usar `btoa()` directamente con texto UTF-8 (rompe emojis y acentos)
 - ❌ No usar `apiCall()` para `/api/catalogo` (dobla el prefijo `/api`)
+- ❌ No llamar `wkGetDB()` antes de que las cachés estén listas — usar `wkGetDBAsync()`
+- ❌ No borrar `pool` del export de `init.js` — `gym.routes.js` lo usa para DELETE masivos
 - ✅ El server escucha en `0.0.0.0` (necesario para Railway)
 - ✅ SSL condicional: interno Railway = false, externo = `{ rejectUnauthorized: false }`
 - ✅ Usar `formatFecha()` para mostrar fechas de la BD al usuario
+- ✅ Llamar `invalidatePlantillas()` después de cualquier POST/DELETE a `/api/plantillas`
