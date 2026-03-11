@@ -2334,6 +2334,7 @@ function _askNextMerge(){
   }
   const{importName,matches}=window._mergeQueue.shift();
   const rem=window._mergeQueue.length;
+  document.getElementById('modal-merge-ej').querySelector('.modal-title').textContent='Ejercicio similar encontrado';
   document.getElementById('merge-ej-body').innerHTML=
     '<div style="margin:12px 0 14px;font-size:14px;line-height:1.55">El ejercicio <strong style="color:var(--accent)">'+importName+'</strong> no está en el catálogo.<br><span style="color:var(--text2);font-size:12px">¿Es el mismo que alguno de estos?</span></div>'+
     '<div style="display:flex;flex-direction:column;gap:7px">'+
@@ -2346,6 +2347,58 @@ function _askNextMerge(){
 function _chooseMerge(importName,catalogName){
   if(catalogName)window._mergeMap[importName.toLowerCase()]=catalogName;
   _askNextMerge();
+}
+
+// ── Grupo muscular: validación y asignación manual ───────────────────────────
+function _isValidCatalogGroup(grupo){
+  if(!grupo||!window._catalogoCache)return false;
+  const gl=grupo.toLowerCase().trim();
+  return Object.keys(window._catalogoCache).some(g=>g.toLowerCase()===gl);
+}
+function _normalizeCatalogGroup(grupo){
+  if(!grupo||!window._catalogoCache)return null;
+  const gl=grupo.toLowerCase().trim();
+  return Object.keys(window._catalogoCache).find(g=>g.toLowerCase()===gl)||null;
+}
+function _askGrupos(ejercicios){
+  return new Promise(res=>{
+    window._grupoQueue=[...ejercicios];
+    window._grupoMap={};
+    window._grupoDone=res;
+    _askNextGrupo();
+  });
+}
+function _askNextGrupo(){
+  if(!window._grupoQueue.length){
+    closeModal('modal-merge-ej');
+    if(window._grupoDone){window._grupoDone(window._grupoMap);window._grupoDone=null;}
+    return;
+  }
+  const ej=window._grupoQueue.shift();
+  const rem=window._grupoQueue.length;
+  const grupos=Object.keys(window._catalogoCache||{}).sort();
+  const gruposHtml=grupos.map(g=>{
+    const col=GRUPO_COLORS[_normGrupoSimple(g)]||'var(--accent)';
+    return '<button class="btn btn-secondary" style="text-align:left;padding:10px 14px;display:flex;align-items:center;gap:8px" onclick="_chooseGrupo('+JSON.stringify(ej.nombre)+','+JSON.stringify(g)+')">'
+      +'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+col+';flex-shrink:0"></span>'
+      +'<span>'+g+'</span>'
+      +'</button>';
+  }).join('');
+  document.getElementById('modal-merge-ej').querySelector('.modal-title').textContent='Asignar grupo muscular';
+  document.getElementById('merge-ej-body').innerHTML=
+    '<div style="margin:12px 0 14px;font-size:14px;line-height:1.55">'
+    +'<strong style="color:var(--accent)">'+ej.nombre+'</strong>'
+    +'<br><span style="color:var(--text2);font-size:12px">¿A qué grupo muscular pertenece?</span>'
+    +'</div>'
+    +'<div style="display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;padding-right:2px">'
+    +gruposHtml
+    +'</div>'
+    +(rem?'<div style="font-size:11px;color:var(--text2);margin-top:12px;text-align:right">'+rem+' ejercicio(s) más</div>':'');
+  openModal('modal-merge-ej');
+}
+function _chooseGrupo(importName,grupo){
+  window._grupoMap[importName.toLowerCase()]=grupo;
+  _askNextGrupo();
 }
 
 // ── MAIN IMPORT ──────────────────────────────────────────────────────────────
@@ -2408,10 +2461,27 @@ async function runImport(){
     // Solo crear ejercicios que no se mapearon a uno existente
     const ejParaCrear=[...sinCandidatos,...ejerciciosNuevos.filter(e=>!nameMap[e.nombre.toLowerCase()])];
 
+    // Resolver grupos musculares: normalizar los que coincidan con catálogo, preguntar los desconocidos
+    const ejGrupoDesc=ejParaCrear.filter(e=>!_isValidCatalogGroup(e.grupo_muscular));
+    let grupoResMap={};
+    if(ejGrupoDesc.length){
+      status.textContent=ejGrupoDesc.length+' ejercicio(s) necesitan grupo muscular...';
+      grupoResMap=await _askGrupos(ejGrupoDesc);
+    }
+    function _applyGrupo(e){
+      const sel=grupoResMap[e.nombre.toLowerCase()];
+      if(sel)return{...e,grupo_muscular:sel};
+      const norm=_normalizeCatalogGroup(e.grupo_muscular);
+      return norm?{...e,grupo_muscular:norm}:e;
+    }
+    const ejParaCrearFinal=ejParaCrear.map(_applyGrupo);
+    // Actualizar grupos en sesiones también (para detectarTipoSesion correcto)
+    sesiones.forEach(s=>{s.ejercicios=s.ejercicios.map(e=>_applyGrupo(e));});
+
     let creados=0;
-    if(ejParaCrear.length&&navigator.onLine){
-      status.textContent=`Añadiendo ${ejParaCrear.length} ejercicio(s) nuevo(s) al catálogo...`;
-      creados=await crearEnCatalogo(ejParaCrear);
+    if(ejParaCrearFinal.length&&navigator.onLine){
+      status.textContent=`Añadiendo ${ejParaCrearFinal.length} ejercicio(s) nuevo(s) al catálogo...`;
+      creados=await crearEnCatalogo(ejParaCrearFinal);
       try{await loadCatalogo();}catch(e){}
     }
 
