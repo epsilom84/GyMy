@@ -330,11 +330,11 @@ router.post('/sesiones', validateSesion, async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ ok: false, error: errors.array()[0].msg });
   try {
-    const { fecha, tipo, duracion_min, notas, calorias, valoracion, ejercicios } = req.body;
+    const { fecha, tipo, duracion_min, notas, calorias, valoracion, ejercicios, importado } = req.body;
     const sesion = await withTransaction(async (client) => {
       const row = await client.query(
-        'INSERT INTO sesiones (user_id,fecha,tipo,duracion_min,notas,calorias,valoracion) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
-        [req.user.id, fecha, tipo, duracion_min||null, notas||null, calorias||null, valoracion||null]
+        'INSERT INTO sesiones (user_id,fecha,tipo,duracion_min,notas,calorias,valoracion,importado) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',
+        [req.user.id, fecha, tipo, duracion_min||null, notas||null, calorias||null, valoracion||null, importado||false]
       );
       const s = row.rows[0];
       await insertEjercicios(client, s.id, ejercicios);
