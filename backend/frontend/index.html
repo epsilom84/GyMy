@@ -1390,24 +1390,40 @@ function repetirWorkout(id){
       const {data} = await getSesion(id);
       if(!data.ok){ showToast('Error al cargar sesión','error'); return; }
       const s = data.sesion;
-      // Guardar en sessionStorage para que actividad.html lo cargue
-      // Agrupar series por ejercicio para precargar el bloque completo
-      // series||1: 1 row/set (workout directo) o 1 row con series=N (CSV import)
-      const _ejByNombre={};
+      // Construir lookup nombre→{em,equipo,m} desde catálogo
+      const catFlat={};
+      if(_catalogoCache){
+        for(const [grupo,ejs] of Object.entries(_catalogoCache)){
+          for(const ej of ejs){
+            if(ej.n) catFlat[ej.n.toLowerCase().trim()]={em:ej.em,equipo:ej.equipo||null,m:grupo};
+          }
+        }
+      }
+      // Agrupar ejercicios por nombre preservando sets exactos
+      const ejMap={}, ejOrder=[];
       (s.ejercicios||[]).forEach(e=>{
-        if(!_ejByNombre[e.nombre])_ejByNombre[e.nombre]={em:'🏋️',n:e.nombre,m:e.nombre.toUpperCase(),sets:[]};
-        const n=e.series||1;
-        for(let i=0;i<n;i++) _ejByNombre[e.nombre].sets.push({kg:e.peso_kg||60,reps:e.reps||10});
+        const key=e.nombre.toLowerCase().trim();
+        if(!ejMap[key]){
+          const cat=catFlat[key]||{};
+          ejMap[key]={em:cat.em||'💪',equipo:cat.equipo||null,n:e.nombre,m:cat.m||e.nombre.toUpperCase(),sets:[]};
+          ejOrder.push(key);
+        }
+        // Preferir sets_data (datos por serie exactos)
+        let sets=null;
+        if(e.sets_data){try{sets=JSON.parse(e.sets_data);}catch(x){}}
+        if(sets?.length){
+          sets.forEach(s=>ejMap[key].sets.push({kg:s.kg||0,reps:s.reps||0}));
+        }else{
+          // Fallback: N series iguales (formato antiguo / CSV import)
+          const n=e.series||1;
+          for(let i=0;i<n;i++) ejMap[key].sets.push({kg:e.peso_kg||60,reps:e.reps||10});
+        }
       });
-      const preload = {
-        tipo: s.tipo,
-        ejercicios: Object.values(_ejByNombre)
-      };
-      sessionStorage.setItem('gymy_preload_workout', JSON.stringify(preload));
-      // Open workout tab directly (no page navigation)
+      const preload={tipo:s.tipo,fromHistory:true,ejercicios:ejOrder.map(k=>ejMap[k])};
+      sessionStorage.setItem('gymy_preload_workout',JSON.stringify(preload));
       const wtab=document.getElementById('tab-workout');
       if(wtab)wtab.style.display='flex';
-      goTab('workout', wtab);
+      goTab('workout',wtab);
     },
     'primary'
   );
@@ -2829,9 +2845,9 @@ function wkInit(){
       pw.ejercicios.forEach(e=>{
         const id=wkEid++;
         const sets=(e.sets&&e.sets.length)
-          ?e.sets.map(s=>({kg:s.kg||60,reps:s.reps||10,done:false,pre:true}))
-          :[{kg:e.kg||60,reps:e.reps||10,done:false,pre:true}];
-        wkExs.push({id,em:e.em||'🏋️',n:e.n,m:e.m||e.n.toUpperCase(),sets});
+          ?e.sets.map(s=>({kg:s.kg!=null?s.kg:60,reps:s.reps||10,done:false,pre:true}))
+          :[{kg:e.kg!=null?e.kg:60,reps:e.reps||10,done:false,pre:true}];
+        wkExs.push({id,em:e.em||'💪',equipo:e.equipo||null,n:e.n,m:e.m||e.n.toUpperCase(),sets});
       });
       wkActivate();
       wkRender();
