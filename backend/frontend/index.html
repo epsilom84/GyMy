@@ -2808,6 +2808,8 @@ async function runImport(){
     // Solo crear ejercicios que no se mapearon a uno existente
     const ejParaCrear=[...sinCandidatos,...ejerciciosNuevos.filter(e=>!nameMap[e.nombre.toLowerCase()])];
 
+    // Asegurar que el catálogo está cargado antes de validar grupos
+    await loadCatalogo();
     // Resolver grupos musculares: normalizar los que coincidan con catálogo, preguntar los desconocidos
     const ejGrupoDesc=ejParaCrear.filter(e=>!_isValidCatalogGroup(e.grupo_muscular));
     let grupoResMap={};
