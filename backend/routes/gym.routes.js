@@ -471,30 +471,35 @@ router.post('/ai/import', async (req, res) => {
     const { prompt } = req.body;
     if (!prompt) return res.status(400).json({ ok: false, error: 'prompt required' });
 
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return res.status(503).json({ ok: false, error: 'IA no configurada (falta ANTHROPIC_API_KEY en Railway)' });
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY || '',
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4000,
+        max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }]
       })
     });
 
     if (!response.ok) {
-      const err = await response.text();
-      return res.status(502).json({ ok: false, error: 'AI error: ' + err.slice(0, 200) });
+      const errText = await response.text();
+      let msg = 'Error de IA ('+response.status+')';
+      try { const j=JSON.parse(errText); msg=j.error?.message||msg; } catch(x){}
+      return res.status(502).json({ ok: false, error: msg });
     }
 
     const data = await response.json();
     const text = data.content?.[0]?.text || '';
     res.json({ ok: true, text });
   } catch(e) {
-    res.status(500).json({ ok: false, error: e.message });
+    res.status(500).json({ ok: false, error: 'Error de red: '+e.message });
   }
 });
 
