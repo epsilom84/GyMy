@@ -164,9 +164,9 @@ router.use(verifyToken);
 const validateSesion = [
   body('fecha').isDate().withMessage('Fecha no válida (YYYY-MM-DD)'),
   body('tipo').notEmpty().withMessage('Tipo obligatorio'),
-  body('duracion_min').optional().isInt({ min: 1, max: 600 }),
-  body('calorias').optional().isInt({ min: 0, max: 10000 }),
-  body('valoracion').optional().isInt({ min: 1, max: 5 }),
+  body('duracion_min').optional({ nullable: true }).isInt({ min: 0, max: 600 }),
+  body('calorias').optional({ nullable: true }).isInt({ min: 0, max: 10000 }),
+  body('valoracion').optional({ nullable: true }).isInt({ min: 1, max: 5 }),
   body('ejercicios').optional().isArray(),
 ];
 
@@ -190,7 +190,7 @@ async function insertEjercicios(client, sesionId, ejercicios) {
       : null;
     await client.query(
       'INSERT INTO ejercicios (sesion_id,nombre,series,reps,peso_kg,sets_data) VALUES ($1,$2,$3,$4,$5,$6)',
-      [sesionId, e.nombre, e.series || null, e.reps || null, e.peso_kg || null, setsData]
+      [sesionId, e.nombre, e.series || null, e.reps ?? null, e.peso_kg ?? null, setsData]
     );
   }
 }
@@ -267,9 +267,7 @@ router.get('/sesiones', [
       [...params, limit, offset]
     );
 
-    for (const s of sesiones) {
-      s.ejercicios = await loadEjercicios(s.id);
-    }
+    await Promise.all(sesiones.map(async s => { s.ejercicios = await loadEjercicios(s.id); }));
 
     res.json({ ok: true, total, page, pages: Math.ceil(total / limit), sesiones });
   } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
@@ -454,11 +452,14 @@ router.get('/ejercicios/historial', async (req, res) => {
     const { nombre } = req.query;
     if (!nombre) return res.status(400).json({ ok: false, error: 'Nombre requerido' });
     const rows = await queryAll(`
-      SELECT e.nombre, e.peso_kg, e.reps, e.series, s.fecha
+      SELECT e.nombre, e.peso_kg, e.reps, e.series, e.sets_data,
+             s.fecha::text, s.id AS sesion_id
       FROM ejercicios e
-      JOIN sesiones s ON s.id=e.sesion_id
-      WHERE s.user_id=$1 AND e.nombre ILIKE $2
-      ORDER BY s.fecha ASC`, [req.user.id, '%'+nombre+'%']);
+      JOIN sesiones s ON s.id = e.sesion_id
+      WHERE s.user_id = $1
+        AND LOWER(e.nombre) = LOWER($2)
+      ORDER BY s.fecha DESC, s.id DESC
+      LIMIT 50`, [req.user.id, nombre]);
     res.json({ ok: true, historial: rows });
   } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
 });
@@ -497,14 +498,14 @@ router.post('/ai/import', async (req, res) => {
   }
 });
 
-// ── GET /api/plantillas — genéricas + propias del usuario ──────────────────
+// ── GET /api/plantillas — propias del usuario ──────────────────────────────
 router.get('/plantillas', async (req, res) => {
   try {
     const rows = await queryAll(
       `SELECT id, nombre, grupo_muscular, subgrupo, equipo, tipo, user_id,
-              (user_id = $1) AS propia
+              TRUE AS propia
        FROM plantillas_ejercicios
-       WHERE activo = TRUE AND (user_id IS NULL OR user_id = $1)
+       WHERE activo = TRUE AND user_id = $1
        ORDER BY grupo_muscular, nombre`,
       [req.user.id]
     );
