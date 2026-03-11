@@ -2320,12 +2320,20 @@ async function crearEnCatalogo(ejerciciosNuevos){
   return creados;
 }
 
-// ── IMPORT: similitud de ejercicios ─────────────────────────────────────────
+// ── IMPORT: similitud de ejercicios y grupos ─────────────────────────────────
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i?j?0:i:j));
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
 function _normEjN(s){return(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim();}
 function _ejSimilar(a,b){
   const na=_normEjN(a),nb=_normEjN(b);
   if(na===nb)return 1;
   if(na.includes(nb)||nb.includes(na))return 0.85;
+  if(levenshtein(na,nb)<=5)return 0.7;
   const ta=na.split(' ').filter(t=>t.length>2);
   const tb=nb.split(' ').filter(t=>t.length>2);
   if(!ta.length||!tb.length)return 0;
@@ -2334,6 +2342,14 @@ function _ejSimilar(a,b){
 }
 function _findImportCandidates(importName,catalogNames){
   return catalogNames.filter(cn=>_ejSimilar(importName,cn)>=0.4).slice(0,3);
+}
+function _grupoSimilar(a,b){
+  const na=_normEjN(a),nb=_normEjN(b);
+  if(na===nb)return true;
+  return levenshtein(na,nb)<=3;
+}
+function _findGrupoCandidates(importGrupo,catalogGrupos){
+  return catalogGrupos.filter(g=>_grupoSimilar(importGrupo,g));
 }
 function _askMerges(candidates){
   return new Promise(res=>{
@@ -2364,6 +2380,38 @@ function _chooseMerge(importName,catalogName){
   if(catalogName)window._mergeMap[importName.toLowerCase()]=catalogName;
   _askNextMerge();
 }
+function _askGrupoMerges(candidates){
+  return new Promise(res=>{
+    window._grupoQueue=[...candidates];
+    window._grupoMap={};
+    window._grupoDone=res;
+    _askNextGrupoMerge();
+  });
+}
+function _askNextGrupoMerge(){
+  if(!window._grupoQueue.length){
+    closeModal('modal-merge-grupo');
+    if(window._grupoDone){window._grupoDone(window._grupoMap);window._grupoDone=null;}
+    return;
+  }
+  const{importGrupo,matches,catalogGrupos}=window._grupoQueue.shift();
+  const rem=window._grupoQueue.length;
+  const hasSimilar=matches.length>0;
+  document.getElementById('merge-grupo-body').innerHTML=
+    '<div style="margin:12px 0 14px;font-size:14px;line-height:1.55">El grupo <strong style="color:var(--accent)">'+importGrupo+'</strong> no está en el catálogo.'+
+    (hasSimilar?'<br><span style="color:var(--text2);font-size:12px">¿Es el mismo que alguno de estos?</span>':
+    '<br><span style="color:var(--text2);font-size:12px">Elige a qué grupo muscular asignarlo:</span>')+'</div>'+
+    '<div style="display:flex;flex-direction:column;gap:7px">'+
+    (hasSimilar?matches:catalogGrupos).map(g=>'<button class="btn btn-secondary" style="text-align:left;padding:11px 14px" onclick="_chooseGrupoMerge('+JSON.stringify(importGrupo)+','+JSON.stringify(g)+')"><strong>'+g+'</strong></button>').join('')+
+    (hasSimilar?'<button class="btn" style="margin-top:3px;background:var(--bg3);border:1px solid var(--border);color:var(--text2)" onclick="_chooseGrupoMerge('+JSON.stringify(importGrupo)+',null)">Mantener nombre original</button>':'')+
+    '</div>'+
+    (rem?'<div style="font-size:11px;color:var(--text2);margin-top:12px;text-align:right">'+rem+' grupo(s) más</div>':'');
+  openModal('modal-merge-grupo');
+}
+function _chooseGrupoMerge(importGrupo,catalogGrupo){
+  if(catalogGrupo)window._grupoMap[importGrupo.toLowerCase()]=catalogGrupo;
+  _askNextGrupoMerge();
+}
 
 // ── MAIN IMPORT ──────────────────────────────────────────────────────────────
 async function runImport(){
@@ -2381,8 +2429,32 @@ async function runImport(){
     if(!sesiones.length){status.style.color='var(--accent2)';status.textContent='No se encontraron sesiones válidas';btn.disabled=false;btn.textContent='📥 Importar';return;}
     status.textContent=`✓ ${sesiones.length} sesión(es) detectada(s). Verificando ejercicios...`;
 
-    // 2. Detectar ejercicios nuevos y resolver similitudes
+    // 2. Matching de grupos musculares
     const catalogoActual=window._catalogoCache||{};
+    const catalogGrupos=Object.keys(catalogoActual);
+    const gruposImportados=[...new Set(sesiones.flatMap(s=>(s.ejercicios||[]).map(e=>e.grupo_muscular||'')).filter(Boolean))];
+    const grupoConflictos=[];
+    gruposImportados.forEach(g=>{
+      const gLow=g.toLowerCase();
+      if(catalogGrupos.some(cg=>cg.toLowerCase()===gLow))return;
+      const matches=_findGrupoCandidates(g,catalogGrupos);
+      grupoConflictos.push({importGrupo:g,matches,catalogGrupos});
+    });
+    let grupoMap={};
+    if(grupoConflictos.length){
+      status.textContent=grupoConflictos.length+' grupo(s) muscular(es) por mapear...';
+      grupoMap=await _askGrupoMerges(grupoConflictos);
+    }
+    if(Object.keys(grupoMap).length){
+      sesiones.forEach(s=>{
+        s.ejercicios=(s.ejercicios||[]).map(e=>{
+          const mapped=grupoMap[(e.grupo_muscular||'').toLowerCase()];
+          return mapped?{...e,grupo_muscular:mapped}:e;
+        });
+      });
+    }
+
+    // 3. Detectar ejercicios nuevos y resolver similitudes
     const catalogNames=Object.values(catalogoActual).flat().map(e=>e.n||e.nombre||'');
     const catalogNamesLower=catalogNames.map(n=>n.toLowerCase());
     const ejerciciosNuevos=[];
@@ -2443,6 +2515,7 @@ async function runImport(){
         duracion_min:s.duracion_min||null,
         calorias:s.calorias||0,
         notas:s.notas,
+        importado:true,
         ejercicios:(s.ejercicios||[]).map(e=>({
           nombre:e.nombre,
           series:e.series||1,
@@ -3486,6 +3559,15 @@ function wkCancelStart(){
       <div class="modal-title">Ejercicio similar encontrado</div>
     </div>
     <div id="merge-ej-body" style="padding:0 16px 16px"></div>
+  </div>
+</div>
+<!-- Modal: merge grupos musculares -->
+<div class="modal-overlay center" id="modal-merge-grupo">
+  <div class="modal center-dialog" style="max-width:380px">
+    <div class="modal-header">
+      <div class="modal-title">Grupo muscular desconocido</div>
+    </div>
+    <div id="merge-grupo-body" style="padding:0 16px 16px"></div>
   </div>
 </div>
 </body>
