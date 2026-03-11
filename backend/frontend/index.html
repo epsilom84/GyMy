@@ -469,7 +469,8 @@ input:focus,select:focus{border-color:var(--accent);}
       </div>
       <!-- Ejercicio view -->
       <div id="stats-ejercicio-view">
-        <div class="days-grid" id="stats-grupo-filter" style="margin-bottom:12px;gap:6px"></div>
+        <div class="days-grid" id="stats-grupo-filter" style="margin-bottom:6px;gap:6px"></div>
+        <div class="days-grid" id="stats-subgrupo-filter" style="margin-bottom:12px;gap:6px;display:none"></div>
         <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openStatsEjModal()">
           <div style="display:flex;align-items:center;justify-content:space-between">
             <div>
@@ -481,8 +482,8 @@ input:focus,select:focus{border-color:var(--accent);}
         </div>
         <div id="stats-ej-detail" style="display:none">
           <div class="stat-highlight">
-            <div class="stat-hl"><div class="stat-hl-val" id="ej-max-kg">—</div><div class="stat-hl-lbl">Peso máximo</div></div>
-            <div class="stat-hl"><div class="stat-hl-val" id="ej-max-vol">—</div><div class="stat-hl-lbl">Volumen máximo</div></div>
+            <div class="stat-hl"><div class="stat-hl-val" id="ej-max-kg">—</div><div class="stat-hl-lbl">Peso máximo</div><div id="ej-max-kg-fecha" style="font-size:10px;color:var(--text2);margin-top:2px"></div></div>
+            <div class="stat-hl"><div class="stat-hl-val" id="ej-max-vol">—</div><div class="stat-hl-lbl">Volumen máximo</div><div id="ej-max-vol-fecha" style="font-size:10px;color:var(--text2);margin-top:2px"></div></div>
           </div>
           <div class="card">
             <div class="card-title" id="ej-chart-title">Peso máximo a lo largo del tiempo</div>
@@ -496,12 +497,24 @@ input:focus,select:focus{border-color:var(--accent);}
       </div>
       <!-- Días view -->
       <div id="stats-dias-view" style="display:none">
-        <div class="card">
-          <div class="card-title">Filtrar por días</div>
-          <div class="days-grid" id="days-filter"></div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button class="stats-type-btn active" id="dias-metric-vol" onclick="setDiasMetric('vol')">Volumen</button>
+          <button class="stats-type-btn" id="dias-metric-cal" onclick="setDiasMetric('cal')">Calorías</button>
         </div>
         <div class="card">
-          <div class="card-title">Sesiones por día de la semana</div>
+          <div class="card-title">Filtrar por día</div>
+          <div class="days-grid" id="days-filter"></div>
+        </div>
+        <div class="card" id="dias-months-card">
+          <div class="card-title">Filtrar por mes</div>
+          <div class="days-grid" id="months-filter"></div>
+        </div>
+        <div class="card" id="dias-years-card" style="display:none">
+          <div class="card-title">Filtrar por año</div>
+          <div class="days-grid" id="years-filter"></div>
+        </div>
+        <div class="card">
+          <div class="card-title" id="dias-chart-title">Volumen por sesión (kg)</div>
           <div class="chart-container"><canvas id="chart-dias"></canvas></div>
         </div>
         <div id="dias-sesiones"></div>
@@ -1462,11 +1475,13 @@ async function loadStatsEjercicios(){
   const ejMap={};
   all.forEach(s=>{
     (s.ejercicios||[]).forEach(e=>{
-      if(!ejMap[e.nombre])ejMap[e.nombre]={nombre:e.nombre,maxKg:0,maxVol:0,entries:[]};
-      ejMap[e.nombre].maxKg=Math.max(ejMap[e.nombre].maxKg,e.peso_kg||0);
-      const vol=(e.peso_kg||0)*(e.reps||1)*(e.series||1);
-      ejMap[e.nombre].maxVol=Math.max(ejMap[e.nombre].maxVol,vol);
-      ejMap[e.nombre].entries.push({fecha:s.fecha,kg:e.peso_kg||0,vol,reps:e.reps||0,series:e.series||1});
+      const nm=e.nombre;
+      if(!ejMap[nm])ejMap[nm]={nombre:nm,maxKg:0,maxVol:0,maxKgFecha:'',maxVolFecha:'',maxKgSesionId:null,maxVolSesionId:null,entries:[]};
+      const kg=e.peso_kg||0;
+      const vol=kg*(e.reps||1)*(e.series||1);
+      if(kg>ejMap[nm].maxKg){ejMap[nm].maxKg=kg;ejMap[nm].maxKgFecha=s.fecha;ejMap[nm].maxKgSesionId=s.id;}
+      if(vol>ejMap[nm].maxVol){ejMap[nm].maxVol=vol;ejMap[nm].maxVolFecha=s.fecha;ejMap[nm].maxVolSesionId=s.id;}
+      ejMap[nm].entries.push({fecha:s.fecha,sesionId:s.id,kg,vol,reps:e.reps||0,series:e.series||1});
     });
   });
   window._statsEjMap=ejMap;
@@ -1488,26 +1503,50 @@ function detectarGrupoStats(nombre){
 
 function renderStatsGrupoChips(){
   const ejMap=window._statsEjMap||{};
-  const grupos=new Set(Object.values(ejMap).map(e=>detectarGrupoStats(e.nombre)));
-  const orden=[...Object.keys(_catalogoCache||{}),'Otros'];
-  const sel=window._statsGrupoSel||'';
-  const chips=['<div class="day-chip'+(sel===''?' active':'')+'" onclick="setStatsGrupo(\'\')">Todos</div>'];
-  orden.filter(g=>grupos.has(g)).forEach(g=>{
-    chips.push('<div class="day-chip'+(sel===g?' active':'')+'" onclick="setStatsGrupo(\''+g+'\')">'+g+'</div>');
+  const selParent=window._statsGrupoParent||'';
+  const selSub=window._statsGrupoSub||'';
+  // Parent groups used in data
+  const usedParents=new Set(Object.values(ejMap).map(e=>_normGrupoSimple(detectarGrupoStats(e.nombre))));
+  const parentOrder=['Pecho','Espalda','Piernas','Hombros','Brazos','Core','Otros'];
+  const chips=['<div class="day-chip'+(selParent===''?' active':'')+'" onclick="setStatsGrupoParent(\'\')">Todos</div>'];
+  parentOrder.filter(g=>usedParents.has(g)).forEach(g=>{
+    chips.push('<div class="day-chip'+(selParent===g?' active':'')+'" onclick="setStatsGrupoParent(\''+g+'\')">'+g+'</div>');
   });
   const el=document.getElementById('stats-grupo-filter');
   if(el)el.innerHTML=chips.join('');
+  // Subgroup chips
+  const subEl=document.getElementById('stats-subgrupo-filter');
+  if(!subEl)return;
+  if(!selParent){subEl.innerHTML='';subEl.style.display='none';return;}
+  const subgroups=new Set();
+  if(_catalogoCache){Object.keys(_catalogoCache).forEach(g=>{if(_normGrupoSimple(g)===selParent)subgroups.add(g);});}
+  Object.values(ejMap).forEach(e=>{const g=detectarGrupoStats(e.nombre);if(_normGrupoSimple(g)===selParent)subgroups.add(g);});
+  if(subgroups.size<=1){subEl.innerHTML='';subEl.style.display='none';return;}
+  const subChips=['<div class="day-chip'+(selSub===''?' active':'')+'" onclick="setStatsGrupoSub(\'\')">Todos</div>'];
+  [...subgroups].forEach(g=>{subChips.push('<div class="day-chip'+(selSub===g?' active':'')+'" onclick="setStatsGrupoSub(\''+g+'\')">'+g+'</div>');});
+  subEl.innerHTML=subChips.join('');
+  subEl.style.display='flex';
 }
-function setStatsGrupo(g){
-  window._statsGrupoSel=g;
+function setStatsGrupoParent(g){
+  window._statsGrupoParent=g;
+  window._statsGrupoSub='';
   renderStatsGrupoChips();
+  statsRenderEjGrid();
 }
+function setStatsGrupoSub(g){
+  window._statsGrupoSub=g;
+  renderStatsGrupoChips();
+  statsRenderEjGrid();
+}
+function setStatsGrupo(g){setStatsGrupoParent(g);}
 function statsRenderEjGrid(){
   const all=window._statsEjAll||Object.values(window._statsEjMap||{});
   const q=_normQ(document.getElementById('stats-ej-q')?.value||'');
-  const g=window._statsGrupoSel||'';
+  const gParent=window._statsGrupoParent||'';
+  const gSub=window._statsGrupoSub||'';
   let list=[...all];
-  if(g)list=list.filter(e=>detectarGrupoStats(e.nombre)===g);
+  if(gSub)list=list.filter(e=>detectarGrupoStats(e.nombre)===gSub);
+  else if(gParent)list=list.filter(e=>_normGrupoSimple(detectarGrupoStats(e.nombre))===gParent);
   if(q)list=list.filter(e=>_normQ(e.nombre).includes(q));
   list.sort((a,b)=>b.maxKg-a.maxKg);
   const body=document.getElementById('stats-modal-body');
@@ -1549,12 +1588,21 @@ function filterStatsEjercicios(){
 function selectStatsEj(nombre){
   selectedStatsEj=nombre;
   const ej=window._statsEjMap[nombre];if(!ej)return;
+  // Max highlights with dates
   document.getElementById('ej-max-kg').textContent=ej.maxKg+'kg';
   document.getElementById('ej-max-vol').textContent=ej.maxVol+'kg';
+  const kgFechaEl=document.getElementById('ej-max-kg-fecha');
+  const volFechaEl=document.getElementById('ej-max-vol-fecha');
+  if(kgFechaEl)kgFechaEl.textContent=ej.maxKgFecha?formatFecha(ej.maxKgFecha):'';
+  if(volFechaEl)volFechaEl.textContent=ej.maxVolFecha?formatFecha(ej.maxVolFecha):'';
   document.getElementById('ej-chart-title').textContent='Progresión de peso · '+nombre;
   document.getElementById('stats-ej-detail').style.display='block';
   const entries=ej.entries.sort((a,b)=>a.fecha.localeCompare(b.fecha));
-  const labels=entries.map(e=>e.fecha.slice(5));
+  // X-axis: show year only at year boundaries, empty otherwise
+  const labels=entries.map((e,i)=>{
+    const yr=e.fecha.slice(0,4);
+    return(i===0||yr!==entries[i-1].fecha.slice(0,4))?yr:'';
+  });
   const kgData=entries.map(e=>e.kg);
   const volData=entries.map(e=>e.vol);
   const isDark=!document.body.classList.contains('theme-light')&&!document.body.classList.contains('theme-material-light');
@@ -1565,37 +1613,123 @@ function selectStatsEj(nombre){
   const tooltipTitleC=isDark?'#fff':'#111';
   const tooltipBodyC=isDark?'#aaa':'#555';
   const commonOpts={responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},animation:{duration:600,easing:'easeInOutQuart'},plugins:{legend:{display:false},tooltip:{backgroundColor:tooltipBg,borderColor:tooltipBorder,borderWidth:1,titleColor:tooltipTitleC,bodyColor:tooltipBodyC,padding:12,cornerRadius:10,displayColors:false}},scales:{x:{grid:{color:gridC,drawTicks:false},border:{display:false},ticks:{color:tickC,font:{size:10},maxRotation:0,padding:6}},y:{grid:{color:gridC,drawTicks:false},border:{display:false},ticks:{color:tickC,font:{size:10},padding:8}}}};
-  const mkLine=(ctxEl,color,gradAlpha,yFmt)=>{
-    const ctx=document.getElementById(ctxEl).getContext('2d');
-    const grad=ctx.createLinearGradient(0,0,0,230);
-    grad.addColorStop(0,color.replace(')',','+gradAlpha+')').replace('rgb','rgba'));
-    grad.addColorStop(1,color.replace(')',',0)').replace('rgb','rgba'));
-    return{ctx:document.getElementById(ctxEl),grad,yFmt};
-  };
   if(chartEjPeso)chartEjPeso.destroy();
   const pesoCtx=document.getElementById('chart-ej-peso').getContext('2d');
   const pesoGrad=pesoCtx.createLinearGradient(0,0,0,230);
   pesoGrad.addColorStop(0,'rgba(232,255,71,.3)');pesoGrad.addColorStop(1,'rgba(232,255,71,0)');
-  chartEjPeso=new Chart(pesoCtx,{type:'line',data:{labels,datasets:[{data:kgData,borderColor:'#e8ff47',backgroundColor:pesoGrad,fill:true,tension:.4,borderWidth:2.5,pointRadius:4,pointHoverRadius:7,pointBackgroundColor:'#e8ff47',pointBorderColor:isDark?'#1a1a2e':'#fff',pointBorderWidth:2}]},options:{...commonOpts,plugins:{...commonOpts.plugins,tooltip:{...commonOpts.plugins.tooltip,callbacks:{label:v=>v.parsed.y+' kg'}}}}});
+  chartEjPeso=new Chart(pesoCtx,{type:'line',data:{labels,datasets:[{data:kgData,borderColor:'#e8ff47',backgroundColor:pesoGrad,fill:true,tension:.4,borderWidth:2.5,pointRadius:3,pointHoverRadius:7,pointBackgroundColor:'#e8ff47',pointBorderColor:isDark?'#1a1a2e':'#fff',pointBorderWidth:2}]},options:{...commonOpts,plugins:{...commonOpts.plugins,tooltip:{...commonOpts.plugins.tooltip,callbacks:{title:ctx=>{const e=entries[ctx[0].dataIndex];return e?formatFecha(e.fecha):'';},label:ctx=>{const e=entries[ctx.dataIndex];return e?ctx.parsed.y+'kg · '+e.reps+' reps':''+ctx.parsed.y+'kg';}}}}}});
   if(chartEjVol)chartEjVol.destroy();
   const volCtx=document.getElementById('chart-ej-vol').getContext('2d');
   const volGrad=volCtx.createLinearGradient(0,0,0,230);
   volGrad.addColorStop(0,'rgba(108,71,255,.35)');volGrad.addColorStop(1,'rgba(108,71,255,0)');
-  chartEjVol=new Chart(volCtx,{type:'line',data:{labels,datasets:[{data:volData,borderColor:'#6c47ff',backgroundColor:volGrad,fill:true,tension:.4,borderWidth:2.5,pointRadius:4,pointHoverRadius:7,pointBackgroundColor:'#6c47ff',pointBorderColor:isDark?'#1a1a2e':'#fff',pointBorderWidth:2}]},options:{...commonOpts,plugins:{...commonOpts.plugins,tooltip:{...commonOpts.plugins.tooltip,callbacks:{label:v=>v.parsed.y+' kg vol'}}}}});
+  chartEjVol=new Chart(volCtx,{type:'line',data:{labels,datasets:[{data:volData,borderColor:'#6c47ff',backgroundColor:volGrad,fill:true,tension:.4,borderWidth:2.5,pointRadius:3,pointHoverRadius:7,pointBackgroundColor:'#6c47ff',pointBorderColor:isDark?'#1a1a2e':'#fff',pointBorderWidth:2}]},options:{...commonOpts,plugins:{...commonOpts.plugins,tooltip:{...commonOpts.plugins.tooltip,callbacks:{title:ctx=>{const e=entries[ctx[0].dataIndex];return e?formatFecha(e.fecha):'';},label:ctx=>{const e=entries[ctx.dataIndex];return e?ctx.parsed.y+'kg vol · '+e.reps+' reps':''+ctx.parsed.y+'kg vol';}}}}}});
+  _setupChartLongPress('chart-ej-peso',entries);
+  _setupChartLongPress('chart-ej-vol',entries);
   renderStatsEjList(Object.values(window._statsEjMap||{}));
+}
+
+function _setupChartLongPress(canvasId,entries){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas)return;
+  let timer=null;
+  let pressX=0,pressY=0;
+  const clear=()=>{if(timer){clearTimeout(timer);timer=null;}};
+  const start=(cx,cy)=>{
+    pressX=cx;pressY=cy;
+    clear();
+    timer=setTimeout(()=>{
+      timer=null;
+      const chart=Chart.getChart(canvas);
+      if(!chart)return;
+      const ev=new MouseEvent('mousemove',{clientX:pressX,clientY:pressY,bubbles:true});
+      const pts=chart.getElementsAtEventForMode(ev,'index',{intersect:false},false);
+      if(!pts.length)return;
+      const entry=entries[pts[0].index];
+      if(!entry)return;
+      if(confirm('Ver sesión del '+formatFecha(entry.fecha)+'?')){
+        const qEl=document.getElementById('hist-search');
+        if(qEl){qEl.value=formatFecha(entry.fecha);}
+        showScreen('historial');
+        loadHistorial();
+      }
+    },600);
+  };
+  canvas.removeEventListener('touchstart',canvas._lpTs);
+  canvas.removeEventListener('touchend',canvas._lpTe);
+  canvas.removeEventListener('touchmove',canvas._lpTe);
+  canvas.removeEventListener('mousedown',canvas._lpMd);
+  canvas.removeEventListener('mouseup',canvas._lpMu);
+  canvas._lpTs=e=>{if(e.touches.length){start(e.touches[0].clientX,e.touches[0].clientY);}};
+  canvas._lpTe=clear;
+  canvas._lpMd=e=>start(e.clientX,e.clientY);
+  canvas._lpMu=clear;
+  canvas.addEventListener('touchstart',canvas._lpTs,{passive:true});
+  canvas.addEventListener('touchend',canvas._lpTe);
+  canvas.addEventListener('touchmove',canvas._lpTe,{passive:true});
+  canvas.addEventListener('mousedown',canvas._lpMd);
+  canvas.addEventListener('mouseup',canvas._lpMu);
 }
 
 async function loadStatssDias(){
   const{data}=await getSesiones({limit:500});
   if(!data.ok)return;
   const all=data.sesiones||[];
+  window._statsDiasAll=all;
+  const years=[...new Set(all.map(s=>s.fecha.slice(0,4)))].sort();
+  window._statsDiasYears=years;
+  if(!window._selectedDays)window._selectedDays=[];
+  if(!window._selectedMonths)window._selectedMonths=[];
+  if(!window._selectedYears)window._selectedYears=[];
+  if(!window._diasMetric)window._diasMetric='vol';
+  _renderDiasFilters(years);
+  _renderDiasChart();
+}
+
+function _renderDiasFilters(years){
   const dayNames=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-  const counts=Array(7).fill(0);
-  all.forEach(s=>{const d=new Date(s.fecha+'T12:00:00');counts[d.getDay()]++;});
-  // Days filter chips
+  const mNames=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  years=years||window._statsDiasYears||[];
   const selDays=window._selectedDays||[];
-  document.getElementById('days-filter').innerHTML=dayNames.map((d,i)=>'<div class="day-chip '+(selDays.includes(i)?'active':'')+'" onclick="toggleDayFilter('+i+')">'+d+'</div>').join('');
-  // Chart
+  const selMonths=window._selectedMonths||[];
+  const selYears=window._selectedYears||[];
+  document.getElementById('days-filter').innerHTML=dayNames.map((d,i)=>'<div class="day-chip'+(selDays.includes(i)?' active':'')+'" onclick="toggleDayFilter('+i+')">'+d+'</div>').join('');
+  const mEl=document.getElementById('months-filter');
+  if(mEl)mEl.innerHTML=mNames.map((m,i)=>'<div class="day-chip'+(selMonths.includes(i)?' active':'')+'" onclick="toggleMonthFilter('+i+')">'+m+'</div>').join('');
+  const yEl=document.getElementById('years-filter');
+  const yCard=document.getElementById('dias-years-card');
+  if(yEl&&years.length>1){
+    yEl.innerHTML=years.map(y=>'<div class="day-chip'+(selYears.includes(y)?' active':'')+'" onclick="toggleYearFilter(\''+y+'\')">'+y+'</div>').join('');
+    if(yCard)yCard.style.display='block';
+  }else if(yCard)yCard.style.display='none';
+}
+
+function _renderDiasChart(){
+  const all=window._statsDiasAll||[];
+  const selDays=window._selectedDays||[];
+  const selMonths=window._selectedMonths||[];
+  const selYears=window._selectedYears||[];
+  const metric=window._diasMetric||'vol';
+  let filtered=all.filter(s=>{
+    const d=new Date(s.fecha+'T12:00:00');
+    if(selDays.length&&!selDays.includes(d.getDay()))return false;
+    if(selMonths.length&&!selMonths.includes(d.getMonth()))return false;
+    if(selYears.length&&!selYears.includes(s.fecha.slice(0,4)))return false;
+    return true;
+  }).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const metricData=filtered.map(s=>{
+    if(metric==='cal')return s.calorias||0;
+    return(s.ejercicios||[]).reduce((sum,e)=>sum+(e.peso_kg||0)*(e.reps||1)*(e.series||1),0);
+  });
+  const labels=filtered.map((s,i)=>{
+    const yr=s.fecha.slice(0,4);
+    return(i===0||yr!==filtered[i-1].fecha.slice(0,4))?yr:'';
+  });
+  const titleEl=document.getElementById('dias-chart-title');
+  if(titleEl)titleEl.textContent=metric==='cal'?'Calorías por sesión':'Volumen por sesión (kg)';
+  const volBtn=document.getElementById('dias-metric-vol');
+  const calBtn=document.getElementById('dias-metric-cal');
+  if(volBtn)volBtn.classList.toggle('active',metric==='vol');
+  if(calBtn)calBtn.classList.toggle('active',metric==='cal');
   if(chartDias)chartDias.destroy();
   const isDarkD=!document.body.classList.contains('theme-light')&&!document.body.classList.contains('theme-material-light');
   const gridCD=isDarkD?'rgba(255,255,255,.05)':'rgba(0,0,0,.06)';
@@ -1603,25 +1737,37 @@ async function loadStatssDias(){
   const tooltipBgD=isDarkD?'rgba(18,18,28,.95)':'rgba(255,255,255,.98)';
   const tooltipBorderD=isDarkD?'rgba(255,255,255,.08)':'rgba(0,0,0,.08)';
   const diasCtx=document.getElementById('chart-dias').getContext('2d');
-  const maxCount=Math.max(...counts,1);
-  const barColors=counts.map((_,i)=>{
-    if(selDays.length>0&&!selDays.includes(i))return isDarkD?'rgba(232,255,71,.08)':'rgba(100,100,100,.1)';
-    const grad=diasCtx.createLinearGradient(0,0,0,230);
-    grad.addColorStop(0,'rgba(232,255,71,.9)');
-    grad.addColorStop(1,'rgba(232,255,71,.25)');
-    return grad;
-  });
-  chartDias=new Chart(diasCtx,{type:'bar',data:{labels:dayNames,datasets:[{data:counts,backgroundColor:barColors,borderRadius:10,borderSkipped:false,hoverBackgroundColor:counts.map((_,i)=>selDays.length===0||selDays.includes(i)?'rgba(232,255,71,1)':'rgba(232,255,71,.2)')}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:500,easing:'easeInOutQuart'},plugins:{legend:{display:false},tooltip:{backgroundColor:tooltipBgD,borderColor:tooltipBorderD,borderWidth:1,titleColor:isDarkD?'#fff':'#111',bodyColor:isDarkD?'#aaa':'#555',padding:12,cornerRadius:10,displayColors:false,callbacks:{label:c=>c.parsed.y+' sesiones'}}},scales:{x:{grid:{display:false},border:{display:false},ticks:{color:tickCD,font:{size:11},padding:6}},y:{grid:{color:gridCD,drawTicks:false},border:{display:false},ticks:{color:tickCD,font:{size:10},stepSize:1,padding:6}}}}});
-  // List filtered sessions
-  const filtered=selDays.length?all.filter(s=>{const d=new Date(s.fecha+'T12:00:00');return selDays.includes(d.getDay());}):all.slice(0,20);
-  document.getElementById('dias-sesiones').innerHTML=filtered.length?filtered.map(s=>sessionCard(s)).join(''):'';
+  chartDias=new Chart(diasCtx,{type:'bar',data:{labels,datasets:[{data:metricData,backgroundColor:isDarkD?'rgba(232,255,71,.75)':'rgba(100,180,255,.75)',borderRadius:6,borderSkipped:false,hoverBackgroundColor:isDarkD?'rgba(232,255,71,1)':'rgba(100,180,255,1)'}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:500,easing:'easeInOutQuart'},plugins:{legend:{display:false},tooltip:{backgroundColor:tooltipBgD,borderColor:tooltipBorderD,borderWidth:1,titleColor:isDarkD?'#fff':'#111',bodyColor:isDarkD?'#aaa':'#555',padding:12,cornerRadius:10,displayColors:false,callbacks:{title:ctx=>{const s=filtered[ctx[0].dataIndex];return s?formatFecha(s.fecha):'';},label:ctx=>ctx.parsed.y+(metric==='cal'?' kcal':' kg vol')}}},scales:{x:{grid:{display:false},border:{display:false},ticks:{color:tickCD,font:{size:10},maxRotation:0,padding:4}},y:{grid:{color:gridCD,drawTicks:false},border:{display:false},ticks:{color:tickCD,font:{size:10},padding:6}}}}});
+  document.getElementById('dias-sesiones').innerHTML=filtered.length?filtered.slice().reverse().slice(0,20).map(s=>sessionCard(s)).join(''):'';
+}
+
+function setDiasMetric(m){
+  window._diasMetric=m;
+  _renderDiasChart();
 }
 
 function toggleDayFilter(i){
   window._selectedDays=window._selectedDays||[];
   const idx=window._selectedDays.indexOf(i);
   if(idx>=0)window._selectedDays.splice(idx,1);else window._selectedDays.push(i);
-  loadStatssDias();
+  _renderDiasFilters();
+  _renderDiasChart();
+}
+
+function toggleMonthFilter(i){
+  window._selectedMonths=window._selectedMonths||[];
+  const idx=window._selectedMonths.indexOf(i);
+  if(idx>=0)window._selectedMonths.splice(idx,1);else window._selectedMonths.push(i);
+  _renderDiasFilters();
+  _renderDiasChart();
+}
+
+function toggleYearFilter(y){
+  window._selectedYears=window._selectedYears||[];
+  const idx=window._selectedYears.indexOf(y);
+  if(idx>=0)window._selectedYears.splice(idx,1);else window._selectedYears.push(y);
+  _renderDiasFilters();
+  _renderDiasChart();
 }
 
 // ══════════════════════════════════════════════
