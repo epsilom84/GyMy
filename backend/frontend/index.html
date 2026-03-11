@@ -2210,7 +2210,7 @@ function parsearCSV(rawText){
     }
 
     // Solo añadir ejercicio si hay nombre
-    const nombre=iNombre>=0?get(iNombre):(!hasHeader?get(4):'');
+    const nombre=(iNombre>=0?get(iNombre):(!hasHeader?get(4):'')).replace(/[()]/g,'').replace(/\s+/g,' ').trim();
     if(!nombre)return;
 
     const grupoRaw=iGrupo>=0?get(iGrupo):'';
