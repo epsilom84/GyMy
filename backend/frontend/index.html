@@ -350,6 +350,13 @@ input:focus,select:focus{border-color:var(--accent);}
 .ej-card-n{font-weight:600;font-size:11px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;padding:0 4px;}
 .ej-card-hint{font-size:10px;color:var(--accent2);font-weight:700;}
 .ej-card-m{font-size:9px;color:var(--text2);}
+.ej-card--img{padding:0 0 4px;gap:1px;}
+.ej-card--img .ej-item-em{width:100%;height:90px;flex-shrink:0;border-radius:10px 10px 0 0;overflow:hidden;}
+.ej-card--img .ej-item-em img{width:100%!important;height:100%!important;object-fit:cover;border-radius:0;}
+.ej-card--img .ej-card-n{font-size:8px;line-height:1.15;padding:2px 3px 0;-webkit-line-clamp:2;}
+.ej-card--img .ej-card-hint{font-size:7px;}
+.ej-card--svg .ej-item-em{width:30px;height:30px;}
+.ej-card--svg .ej-card-n{font-size:13px;font-weight:700;-webkit-line-clamp:3;}
 .ej-item{display:flex;align-items:center;gap:12px;padding:11px 12px;background:var(--bg3);border-radius:11px;margin-bottom:7px;cursor:pointer;border:1.5px solid transparent;transition:.15s;}
 .ej-item:active,.ej-item:hover{border-color:var(--accent);}
 .ej-item-em{width:56px;height:56px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -455,6 +462,8 @@ input:focus,select:focus{border-color:var(--accent);}
         <div class="filter-chip" onclick="setTipoFilter('Cardio',this)">🏃 Cardio</div>
         <div class="filter-chip" onclick="setTipoFilter('HIIT',this)">🔥 HIIT</div>
       </div>
+      <div class="filters" id="grupo-filters" style="display:none"></div>
+      <div class="filters" id="subgrupo-filters" style="display:none"></div>
       <div id="historial-lista"></div>
       <div class="pagination" id="pagination"></div>
     </div>
@@ -580,6 +589,7 @@ input:focus,select:focus{border-color:var(--accent);}
           </select>
         </div>
         <p style="font-size:11px;color:var(--text2);margin-top:10px">Los datos se guardan localmente en este dispositivo.</p>
+        <button class="btn btn-secondary" style="width:100%;margin-top:10px;font-size:13px" onclick="guardarPerfilFisicoEnBD()">☁️ Sincronizar con tu cuenta</button>
       </div>
 
       <div class="profile-section-title">Configuración</div>
@@ -608,6 +618,10 @@ input:focus,select:focus{border-color:var(--accent);}
         <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Ejercicios guardados en la base de datos, disponibles para todos los usuarios.</div>
         <div style="display:flex;justify-content:center;margin-bottom:12px">
           <img src="/assets/musculos.svg" alt="Grupos musculares" width="120" height="214" style="opacity:.85"/>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+          <button class="btn btn-secondary" style="font-size:13px" onclick="document.getElementById('inp-catalogo-file').click()">📂 Actualizar catálogo desde Excel/CSV</button>
+          <input type="file" id="inp-catalogo-file" accept=".csv,.json" style="display:none" onchange="importCatalogoFile(event)"/>
         </div>
         <div id="catalogo-list" style="margin-top:4px">
           <div style="font-size:12px;color:var(--text2);text-align:center;padding:10px">Cargando catálogo...</div>
@@ -767,6 +781,21 @@ input:focus,select:focus{border-color:var(--accent);}
     <div style="display:flex;gap:8px">
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-import-plantillas')">Cancelar</button>
       <button class="btn btn-primary" style="flex:1" id="btn-confirm-import-plantillas" onclick="confirmarImportPlantillas()">Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal confirmación importar catálogo -->
+<div class="modal-overlay center" id="modal-import-catalogo">
+  <div class="modal center-dialog" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title">⚠️ Actualizar catálogo global</div>
+      <button class="close-btn" onclick="closeModal('modal-import-catalogo')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+    </div>
+    <div id="import-catalogo-body" style="max-height:320px;overflow-y:auto;margin-bottom:12px"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-import-catalogo')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1" id="btn-confirm-import-catalogo" onclick="confirmarImportCatalogo()">Actualizar catálogo</button>
     </div>
   </div>
 </div>
@@ -960,7 +989,7 @@ function getPendientesOffline(){return JSON.parse(localStorage.getItem('gymy_off
 // ══════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════
-let currentPage=1,currentTipoFilter='',statsCache=null,ejCount=0;
+let currentPage=1,currentTipoFilter='',currentGrupoFilter='',currentSubgrupoFilter='',statsCache=null,ejCount=0;
 let currentStatsType='ejercicio',selectedStatsEj=null,chartEjPeso=null,chartEjVol=null,chartDias=null;
 
 window.onload=()=>{
@@ -1006,6 +1035,10 @@ function initApp(){
   // Precargar catálogo de ejercicios y plantillas personales desde BD
   loadCatalogo().then(()=>console.log('[Catálogo] Cargado:',Object.keys(_catalogoCache||{}).length,'grupos'));
   loadPlantillas().then(()=>console.log('[Plantillas] Cargadas:',(_plantillasCache||[]).length,'ejercicios'));
+  // Cargar perfil físico para cálculo de kcal: localStorage inmediato + BD en background
+  const _pd=JSON.parse(localStorage.getItem('gymy_profile_data')||'{}');
+  window._wkUserPerfil={edad:parseInt(_pd.edad)||null,genero:_pd.genero||null,peso:parseFloat(_pd.peso)||null};
+  apiCall('GET','/auth/me').then(r=>{if(r.data&&r.data.ok)window._wkUserPerfil=r.data.usuario;}).catch(()=>{});
   // Restore workout tab if active
   const wtab = document.getElementById('tab-workout');
   if(wtab) wtab.style.display = wkIsActive() ? 'flex' : 'none';
@@ -1104,7 +1137,7 @@ function goTab(name,btn){
   if(fabs)fabs.classList.toggle('visible',wkStarted);
   // Re-adjust layout in case tabbar height changed
   if(wkStarted)setTimeout(()=>wkAdjustLayout(),50);
-  if(name==='historial'){currentPage=1;loadHistorial();}
+  if(name==='historial'){currentPage=1;loadHistorial();populateGrupoFilters();}
   if(name==='stats')initStatsView();
   if(name==='perfil'){renderPlantillasList();renderCatalogoList();loadProfileData();}
   if(name==='workout')wkInit();
@@ -1240,6 +1273,8 @@ async function loadHistorial(){
   const q=(document.getElementById('search-q')?.value||'').trim();
   const params={page:currentPage,limit:15};
   if(currentTipoFilter)params.tipo=currentTipoFilter;
+  if(currentGrupoFilter)params.grupo=currentGrupoFilter;
+  if(currentSubgrupoFilter)params.subgrupo=currentSubgrupoFilter;
   if(q)params.q=q;
   const{data}=await getSesiones(params);if(!data.ok)return;
   const el=document.getElementById('historial-lista');
@@ -1255,6 +1290,43 @@ function setTipoFilter(tipo,el){
   document.querySelectorAll('#tipo-filters .filter-chip').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
   clearTimeout(_histSearchTimer);
+  loadHistorial();
+}
+async function populateGrupoFilters(){
+  await loadCatalogo();
+  const cache=window._catalogoCache||{};
+  const grupos=Object.keys(cache).sort();
+  const gEl=document.getElementById('grupo-filters');
+  if(!gEl||!grupos.length)return;
+  gEl.innerHTML=
+    '<div class="filter-chip'+(currentGrupoFilter?'':' active')+'" onclick="setGrupoFilter(\'\',this)">Todos los grupos</div>'+
+    grupos.map(g=>'<div class="filter-chip'+(currentGrupoFilter===g?' active':'')+'" onclick="setGrupoFilter('+JSON.stringify(g)+',this)">'+tipoIcon(g)+' '+g+'</div>').join('');
+  gEl.style.display='flex';
+  _renderSubgrupoFilters();
+}
+function _renderSubgrupoFilters(){
+  const sEl=document.getElementById('subgrupo-filters');if(!sEl)return;
+  if(!currentGrupoFilter){sEl.style.display='none';sEl.innerHTML='';return;}
+  const cache=window._catalogoCache||{};
+  const ejs=cache[currentGrupoFilter]||[];
+  const subgrupos=[...new Set(ejs.map(e=>e.sg).filter(Boolean))].sort();
+  if(!subgrupos.length){sEl.style.display='none';return;}
+  sEl.innerHTML=
+    '<div class="filter-chip'+(currentSubgrupoFilter?'':' active')+'" onclick="setSubgrupoFilter(\'\',this)">Todos</div>'+
+    subgrupos.map(sg=>'<div class="filter-chip'+(currentSubgrupoFilter===sg?' active':'')+'" onclick="setSubgrupoFilter('+JSON.stringify(sg)+',this)">'+sg+'</div>').join('');
+  sEl.style.display='flex';
+}
+function setGrupoFilter(grupo,el){
+  currentGrupoFilter=grupo;currentSubgrupoFilter='';currentPage=1;
+  document.querySelectorAll('#grupo-filters .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  _renderSubgrupoFilters();
+  loadHistorial();
+}
+function setSubgrupoFilter(sg,el){
+  currentSubgrupoFilter=sg;currentPage=1;
+  document.querySelectorAll('#subgrupo-filters .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
   loadHistorial();
 }
 function renderPagination(page,pages){
@@ -1552,11 +1624,11 @@ function statsRenderEjGrid(){
   const body=document.getElementById('stats-modal-body');
   if(!list.length){body.innerHTML='<div style="text-align:center;padding:32px;color:var(--text2);font-size:13px">Sin resultados</div>';return;}
   body.innerHTML='<div class="ej-grid" style="padding:4px 12px 8px">'+
-    list.map(e=>'<div class="ej-card" onclick=\'selectStatsEjFromModal("'+e.nombre.replace(/"/g,'&quot;')+'")\'>'
+    list.map(e=>{const _ci=ejHasImg(e.nombre)?'ej-card--img':'ej-card--svg';return'<div class="ej-card '+_ci+'" onclick=\'selectStatsEjFromModal("'+e.nombre.replace(/"/g,'&quot;')+'")\'>'
       +'<div class="ej-item-em">'+ejIconHtml(e.nombre,null,56)+'</div>'
       +'<div class="ej-card-n">'+e.nombre+'</div>'
       +'<div class="ej-card-hint">'+e.maxKg+'kg</div>'
-      +'</div>').join('')
+      +'</div>';}).join('')
     +'</div>';
 }
 function openStatsEjModal(){
@@ -1811,11 +1883,11 @@ async function renderCatalogoList(){
     const ejs=(_catalogoCache||{})[grupo]||[];
     if(!ejs.length)return'';
     const grid='<div class="ej-grid" style="padding:8px 0 4px">'+
-      ejs.map(e=>'<div class="ej-card" style="cursor:default">'
+      ejs.map(e=>{const _ci=ejHasImg(e.n)?'ej-card--img':'ej-card--svg';return'<div class="ej-card '+_ci+'" style="cursor:default">'
         +'<div class="ej-item-em">'+ejIconHtml(e.n,e.equipo,56)+'</div>'
         +'<div class="ej-card-n">'+e.n+'</div>'
         +(e.m&&e.m!==grupo?'<div class="ej-card-m">'+e.m+'</div>':'')
-        +'</div>').join('')
+        +'</div>';}).join('')
       +'</div>';
     return '<details style="margin-bottom:8px">'
       +'<summary style="cursor:pointer;font-size:13px;font-weight:600;padding:10px 12px;background:var(--bg3);border-radius:10px;list-style:none;display:flex;justify-content:space-between;align-items:center">'
@@ -1979,6 +2051,45 @@ async function confirmarImportPlantillas(){
   _importPlantillasParsed=[];
 }
 
+let _importCatalogoParsed=[];
+function importCatalogoFile(event){
+  const file=event.target.files[0];if(!file)return;
+  event.target.value='';
+  const reader=new FileReader();
+  reader.onload=(ev)=>{
+    const parsed=_parsePlantillasFile(ev.target.result);
+    if(!parsed.length)return showToast('No se encontraron ejercicios en el archivo','error');
+    _importCatalogoParsed=parsed;
+    const byGrupo={};
+    parsed.forEach(e=>{if(!byGrupo[e.grupo_muscular])byGrupo[e.grupo_muscular]=[];byGrupo[e.grupo_muscular].push(e.nombre);});
+    const body=document.getElementById('import-catalogo-body');
+    body.innerHTML=
+      '<div style="font-size:13px;margin-bottom:10px;color:var(--danger,#e53935)">⚠️ Se reemplazarán <strong>TODOS</strong> los ejercicios del catálogo actual para todos los usuarios.</div>'+
+      '<div style="font-size:13px;margin-bottom:10px">Nuevo catálogo: <strong>'+parsed.length+'</strong> ejercicios en <strong>'+Object.keys(byGrupo).length+'</strong> grupos:</div>'+
+      Object.entries(byGrupo).map(([grupo,ejs])=>
+        '<div style="margin-bottom:8px"><div style="font-size:12px;font-weight:600;color:var(--accent)">'+grupoEmoji(grupo)+' '+grupo+' ('+ejs.length+')</div></div>'
+      ).join('');
+    openModal('modal-import-catalogo');
+  };
+  reader.readAsText(file,'utf-8');
+}
+async function confirmarImportCatalogo(){
+  if(!_importCatalogoParsed.length)return;
+  const btn=document.getElementById('btn-confirm-import-catalogo');
+  btn.disabled=true;btn.textContent='Actualizando...';
+  const{data}=await apiCall('POST','/catalogo/import',{ejercicios:_importCatalogoParsed});
+  btn.disabled=false;btn.textContent='Actualizar catálogo';
+  closeModal('modal-import-catalogo');
+  if(data.ok){
+    _catalogoCache=null;
+    loadCatalogo().then(()=>renderCatalogoList());
+    showToast('Catálogo actualizado: '+(data.insertados||0)+' ejercicios','success');
+  } else {
+    showToast(data.error||'Error al actualizar catálogo','error');
+  }
+  _importCatalogoParsed=[];
+}
+
 function confirmEliminarPlantillas(){
   showConfirm('¿Eliminar todas las plantillas?','Se eliminarán todos los ejercicios personalizados. Los ejercicios base no se ven afectados.','Eliminar todo',async()=>{
     await apiCall('DELETE','/plantillas');
@@ -2078,6 +2189,8 @@ function saveProfileData(){
     if(el)data[f]=el.value;
   });
   localStorage.setItem('gymy_profile_data',JSON.stringify(data));
+  // Actualizar perfil en memoria para cálculo inmediato de kcal
+  window._wkUserPerfil=Object.assign(window._wkUserPerfil||{},data);
 }
 function loadProfileData(){
   const data=JSON.parse(localStorage.getItem('gymy_profile_data')||'{}');
@@ -2086,6 +2199,22 @@ function loadProfileData(){
     const el=document.getElementById('p-'+f);
     if(el&&data[f]!==undefined)el.value=data[f];
   });
+}
+async function guardarPerfilFisicoEnBD(){
+  const pd=JSON.parse(localStorage.getItem('gymy_profile_data')||'{}');
+  const genMap={'hombre':'M','mujer':'F','otro':'O'};
+  const body={
+    edad:parseInt(pd.edad)||null,
+    genero:genMap[pd.genero]||pd.genero||null,
+    peso_corporal:parseFloat(pd.peso)||null,
+  };
+  const r=await apiCall('PUT','/auth/me',body);
+  if(r.data&&r.data.ok){
+    window._wkUserPerfil=Object.assign(window._wkUserPerfil||{},body);
+    showToast('Datos físicos sincronizados con tu cuenta ✓','success');
+  }else{
+    showToast((r.data&&r.data.error)||'Error al sincronizar','error');
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -2449,12 +2578,20 @@ async function crearEnCatalogo(ejerciciosNuevos){
   return creados;
 }
 
-// ── IMPORT: similitud de ejercicios ─────────────────────────────────────────
+// ── IMPORT: similitud de ejercicios y grupos ─────────────────────────────────
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i?j?0:i:j));
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
 function _normEjN(s){return(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim();}
 function _ejSimilar(a,b){
   const na=_normEjN(a),nb=_normEjN(b);
   if(na===nb)return 1;
   if(na.includes(nb)||nb.includes(na))return 0.85;
+  if(levenshtein(na,nb)<=5)return 0.7;
   const ta=na.split(' ').filter(t=>t.length>2);
   const tb=nb.split(' ').filter(t=>t.length>2);
   if(!ta.length||!tb.length)return 0;
@@ -2463,6 +2600,14 @@ function _ejSimilar(a,b){
 }
 function _findImportCandidates(importName,catalogNames){
   return catalogNames.filter(cn=>_ejSimilar(importName,cn)>=0.4).slice(0,3);
+}
+function _grupoSimilar(a,b){
+  const na=_normEjN(a),nb=_normEjN(b);
+  if(na===nb)return true;
+  return levenshtein(na,nb)<=3;
+}
+function _findGrupoCandidates(importGrupo,catalogGrupos){
+  return catalogGrupos.filter(g=>_grupoSimilar(importGrupo,g));
 }
 function _askMerges(candidates){
   return new Promise(res=>{
@@ -2493,6 +2638,38 @@ function _askNextMerge(){
 function _chooseMerge(importName,catalogName){
   if(catalogName)window._mergeMap[importName.toLowerCase()]=catalogName;
   _askNextMerge();
+}
+function _askGrupoMerges(candidates){
+  return new Promise(res=>{
+    window._grupoQueue=[...candidates];
+    window._grupoMap={};
+    window._grupoDone=res;
+    _askNextGrupoMerge();
+  });
+}
+function _askNextGrupoMerge(){
+  if(!window._grupoQueue.length){
+    closeModal('modal-merge-grupo');
+    if(window._grupoDone){window._grupoDone(window._grupoMap);window._grupoDone=null;}
+    return;
+  }
+  const{importGrupo,matches,catalogGrupos}=window._grupoQueue.shift();
+  const rem=window._grupoQueue.length;
+  const hasSimilar=matches.length>0;
+  document.getElementById('merge-grupo-body').innerHTML=
+    '<div style="margin:12px 0 14px;font-size:14px;line-height:1.55">El grupo <strong style="color:var(--accent)">'+importGrupo+'</strong> no está en el catálogo.'+
+    (hasSimilar?'<br><span style="color:var(--text2);font-size:12px">¿Es el mismo que alguno de estos?</span>':
+    '<br><span style="color:var(--text2);font-size:12px">Elige a qué grupo muscular asignarlo:</span>')+'</div>'+
+    '<div style="display:flex;flex-direction:column;gap:7px">'+
+    (hasSimilar?matches:catalogGrupos).map(g=>'<button class="btn btn-secondary" style="text-align:left;padding:11px 14px" onclick="_chooseGrupoMerge('+JSON.stringify(importGrupo)+','+JSON.stringify(g)+')"><strong>'+g+'</strong></button>').join('')+
+    (hasSimilar?'<button class="btn" style="margin-top:3px;background:var(--bg3);border:1px solid var(--border);color:var(--text2)" onclick="_chooseGrupoMerge('+JSON.stringify(importGrupo)+',null)">Mantener nombre original</button>':'')+
+    '</div>'+
+    (rem?'<div style="font-size:11px;color:var(--text2);margin-top:12px;text-align:right">'+rem+' grupo(s) más</div>':'');
+  openModal('modal-merge-grupo');
+}
+function _chooseGrupoMerge(importGrupo,catalogGrupo){
+  if(catalogGrupo)window._grupoMap[importGrupo.toLowerCase()]=catalogGrupo;
+  _askNextGrupoMerge();
 }
 
 // ── Grupo muscular: validación y asignación manual ───────────────────────────
@@ -2563,8 +2740,32 @@ async function runImport(){
     if(!sesiones.length){status.style.color='var(--accent2)';status.textContent='No se encontraron sesiones válidas';btn.disabled=false;btn.textContent='📥 Importar';return;}
     status.textContent=`✓ ${sesiones.length} sesión(es) detectada(s). Verificando ejercicios...`;
 
-    // 2. Detectar ejercicios nuevos y resolver similitudes
-    const catalogoActual=_catalogoCache||{};
+    // 2. Matching de grupos musculares
+    const catalogoActual=window._catalogoCache||{};
+    const catalogGrupos=Object.keys(catalogoActual);
+    const gruposImportados=[...new Set(sesiones.flatMap(s=>(s.ejercicios||[]).map(e=>e.grupo_muscular||'')).filter(Boolean))];
+    const grupoConflictos=[];
+    gruposImportados.forEach(g=>{
+      const gLow=g.toLowerCase();
+      if(catalogGrupos.some(cg=>cg.toLowerCase()===gLow))return;
+      const matches=_findGrupoCandidates(g,catalogGrupos);
+      grupoConflictos.push({importGrupo:g,matches,catalogGrupos});
+    });
+    let grupoMap={};
+    if(grupoConflictos.length){
+      status.textContent=grupoConflictos.length+' grupo(s) muscular(es) por mapear...';
+      grupoMap=await _askGrupoMerges(grupoConflictos);
+    }
+    if(Object.keys(grupoMap).length){
+      sesiones.forEach(s=>{
+        s.ejercicios=(s.ejercicios||[]).map(e=>{
+          const mapped=grupoMap[(e.grupo_muscular||'').toLowerCase()];
+          return mapped?{...e,grupo_muscular:mapped}:e;
+        });
+      });
+    }
+
+    // 3. Detectar ejercicios nuevos y resolver similitudes
     const catalogNames=Object.values(catalogoActual).flat().map(e=>e.n||e.nombre||'');
     const catalogNamesLower=catalogNames.map(n=>n.toLowerCase());
     const ejerciciosNuevos=[];
@@ -2644,6 +2845,7 @@ async function runImport(){
         duracion_min:s.duracion_min||null,
         calorias:s.calorias||0,
         notas:s.notas,
+        importado:true,
         ejercicios:(s.ejercicios||[]).map(e=>({
           nombre:e.nombre,
           series:e.series||1,
@@ -2895,6 +3097,7 @@ function ejIconHtml(nombre,equipo,size){
   if(img)return`<img src="${img}" alt="${nombre}" width="${sz}" height="${sz}" style="object-fit:cover;border-radius:4px;flex-shrink:0;display:block">`;
   return equipoSVGHtml(equipo,sz);
 }
+function ejHasImg(nombre){return!!(EJ_ICONOS[(nombre||'').toLowerCase().trim()]);}
 function equipoSVGHtml(equipo, size){
   const k=_normEquipo(equipo);
   const paths=EQUIPO_SVG[k];
@@ -2927,6 +3130,7 @@ async function loadCatalogo(){
             equipo:e.equipo||null,
             n:e.nombre,
             m:(e.subgrupo||grupo).toUpperCase(),
+            sg:e.subgrupo||null,
             id:e.id
           }));
         });
@@ -3284,7 +3488,8 @@ function wkRenderEjList(list,showGroup){
       return maxKg+'kg×'+avgReps;
     })():'';
     const safeE=JSON.stringify({em:e.em,equipo:e.equipo||null,n:e.n,m:e.m}).replace(/'/g,"&#39;");
-    return '<div class="ej-card" onclick=\'wkAddEx('+safeE+')\'>'
+    const _ci=ejHasImg(e.n)?'ej-card--img':'ej-card--svg';
+    return '<div class="ej-card '+_ci+'" onclick=\'wkAddEx('+safeE+')\'>'
       +'<div class="ej-item-em">'+ejIconHtml(e.n,e.equipo,56)+'</div>'
       +'<div class="ej-card-n">'+e.n+'</div>'
       +(hint?'<div class="ej-card-hint">'+hint+'</div>':'')
@@ -3479,18 +3684,42 @@ function wkStep(exId,si,field,delta){
   if(row)row.querySelectorAll('.stepper').forEach(st=>st.classList.remove('preloaded'));
   wkRefreshStats();wkSaveState();
 }
+function calcKcalSerie(kg,reps,grupoMuscular,restSecs){
+  // Factor por grupo muscular (compuestos gastan más energía)
+  const MET={'Piernas':1.00,'Espalda':0.90,'Pecho':0.85,'Hombros':0.75,'Brazos':0.65,'Core':0.70};
+  const grupoBase=(grupoMuscular||'').split(' ')[0];
+  const metFactor=MET[grupoBase]||0.80;
+  // Volumen de trabajo como componente principal
+  const volKcal=kg*reps*0.1*metFactor;
+  // Descanso corto = mayor demanda metabólica (EPOC)
+  const restFactor=restSecs<60?1.15:restSecs>180?0.88:1.0;
+  // Datos del usuario (cargados tras login, o desde localStorage como fallback)
+  const u=window._wkUserPerfil||{};
+  const edad=u.edad||30;
+  const genero=u.genero||'M';
+  const pesoCorp=u.peso_corporal||u.peso||75;
+  // Factor género (acepta 'F'/'mujer' de BD/localStorage respectivamente)
+  const genFactor=(genero==='F'||genero==='mujer')?0.85:1.0;
+  // Factor edad (~3% menos por década a partir de 30)
+  const ageFactor=edad<30?1.05:edad<40?1.0:edad<50?0.95:0.88;
+  // Factor peso corporal normalizado a 75 kg
+  const bwFactor=Math.sqrt(pesoCorp/75);
+  return Math.max(1,Math.round(volKcal*restFactor*genFactor*ageFactor*bwFactor));
+}
 function wkToggleDone(exId,si){
   const ex=wkExs.find(e=>e.id===exId);if(!ex)return;
   ex.sets[si].done=!ex.sets[si].done;
   if(ex.sets[si].done){
     ex.sets[si].pre=false;
+    const restDef=parseInt(localStorage.getItem('gymy_rest_secs')||'90');
+    ex.sets[si].kcal=calcKcalSerie(ex.sets[si].kg,ex.sets[si].reps,ex.m,restDef);
     wkStartRestTimer();
     const hist=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]').filter(h=>h.nombre===ex.n);
     const prKg=hist.length?Math.max(...hist.map(h=>h.kg)):0;
     const isPR=prKg>0&&ex.sets[si].kg>prKg;
     if(isPR)showToast('🏆 Nuevo PR en '+ex.n+'!','success');
-    else showToast('Serie completada ✓');
-  } else { wkSkipRest(); }
+    else showToast('Serie completada ✓ +'+ex.sets[si].kcal+'kcal');
+  } else { delete ex.sets[si].kcal; wkSkipRest(); }
   wkReRenderCard(ex);wkRefreshStats();wkSaveState();
 }
 function wkAddSet(exId){
@@ -3512,9 +3741,8 @@ function wkReRenderCard(ex){
 }
 
 function wkRefreshStats(){
-  let vol=0,ser=0;
-  wkExs.forEach(ex=>ex.sets.forEach(s=>{if(s.done){vol+=s.kg*s.reps;ser++;}}));
-  const kcal=Math.round(ser*5+wkSecs/60*4);
+  let vol=0,ser=0,kcal=0;
+  wkExs.forEach(ex=>ex.sets.forEach(s=>{if(s.done){vol+=s.kg*s.reps;ser++;kcal+=(s.kcal||0);}}));
   const m=String(Math.floor(wkSecs/60)).padStart(2,'0');
   const s=String(wkSecs%60).padStart(2,'0');
   document.getElementById('wkb-dur').textContent=m+':'+s;
@@ -3591,16 +3819,16 @@ async function wkDoSave(){
   const fab=document.getElementById('wk-fab-ok');
   fab.classList.add('saving');
   fab.innerHTML='<svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-dasharray="28" stroke-dashoffset="8"/></svg>';
-  // Una fila por ejercicio con sets_data para guardar cada serie real
+  // Una fila por ejercicio con sets_data para guardar cada serie real (incluye kcal por serie)
   const ejercicios=wkExs.filter(ex=>ex.sets.some(s=>s.done)).map(ex=>{
     const done=ex.sets.filter(s=>s.done);
     return{nombre:ex.n,series:done.length,
       reps:done.reduce((m,s)=>Math.max(m,s.reps),0),
       peso_kg:done.reduce((m,s)=>Math.max(m,s.kg),0),
-      sets_data:JSON.stringify(done.map(s=>({reps:s.reps,kg:s.kg})))};
+      sets_data:JSON.stringify(done.map(s=>({reps:s.reps,kg:s.kg,kcal:s.kcal||0})))};
   });
   const totalVol=ejercicios.reduce((a,e)=>a+(e.peso_kg||0)*(e.reps||0)*(e.series||1),0);
-  const kcal=0; // kcal bar removed
+  const kcal=wkExs.flatMap(ex=>ex.sets.filter(s=>s.done)).reduce((t,s)=>t+(s.kcal||0),0);
   const sesion={fecha:new Date().toISOString().split('T')[0],tipo:wkCurTipo||'Fuerza',
     duracion_min:Math.max(1,Math.round(wkSecs/60)),calorias:kcal,
     notas:'Volumen: '+totalVol+'kg',ejercicios};
@@ -3663,6 +3891,15 @@ function wkCancelStart(){
       <div class="modal-title">Ejercicio similar encontrado</div>
     </div>
     <div id="merge-ej-body" style="padding:0 16px 16px"></div>
+  </div>
+</div>
+<!-- Modal: merge grupos musculares -->
+<div class="modal-overlay center" id="modal-merge-grupo">
+  <div class="modal center-dialog" style="max-width:380px">
+    <div class="modal-header">
+      <div class="modal-title">Grupo muscular desconocido</div>
+    </div>
+    <div id="merge-grupo-body" style="padding:0 16px 16px"></div>
   </div>
 </div>
 </body>
