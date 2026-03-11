@@ -350,6 +350,13 @@ input:focus,select:focus{border-color:var(--accent);}
 .ej-card-n{font-weight:600;font-size:11px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;padding:0 4px;}
 .ej-card-hint{font-size:10px;color:var(--accent2);font-weight:700;}
 .ej-card-m{font-size:9px;color:var(--text2);}
+.ej-card--img{padding:0 0 4px;gap:1px;}
+.ej-card--img .ej-item-em{width:100%;height:90px;flex-shrink:0;border-radius:10px 10px 0 0;overflow:hidden;}
+.ej-card--img .ej-item-em img{width:100%!important;height:100%!important;object-fit:cover;border-radius:0;}
+.ej-card--img .ej-card-n{font-size:8px;line-height:1.15;padding:2px 3px 0;-webkit-line-clamp:2;}
+.ej-card--img .ej-card-hint{font-size:7px;}
+.ej-card--svg .ej-item-em{width:30px;height:30px;}
+.ej-card--svg .ej-card-n{font-size:13px;font-weight:700;-webkit-line-clamp:3;}
 .ej-item{display:flex;align-items:center;gap:12px;padding:11px 12px;background:var(--bg3);border-radius:11px;margin-bottom:7px;cursor:pointer;border:1.5px solid transparent;transition:.15s;}
 .ej-item:active,.ej-item:hover{border-color:var(--accent);}
 .ej-item-em{width:56px;height:56px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -1442,11 +1449,11 @@ function statsRenderEjGrid(){
   const body=document.getElementById('stats-modal-body');
   if(!list.length){body.innerHTML='<div style="text-align:center;padding:32px;color:var(--text2);font-size:13px">Sin resultados</div>';return;}
   body.innerHTML='<div class="ej-grid" style="padding:4px 12px 8px">'+
-    list.map(e=>'<div class="ej-card" onclick=\'selectStatsEjFromModal("'+e.nombre.replace(/"/g,'&quot;')+'")\'>'
+    list.map(e=>{const _ci=ejHasImg(e.nombre)?'ej-card--img':'ej-card--svg';return'<div class="ej-card '+_ci+'" onclick=\'selectStatsEjFromModal("'+e.nombre.replace(/"/g,'&quot;')+'")\'>'
       +'<div class="ej-item-em">'+ejIconHtml(e.nombre,null,56)+'</div>'
       +'<div class="ej-card-n">'+e.nombre+'</div>'
       +'<div class="ej-card-hint">'+e.maxKg+'kg</div>'
-      +'</div>').join('')
+      +'</div>';}).join('')
     +'</div>';
 }
 function openStatsEjModal(){
@@ -1594,11 +1601,11 @@ async function renderCatalogoList(){
     const ejs=(_catalogoCache||{})[grupo]||[];
     if(!ejs.length)return'';
     const grid='<div class="ej-grid" style="padding:8px 0 4px">'+
-      ejs.map(e=>'<div class="ej-card" style="cursor:default">'
+      ejs.map(e=>{const _ci=ejHasImg(e.n)?'ej-card--img':'ej-card--svg';return'<div class="ej-card '+_ci+'" style="cursor:default">'
         +'<div class="ej-item-em">'+ejIconHtml(e.n,e.equipo,56)+'</div>'
         +'<div class="ej-card-n">'+e.n+'</div>'
         +(e.m&&e.m!==grupo?'<div class="ej-card-m">'+e.m+'</div>':'')
-        +'</div>').join('')
+        +'</div>';}).join('')
       +'</div>';
     return '<details style="margin-bottom:8px">'
       +'<summary style="cursor:pointer;font-size:13px;font-weight:600;padding:10px 12px;background:var(--bg3);border-radius:10px;list-style:none;display:flex;justify-content:space-between;align-items:center">'
@@ -2606,6 +2613,7 @@ function ejIconHtml(nombre,equipo,size){
   if(img)return`<img src="${img}" alt="${nombre}" width="${sz}" height="${sz}" style="object-fit:cover;border-radius:4px;flex-shrink:0;display:block">`;
   return equipoSVGHtml(equipo,sz);
 }
+function ejHasImg(nombre){return!!(EJ_ICONOS[(nombre||'').toLowerCase().trim()]);}
 function equipoSVGHtml(equipo, size){
   const k=_normEquipo(equipo);
   const paths=EQUIPO_SVG[k];
@@ -2994,7 +3002,8 @@ function wkRenderEjList(list,showGroup){
       return maxKg+'kg×'+avgReps;
     })():'';
     const safeE=JSON.stringify({em:e.em,equipo:e.equipo||null,n:e.n,m:e.m}).replace(/'/g,"&#39;");
-    return '<div class="ej-card" onclick=\'wkAddEx('+safeE+')\'>'
+    const _ci=ejHasImg(e.n)?'ej-card--img':'ej-card--svg';
+    return '<div class="ej-card '+_ci+'" onclick=\'wkAddEx('+safeE+')\'>'
       +'<div class="ej-item-em">'+ejIconHtml(e.n,e.equipo,56)+'</div>'
       +'<div class="ej-card-n">'+e.n+'</div>'
       +(hint?'<div class="ej-card-hint">'+hint+'</div>':'')
