@@ -118,24 +118,24 @@ async function initDB() {
       }
     }
 
-    // Seed plantillas genéricas (borra las genéricas y re-inserta desde el mismo JSON)
-    const { rows: existingPlantillas } = await client.query(
-      `SELECT COUNT(*) FROM plantillas_ejercicios WHERE user_id IS NULL`
-    );
-    if (parseInt(existingPlantillas[0].count) === 0 && fs.existsSync(seedFile)) {
+    // Seed plantillas genéricas (borra las genéricas y re-inserta desde el mismo JSON — siempre)
+    if (fs.existsSync(seedFile)) {
       try {
         const seedData = JSON.parse(fs.readFileSync(seedFile, 'utf8'));
-        let seeded = 0;
-        for (const e of (Array.isArray(seedData) ? seedData : [])) {
-          if (!e.nombre || !e.grupo_muscular) continue;
-          await client.query(
-            `INSERT INTO plantillas_ejercicios (nombre, grupo_muscular, subgrupo, equipo, tipo)
-             VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING`,
-            [e.nombre, e.grupo_muscular, e.subgrupo||null, e.equipo||null, e.tipo||'fuerza']
-          );
-          seeded++;
+        const ejs = Array.isArray(seedData) ? seedData.filter(e => e.nombre && e.grupo_muscular) : [];
+        if (ejs.length > 0) {
+          await client.query(`DELETE FROM plantillas_ejercicios WHERE user_id IS NULL`);
+          let seeded = 0;
+          for (const e of ejs) {
+            await client.query(
+              `INSERT INTO plantillas_ejercicios (nombre, grupo_muscular, subgrupo, equipo, tipo)
+               VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING`,
+              [e.nombre, e.grupo_muscular, e.subgrupo||null, e.equipo||null, e.tipo||'genérico']
+            );
+            seeded++;
+          }
+          console.log(`[DB] Plantillas genéricas: ${seeded} ejercicios ✓`);
         }
-        if (seeded > 0) console.log(`[DB] Plantillas genéricas: ${seeded} ejercicios ✓`);
       } catch(e) {
         console.warn('[DB] plantillas_ejercicios.json (plantillas) no se pudo leer:', e.message);
       }
