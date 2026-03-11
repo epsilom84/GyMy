@@ -164,9 +164,9 @@ router.use(verifyToken);
 const validateSesion = [
   body('fecha').isDate().withMessage('Fecha no válida (YYYY-MM-DD)'),
   body('tipo').notEmpty().withMessage('Tipo obligatorio'),
-  body('duracion_min').optional().isInt({ min: 1, max: 600 }),
-  body('calorias').optional().isInt({ min: 0, max: 10000 }),
-  body('valoracion').optional().isInt({ min: 1, max: 5 }),
+  body('duracion_min').optional({ nullable: true }).isInt({ min: 0, max: 600 }),
+  body('calorias').optional({ nullable: true }).isInt({ min: 0, max: 10000 }),
+  body('valoracion').optional({ nullable: true }).isInt({ min: 1, max: 5 }),
   body('ejercicios').optional().isArray(),
 ];
 
@@ -261,9 +261,7 @@ router.get('/sesiones', [
       [...params, limit, offset]
     );
 
-    for (const s of sesiones) {
-      s.ejercicios = await loadEjercicios(s.id);
-    }
+    await Promise.all(sesiones.map(async s => { s.ejercicios = await loadEjercicios(s.id); }));
 
     res.json({ ok: true, total, page, pages: Math.ceil(total / limit), sesiones });
   } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
