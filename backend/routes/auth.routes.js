@@ -102,9 +102,27 @@ router.post('/logout', verifyToken, async (req, res) => {
 
 // ── PERFIL ────────────────────────────────────────────────
 router.get('/me', verifyToken, async (req, res) => {
-  const user = await queryOne('SELECT id,username,email,created_at,last_login FROM users WHERE id=$1', [req.user.id]);
+  const user = await queryOne('SELECT id,username,email,created_at,last_login,edad,genero,peso_corporal FROM users WHERE id=$1', [req.user.id]);
   if (!user) return res.status(404).json({ ok: false, error: 'Usuario no encontrado' });
   res.json({ ok: true, usuario: user });
+});
+
+// ── ACTUALIZAR PERFIL FÍSICO ──────────────────────────────
+router.put('/me', verifyToken, [
+  body('edad').optional({ nullable: true }).isInt({ min: 10, max: 120 }),
+  body('genero').optional({ nullable: true }).isIn(['M', 'F', 'O']),
+  body('peso_corporal').optional({ nullable: true }).isFloat({ min: 20, max: 300 }),
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ ok: false, errores: errors.array() });
+  try {
+    const { edad, genero, peso_corporal } = req.body;
+    await queryOne(
+      `UPDATE users SET edad=$1, genero=$2, peso_corporal=$3 WHERE id=$4`,
+      [edad || null, genero || null, peso_corporal || null, req.user.id]
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
 // ── FORGOT PASSWORD ───────────────────────────────────────

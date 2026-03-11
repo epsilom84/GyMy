@@ -61,6 +61,10 @@ async function initDB() {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_ejercicios_sesion ON ejercicios(sesion_id);`);
     // Migración: añadir columna sets_data si no existe
     await client.query(`ALTER TABLE ejercicios ADD COLUMN IF NOT EXISTS sets_data TEXT;`);
+    // Migración: campos de perfil físico en users
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS edad INT;`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS genero TEXT;`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS peso_corporal REAL;`);
 
     // Catálogo de ejercicios clasificados por grupo muscular
     await client.query(`
