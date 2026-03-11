@@ -1554,24 +1554,41 @@ async function openDetalle(id){
     const ejList=ejOrd.map(k=>ejIdx[k]);
     html+='<div class="card-title" style="margin-bottom:8px">Ejercicios ('+ejList.length+')</div>';
     html+=ejList.map(e=>{
-      // Determinar series reales: 1) sets_data de la primera fila, 2) múltiples filas antiguas, 3) sintético
+      // Series reales: 1) sets_data, 2) múltiples filas antiguas (una fila por serie)
+      // NO generar series sintéticas idénticas (produce "mismo peso y reps" en todas)
       let sets=null;
       const firstWithData=e._rows.find(r=>r.sets_data);
       if(firstWithData?.sets_data){try{sets=JSON.parse(firstWithData.sets_data);}catch(x){}}
-      if(!sets&&e._rows.length>1){sets=e._rows.map(r=>({reps:r.reps,kg:r.peso_kg}));}
-      if(!sets&&e.series>0){sets=Array.from({length:e.series},()=>({reps:e.reps,kg:e.peso_kg}));}
+      if(!sets&&e._rows.length>1){sets=e._rows.map(r=>({reps:r.reps??0,kg:r.peso_kg??0}));}
       const hasSets=sets?.length>0;
-      const setsHtml=hasSets?sets.map((s,i)=>
-        '<div class="ej-set-row"><span class="ej-set-num">'+(i+1)+'</span>'
-        +'<span class="ej-set-weight">'+((s.kg||s.peso_kg)>0?(s.kg||s.peso_kg)+'kg':'—')+'</span>'
-        +'<span style="color:var(--text2);font-size:11px">×</span>'
-        +'<span class="ej-set-reps">'+(s.reps>0?s.reps+' reps':'—')+'</span>'
-        +'</div>').join(''):'';
+
+      // Calcular resumen desde sets_data cuando está disponible (más preciso que el MAX del DB)
+      const nSeries=hasSets?sets.length:(e.series||0);
+      const maxKg=hasSets?Math.max(...sets.map(s=>s.kg??s.peso_kg??0)):(e.peso_kg??0);
+      const maxReps=hasSets?Math.max(...sets.map(s=>s.reps??0)):(e.reps??0);
+
+      // Formato resumen: "4 × 10 reps × 80kg" (gym notation)
+      const partes=[];
+      if(nSeries>0)partes.push(nSeries+(nSeries===1?' serie':' series'));
+      if(maxReps>0)partes.push(maxReps+' reps');
+      if(maxKg>0)partes.push(maxKg+'kg');
+      const resumen=partes.length?partes.join(' · '):'Sin datos';
+
+      const setsHtml=hasSets?sets.map((st,i)=>{
+        const kg=st.kg??st.peso_kg??0;
+        const reps=st.reps??0;
+        return '<div class="ej-set-row"><span class="ej-set-num">'+(i+1)+'</span>'
+          +'<span class="ej-set-weight">'+(kg>0?kg+'kg':'PC')+'</span>'
+          +'<span style="color:var(--text2);font-size:11px">×</span>'
+          +'<span class="ej-set-reps">'+(reps>0?reps+' reps':'—')+'</span>'
+          +'</div>';
+      }).join(''):'';
+
       return '<div class="ej-group'+(hasSets?'" onclick="this.classList.toggle(\'expanded\')"':'" style="cursor:default"')+'>'
         +'<div class="session-ej-row" style="margin-bottom:0">'
         +'<div class="session-icon" style="background:var(--bg2);width:38px;height:38px;flex-shrink:0;">'+ejIconHtml(e.nombre,e.equipo,26)+'</div>'
         +'<div class="session-info"><div class="session-tipo">'+e.nombre+'</div>'
-        +'<div class="session-meta">'+[e.series?e.series+' series':null,e.reps?e.reps+' reps':null,e.peso_kg?e.peso_kg+'kg':null].filter(Boolean).join(' · ')+'</div></div>'
+        +'<div class="session-meta">'+resumen+'</div></div>'
         +(hasSets?'<svg class="ej-expand-arrow" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>':'')
         +'</div>'
         +(hasSets?'<div class="ej-sets-collapse">'+setsHtml+'</div>':'')
