@@ -1533,27 +1533,94 @@ function sessionIconHtml(grupos,tipo){
   }
   return'<div class="session-icon" style="'+bg+'">'+grupoSVGHtml(grupos[0],28)+'</div>';
 }
+function toggleSC(id){
+  const el=document.getElementById('sc-'+id);
+  if(el)el.classList.toggle('expanded');
+}
 function sessionCard(s){
   const tipo=normTipo(s);
   const grupos=getSessionGrupos(s.ejercicios);
-  const stars=s.valoracion?'★'.repeat(s.valoracion)+'☆'.repeat(Math.max(0,5-s.valoracion)):'';
   const ejCount=s.ejercicios?.length?new Set(s.ejercicios.map(e=>e.nombre.toLowerCase())).size:0;
   let volKg=0;
-  if(s.ejercicios?.length){for(const e of s.ejercicios){if(e.series&&e.reps&&e.peso_kg)volKg+=e.series*e.reps*e.peso_kg;}}
+  if(s.ejercicios?.length){for(const e of s.ejercicios){
+    if(e.sets_data){try{const sd=JSON.parse(e.sets_data);if(Array.isArray(sd))sd.forEach(r=>{volKg+=(r.kg||0)*(r.reps||0);});continue;}catch(x){}}
+    if(e.series&&e.reps&&e.peso_kg)volKg+=e.series*e.reps*e.peso_kg;
+  }}
   volKg=Math.round(volKg);
+
+  // ── Top bar ──
+  const iconHtml=sessionIconHtml(grupos,tipo);
   const gruposHtml=grupos.length
-    ?grupos.map(g=>'<span style="display:inline-flex;align-items:center;gap:3px"><span style="display:inline-block;width:7px;height:7px;background:'+(GRUPO_COLORS[g]||'var(--accent)')+';border-radius:50%"></span><span style="font-size:13px;font-weight:600">'+g+'</span></span>').join('<span style="color:var(--text2);margin:0 2px"> · </span>')
-    :'<span style="font-weight:600;font-size:14px">'+tipo+'</span>';
-  const meta1=[formatFecha(s.fecha),ejCount?ejCount+' ej.':null].filter(Boolean).join(' · ');
-  const meta2=[s.duracion_min?s.duracion_min+' min':null,volKg>0?volKg.toLocaleString()+'kg vol':null,s.calorias?s.calorias+' kcal':null].filter(Boolean).join(' · ');
-  return'<div class="session-item" onclick="openDetalle('+s.id+')">'
-    +sessionIconHtml(grupos,tipo)
-    +'<div class="session-info">'
-    +'<div class="session-tipo">'+gruposHtml+'</div>'
-    +'<div class="session-meta">'+meta1+'</div>'
-    +(meta2?'<div class="session-meta">'+meta2+'</div>':'')
-    +(stars?'<div class="session-stars" style="font-size:11px;letter-spacing:1px">'+stars+'</div>':'')
-    +'</div></div>';
+    ?grupos.map(g=>'<span class="sc-chip" style="background:'+(GRUPO_COLORS[g]||'var(--accent)')+'22;color:'+(GRUPO_COLORS[g]||'var(--accent)')+'"><span style="width:6px;height:6px;border-radius:50%;background:'+(GRUPO_COLORS[g]||'var(--accent)')+'"></span>'+g+'</span>').join('')
+    :'<span class="sc-chip" style="background:var(--bg2);color:var(--text2)">'+tipo+'</span>';
+  const metaParts=[formatFecha(s.fecha),ejCount?ejCount+' ej.':null,s.duracion_min?s.duracion_min+' min':null,volKg>0?volKg.toLocaleString()+'kg':null,s.calorias?s.calorias+' kcal':null].filter(Boolean);
+  const metaHtml='<div class="sc-meta">'+metaParts.join('<br>')+'</div>';
+  const chevron='<svg class="sc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>';
+
+  // ── Exercise blocks ──
+  let ejHtml='';
+  if(s.ejercicios?.length){
+    const ejIdx={},ejOrd=[];
+    s.ejercicios.forEach(e=>{
+      const k=e.nombre.toLowerCase();
+      if(!ejIdx[k]){ejIdx[k]={...e,_rows:[e]};ejOrd.push(k);}
+      else{ejIdx[k]._rows.push(e);ejIdx[k].series=(ejIdx[k].series||0)+(e.series||1);ejIdx[k].reps=Math.max(ejIdx[k].reps||0,e.reps||0);ejIdx[k].peso_kg=Math.max(ejIdx[k].peso_kg||0,e.peso_kg||0);}
+    });
+    ejHtml=ejOrd.map(k=>{
+      const e=ejIdx[k];
+      let sets=null;
+      const firstWithData=e._rows.find(r=>r.sets_data);
+      if(firstWithData?.sets_data){try{sets=JSON.parse(firstWithData.sets_data);}catch(x){}}
+      if(!sets&&e._rows.length>1)sets=e._rows.map(r=>({reps:r.reps??0,kg:r.peso_kg??0}));
+      const hasSets=sets?.length>0;
+      const nSeries=hasSets?sets.length:(e.series||0);
+      const maxKg=hasSets?Math.max(...sets.map(s=>s.kg??0)):(e.peso_kg??0);
+      const maxReps=hasSets?Math.max(...sets.map(s=>s.reps??0)):(e.reps??0);
+      const partes=[];
+      if(nSeries>0)partes.push(nSeries+(nSeries===1?' serie':' series'));
+      if(maxReps>0)partes.push(maxReps+' reps');
+      if(maxKg>0)partes.push(maxKg+'kg');
+      const resumen=partes.length?partes.join(' · '):'Sin datos';
+      const setsHtml=hasSets?sets.map((st,i)=>{
+        const kg=st.kg??0;const reps=st.reps??0;
+        const kcalStr=st.kcal?'<span style="color:var(--text2);font-size:10px;margin-left:auto">'+Math.round(st.kcal)+' kcal</span>':'';
+        return'<div class="ej-set-row"><span class="ej-set-num">'+(i+1)+'</span>'
+          +'<span class="ej-set-weight">'+(kg>0?kg+'kg':'PC')+'</span>'
+          +'<span style="color:var(--text2);font-size:11px">×</span>'
+          +'<span class="ej-set-reps">'+(reps>0?reps+' reps':'—')+'</span>'
+          +kcalStr+'</div>';
+      }).join(''):'';
+      return'<div class="ej-group'+(hasSets?'" onclick="event.stopPropagation();this.classList.toggle(\'expanded\')"':'" style="cursor:default"')+'>'
+        +'<div class="session-ej-row" style="margin-bottom:0">'
+        +'<div class="session-icon" style="background:var(--bg2);width:36px;height:36px;flex-shrink:0">'+ejIconHtml(e.nombre,e.equipo||e.equipo_catalogo,24)+'</div>'
+        +'<div class="session-info"><div class="session-tipo" style="font-size:13px">'+e.nombre+'</div>'
+        +'<div class="session-meta">'+resumen+'</div></div>'
+        +(hasSets?'<svg class="ej-expand-arrow" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>':'')
+        +'</div>'
+        +(hasSets?'<div class="ej-sets-collapse">'+setsHtml+'</div>':'')
+        +'</div>';
+    }).join('');
+  }
+
+  const stars=s.valoracion?'<div style="font-size:11px;letter-spacing:1px;margin-bottom:6px">'+'★'.repeat(s.valoracion)+'☆'.repeat(Math.max(0,5-s.valoracion))+'</div>':'';
+  const btns='<div style="display:flex;gap:7px;margin-top:8px">'
+    +'<button class="btn btn-secondary" style="flex:1;font-size:12px;padding:8px 6px" onclick="event.stopPropagation();borrarSesionConfirm('+s.id+')">🗑 Eliminar</button>'
+    +'<button class="btn btn-primary" style="flex:2;font-size:12px;padding:8px 6px" onclick="event.stopPropagation();repetirWorkout('+s.id+')">🏋️ Repetir</button>'
+    +'</div>';
+
+  return'<div class="sc-card" id="sc-'+s.id+'">'
+    +'<div class="sc-top" onclick="toggleSC('+s.id+')">'
+    +iconHtml
+    +'<div class="sc-grupos">'+gruposHtml+'</div>'
+    +metaHtml
+    +chevron
+    +'</div>'
+    +'<div class="sc-body">'
+    +stars
+    +(ejHtml||'<div style="font-size:13px;color:var(--text2)">Sin ejercicios registrados</div>')
+    +btns
+    +'</div>'
+    +'</div>';
 }
 
 // ══════════════════════════════════════════════
