@@ -597,7 +597,7 @@ input:focus,select:focus{border-color:var(--accent);}
         <div class="card-title">Modo precarga de series</div>
         <div class="setting-options">
           <div class="setting-opt active" id="opt-ultimo" onclick="setPreload('ultimo')">🕐 Último realizado</div>
-          <div class="setting-opt" id="opt-maximo" onclick="setPreload('maximo')">🏆 Máximo peso</div>
+          <div class="setting-opt" id="opt-maximo" onclick="setPreload('maximo')">🏆 Máximo volumen</div>
         </div>
       </div>
 
@@ -2907,6 +2907,15 @@ async function cargarHistorialLocal(){
       const byNombre={};
       ejercicios.forEach(e=>{
         if(!byNombre[e.nombre])byNombre[e.nombre]=[];
+        // Usar sets_data (datos reales por serie) si está disponible
+        if(e.sets_data){
+          try{
+            const sd=typeof e.sets_data==='string'?JSON.parse(e.sets_data):e.sets_data;
+            sd.forEach(s=>byNombre[e.nombre].push({kg:s.kg!=null?s.kg:(s.peso_kg||0),reps:s.reps||0}));
+            return;
+          }catch(x){}
+        }
+        // Fallback: formato antiguo (peso_kg y reps son el máximo de todas las series)
         const n=e.series||1;
         for(let i=0;i<n;i++) byNombre[e.nombre].push({kg:e.peso_kg||0,reps:e.reps||0});
       });
