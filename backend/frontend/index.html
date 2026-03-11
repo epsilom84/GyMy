@@ -462,6 +462,8 @@ input:focus,select:focus{border-color:var(--accent);}
         <div class="filter-chip" onclick="setTipoFilter('Cardio',this)">🏃 Cardio</div>
         <div class="filter-chip" onclick="setTipoFilter('HIIT',this)">🔥 HIIT</div>
       </div>
+      <div class="filters" id="grupo-filters" style="display:none"></div>
+      <div class="filters" id="subgrupo-filters" style="display:none"></div>
       <div id="historial-lista"></div>
       <div class="pagination" id="pagination"></div>
     </div>
@@ -974,7 +976,7 @@ function getPendientesOffline(){return JSON.parse(localStorage.getItem('gymy_off
 // ══════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════
-let currentPage=1,currentTipoFilter='',statsCache=null,ejCount=0;
+let currentPage=1,currentTipoFilter='',currentGrupoFilter='',currentSubgrupoFilter='',statsCache=null,ejCount=0;
 let currentStatsType='ejercicio',selectedStatsEj=null,chartEjPeso=null,chartEjVol=null,chartDias=null;
 
 window.onload=()=>{
@@ -1122,7 +1124,7 @@ function goTab(name,btn){
   if(fabs)fabs.classList.toggle('visible',wkStarted);
   // Re-adjust layout in case tabbar height changed
   if(wkStarted)setTimeout(()=>wkAdjustLayout(),50);
-  if(name==='historial'){currentPage=1;loadHistorial();}
+  if(name==='historial'){currentPage=1;loadHistorial();populateGrupoFilters();}
   if(name==='stats')initStatsView();
   if(name==='perfil'){renderPlantillasList();renderCatalogoList();loadProfileData();}
   if(name==='workout')wkInit();
@@ -1258,6 +1260,8 @@ async function loadHistorial(){
   const q=(document.getElementById('search-q')?.value||'').trim();
   const params={page:currentPage,limit:15};
   if(currentTipoFilter)params.tipo=currentTipoFilter;
+  if(currentGrupoFilter)params.grupo=currentGrupoFilter;
+  if(currentSubgrupoFilter)params.subgrupo=currentSubgrupoFilter;
   if(q)params.q=q;
   const{data}=await getSesiones(params);if(!data.ok)return;
   const el=document.getElementById('historial-lista');
@@ -1273,6 +1277,43 @@ function setTipoFilter(tipo,el){
   document.querySelectorAll('#tipo-filters .filter-chip').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
   clearTimeout(_histSearchTimer);
+  loadHistorial();
+}
+async function populateGrupoFilters(){
+  await loadCatalogo();
+  const cache=window._catalogoCache||{};
+  const grupos=Object.keys(cache).sort();
+  const gEl=document.getElementById('grupo-filters');
+  if(!gEl||!grupos.length)return;
+  gEl.innerHTML=
+    '<div class="filter-chip'+(currentGrupoFilter?'':' active')+'" onclick="setGrupoFilter(\'\',this)">Todos los grupos</div>'+
+    grupos.map(g=>'<div class="filter-chip'+(currentGrupoFilter===g?' active':'')+'" onclick="setGrupoFilter('+JSON.stringify(g)+',this)">'+tipoIcon(g)+' '+g+'</div>').join('');
+  gEl.style.display='flex';
+  _renderSubgrupoFilters();
+}
+function _renderSubgrupoFilters(){
+  const sEl=document.getElementById('subgrupo-filters');if(!sEl)return;
+  if(!currentGrupoFilter){sEl.style.display='none';sEl.innerHTML='';return;}
+  const cache=window._catalogoCache||{};
+  const ejs=cache[currentGrupoFilter]||[];
+  const subgrupos=[...new Set(ejs.map(e=>e.sg).filter(Boolean))].sort();
+  if(!subgrupos.length){sEl.style.display='none';return;}
+  sEl.innerHTML=
+    '<div class="filter-chip'+(currentSubgrupoFilter?'':' active')+'" onclick="setSubgrupoFilter(\'\',this)">Todos</div>'+
+    subgrupos.map(sg=>'<div class="filter-chip'+(currentSubgrupoFilter===sg?' active':'')+'" onclick="setSubgrupoFilter('+JSON.stringify(sg)+',this)">'+sg+'</div>').join('');
+  sEl.style.display='flex';
+}
+function setGrupoFilter(grupo,el){
+  currentGrupoFilter=grupo;currentSubgrupoFilter='';currentPage=1;
+  document.querySelectorAll('#grupo-filters .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  _renderSubgrupoFilters();
+  loadHistorial();
+}
+function setSubgrupoFilter(sg,el){
+  currentSubgrupoFilter=sg;currentPage=1;
+  document.querySelectorAll('#subgrupo-filters .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
   loadHistorial();
 }
 function renderPagination(page,pages){
@@ -2800,6 +2841,7 @@ async function loadCatalogo(){
             equipo:e.equipo||null,
             n:e.nombre,
             m:(e.subgrupo||grupo).toUpperCase(),
+            sg:e.subgrupo||null,
             id:e.id
           }));
         });

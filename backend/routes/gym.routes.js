@@ -197,12 +197,14 @@ router.get('/sesiones', [
   query('desde').optional().isDate(),
   query('hasta').optional().isDate(),
   query('q').optional().isString(),
+  query('grupo').optional().isString(),
+  query('subgrupo').optional().isString(),
 ], async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
     const offset = (page - 1) * limit;
-    const { tipo, desde, hasta, q } = req.query;
+    const { tipo, desde, hasta, q, grupo, subgrupo } = req.query;
     const uid = req.user.id;
 
     let where = 'WHERE s.user_id=$1';
@@ -233,6 +235,22 @@ router.get('/sesiones', [
       )`;
       params.push('%'+q+'%');
       pi++;
+    }
+    if (grupo) {
+      where += ` AND EXISTS (
+        SELECT 1 FROM ejercicios ej2
+        JOIN ejercicios_catalogo ec ON LOWER(ec.nombre) = LOWER(ej2.nombre)
+        WHERE ej2.sesion_id = s.id AND ec.grupo_muscular = $${pi++}
+      )`;
+      params.push(grupo);
+    }
+    if (subgrupo) {
+      where += ` AND EXISTS (
+        SELECT 1 FROM ejercicios ej2
+        JOIN ejercicios_catalogo ec ON LOWER(ec.nombre) = LOWER(ej2.nombre)
+        WHERE ej2.sesion_id = s.id AND ec.subgrupo = $${pi++}
+      )`;
+      params.push(subgrupo);
     }
 
     const totalRow = await queryOne(`SELECT COUNT(*) as n FROM sesiones s ${where}`, params);
