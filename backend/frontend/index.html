@@ -3544,9 +3544,10 @@ function wkRenderEjList(list,showGroup){
       return maxKg+'kg×'+avgReps;
     })():'';
     const safeE=JSON.stringify({em:e.em,equipo:e.equipo||null,n:e.n,m:e.m}).replace(/'/g,"&#39;");
-    const _ci=ejHasImg(e.n)?'ej-card--img':'ej-card--svg';
+    const _hasImg=ejHasImg(e.n);
+    const _ci=_hasImg?'ej-card--img':'ej-card--svg';
     return '<div class="ej-card '+_ci+'" onclick=\'wkAddEx('+safeE+')\'>'
-      +'<div class="ej-item-em">'+ejIconHtml(e.n,e.equipo,56)+'</div>'
+      +(_hasImg?'<div class="ej-item-em">'+ejIconHtml(e.n,e.equipo,56)+'</div>':'')
       +'<div class="ej-card-n">'+e.n+'</div>'
       +(e.sg?'<div class="ej-card-sg">'+e.sg+'</div>':'')
       +(hint?'<div class="ej-card-hint">'+hint+'</div>':'')
