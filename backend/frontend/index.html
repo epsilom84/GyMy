@@ -357,7 +357,7 @@ input:focus,select:focus{border-color:var(--accent);}
 .ej-card:active,.ej-card:hover{border-color:var(--accent);}
 .ej-card-n{font-weight:600;font-size:11px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;padding:0 4px;}
 .ej-card-hint{font-size:10px;color:var(--accent2);font-weight:700;}
-.ej-card-m{font-size:9px;color:var(--text2);}
+.ej-card-m{font-size:9px;color:var(--text2);}.ej-card-sg{font-size:9px;color:var(--text2);opacity:.8;line-height:1.2;}
 .ej-card--img{padding:0 0 4px;gap:1px;}
 .ej-card--img .ej-item-em{width:100%;height:90px;flex-shrink:0;border-radius:10px 10px 0 0;overflow:hidden;}
 .ej-card--img .ej-item-em img{width:100%!important;height:100%!important;object-fit:cover;border-radius:0;}
@@ -1625,6 +1625,7 @@ async function openDetalle(id){
         +'<div class="session-ej-row" style="margin-bottom:0">'
         +'<div class="session-icon" style="background:var(--bg2);width:38px;height:38px;flex-shrink:0;">'+ejIconHtml(e.nombre,e.equipo,26)+'</div>'
         +'<div class="session-info"><div class="session-tipo">'+e.nombre+'</div>'
+        +(e.subgrupo?'<div style="font-size:11px;color:var(--text2);line-height:1.3;margin-bottom:1px">'+e.subgrupo+'</div>':'')
         +'<div class="session-meta">'+resumen+'</div></div>'
         +(hasSets?'<svg class="ej-expand-arrow" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>':'')
         +'</div>'
@@ -3547,6 +3548,7 @@ function wkRenderEjList(list,showGroup){
     return '<div class="ej-card '+_ci+'" onclick=\'wkAddEx('+safeE+')\'>'
       +'<div class="ej-item-em">'+ejIconHtml(e.n,e.equipo,56)+'</div>'
       +'<div class="ej-card-n">'+e.n+'</div>'
+      +(e.sg?'<div class="ej-card-sg">'+e.sg+'</div>':'')
       +(hint?'<div class="ej-card-hint">'+hint+'</div>':'')
       +(showGroup?'<div class="ej-card-m">'+e.m+'</div>':'')
       +'</div>';
