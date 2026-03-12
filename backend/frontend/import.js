@@ -397,13 +397,20 @@ async function _resolverCombinaciones(sesiones){
       });
       html+='</select>';
 
+      const hintId='cs-hint-'+_normDomId(original);
       if(autoSuggest){
-        html+='<div style="font-size:11px;color:var(--accent3);margin-top:4px">'
+        html+='<div id="'+hintId+'" style="font-size:11px;color:var(--accent3);margin-top:4px">'
           +'✓ Sugerido: <em>'+_escH(topNombre)+'</em> ('+Math.round(topSim*100)+'%)</div>';
       } else if(cands.length){
-        html+='<div style="font-size:11px;color:var(--text2);margin-top:4px">'
+        html+='<div id="'+hintId+'" style="font-size:11px;color:var(--text2);margin-top:4px">'
           +'Mejor coincidencia: '+Math.round(topSim*100)+'%</div>';
+      } else {
+        html+='<div id="'+hintId+'" style="font-size:11px;color:var(--text2);margin-top:4px"></div>';
       }
+      html+='<div style="margin-top:6px">'
+        +'<a onclick="_abrirBuscarCatalogo(\''+id+'\')" style="font-size:11px;color:var(--accent);cursor:pointer;text-decoration:underline;display:inline-flex;align-items:center;gap:4px">'
+        +'🔍 Buscar entre todos los ejercicios</a>'
+        +'</div>';
       html+='</div></div></div>';
     });
 
@@ -415,6 +422,63 @@ async function _resolverCombinaciones(sesiones){
     document.getElementById('combinar-body').innerHTML=html;
     openModal('modal-import-combinar');
   });
+}
+
+// ── BUSCADOR DE CATÁLOGO COMPLETO (desde modal combinar) ──────────────────────
+let _combinarSelectId=null;
+
+function _abrirBuscarCatalogo(selectId){
+  _combinarSelectId=selectId;
+  const q=document.getElementById('buscar-catalogo-q');
+  if(q)q.value='';
+  _renderBuscarCatalogo('');
+  openModal('modal-buscar-catalogo');
+}
+
+function _renderBuscarCatalogo(q){
+  const cache=window._catalogoCache||{};
+  const flat=Object.entries(cache).flatMap(([grupo,ejs])=>ejs.map(e=>({...e,_grupo:grupo})));
+  const norm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const qn=norm(q);
+  const filtered=qn
+    ?flat.filter(e=>norm(e.n).includes(qn)||norm(e.m||'').includes(qn)||norm(e._grupo).includes(qn))
+    :flat;
+
+  const grid=document.getElementById('buscar-catalogo-grid');
+  if(!grid)return;
+  if(!filtered.length){
+    grid.innerHTML='<div style="color:var(--text2);font-size:13px;padding:24px;text-align:center;grid-column:1/-1">Sin resultados</div>';
+    return;
+  }
+  grid.innerHTML=filtered.map(e=>{
+    const nombre=e.n||'';
+    const grupo=e._grupo||'';
+    const sg=e.sg||e.m||'';
+    return '<div class="ej-card ej-card--svg" onclick="_seleccionarDeBusqueda('+JSON.stringify(nombre)+')">'
+      +'<div class="ej-card-n">'+_escH(nombre)+'</div>'
+      +'<div class="ej-card-m">'+_escH(grupo)+'</div>'
+      +(sg&&sg!==grupo?'<div class="ej-card-sg">'+_escH(sg)+'</div>':'')
+      +'</div>';
+  }).join('');
+}
+
+function _seleccionarDeBusqueda(nombre){
+  if(!_combinarSelectId)return;
+  const sel=document.getElementById(_combinarSelectId);
+  if(!sel){closeModal('modal-buscar-catalogo');return;}
+  // Añadir opción si no existe ya en el select
+  const yaExiste=Array.from(sel.options).some(o=>o.value===nombre);
+  if(!yaExiste){
+    const opt=document.createElement('option');
+    opt.value=nombre;opt.textContent=nombre+' ✓';
+    sel.appendChild(opt);
+  }
+  sel.value=nombre;
+  // Actualizar texto de sugerencia del row
+  const hint=document.getElementById('cs-hint-'+_combinarSelectId.replace('cs_',''));
+  if(hint)hint.textContent='Seleccionado: '+nombre;
+  closeModal('modal-buscar-catalogo');
+  _combinarSelectId=null;
 }
 
 // ── AUTO-CREAR EJERCICIOS EN CATÁLOGO ─────────────────────────────────────────
