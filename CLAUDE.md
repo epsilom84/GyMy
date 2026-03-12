@@ -278,6 +278,56 @@ Perfil → Mis ejercicios personalizados
   └─ "🗑 Eliminar mis personalizados" → DELETE /api/plantillas
 ```
 
+### Importación de historial — flujo completo
+
+```
+Usuario sube archivo (CSV / TSV / Excel / texto libre)
+       ↓
+importHistorialCSV() → _readExcel() si .xlsx, o FileReader si CSV/txt
+       ↓
+openImportPreview(rawText, filename)
+  └─ parsearCSV(rawText) → [sesiones]   (autodetecta formato y separador)
+  └─ Muestra modal-import-preview con resumen + botón "Importar"
+       ↓
+runImport()   ← usuario pulsa "Importar"
+  │
+  ├─ PASO 1: _resolverCombinaciones(sesiones)
+  │     Detecta ejercicios del CSV no presentes en _catalogoCache.
+  │     Si los hay → abre modal-import-combinar (espera Promise).
+  │     Usuario elige ejercicio a ejercicio: combinar con existente o crear nuevo.
+  │     Devuelve Map<nombreOriginalLower → nombreCatálogo> | null (cancelado)
+  │     Si null → aborta. Si Map con entradas → renombra en todas las sesiones.
+  │
+  ├─ PASO 2: _autoCrearEjercicios(sesiones)
+  │     Los ejercicios que aún no están en catálogo → POST /api/catalogo
+  │     (los renombrados en paso 1 ya existen → se saltan)
+  │
+  └─ PASO 3: guardar sesiones una a una
+        crearSesion(sesion) → POST /api/sesiones (con ejercicios y sets_data)
+        Si offline → guardarOffline(sesion) → localStorage
+```
+
+#### Funciones de similitud para resolución de ejercicios
+
+```js
+_normEjN(s)                         // normaliza: minúsculas, sin tildes, sin símbolos
+_bigramasSet(s)                     // Set de bigramas de caracteres del string
+_simSilabas(a, b)                   // similitud Jaccard sobre bigramas (0–1)
+_buscarCandidatosEj(nombre, flat, n) // top-N ejercicios del catálogo por similitud
+_normDomId(s)                       // convierte nombre en ID válido para DOM
+_escH(s)                            // escapa HTML para atributos y contenido
+_resolverCombinaciones(sesiones)    // Promise → Map | null (abre/cierra modal-import-combinar)
+```
+
+**Umbral de sugerencia automática**: ≥ 80% de similitud → el candidato más cercano se preselecciona en el `<select>` con indicación visual `✓ Sugerido`.
+
+**`window._combinarResolver(confirmed)`**: función global que resuelve la Promise del modal. La llaman tanto el botón "Continuar →", el botón "Cancelar" y el botón `×` del modal.
+
+#### ⚠️ Trampas del modal de combinaciones
+
+- `_normDomId` puede colisionar si dos ejercicios se reducen al mismo ID truncado (raro, pero posible con nombres muy cortos o idénticos normalizados). No tiene impacto en la importación, solo en el selector del DOM.
+- No re-abrir el modal manualmente desde fuera de `runImport`; la Promise quedaría sin resolver si `_combinarResolver` ya fue llamado.
+
 ### Búsqueda en historial
 
 - Input con debounce 320 ms → `onHistSearch()` → `loadHistorial()` con `?q=...`

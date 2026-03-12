@@ -118,6 +118,17 @@ Formatos compatibles (entre otros):
 - **Hevy / Strong**: CSV con columna `set order` o `exercise name`
 - Cualquier CSV/TSV con columnas de fecha y ejercicio reconocibles
 
+#### Resolución de ejercicios desconocidos
+
+Antes de guardar, si el archivo contiene ejercicios que no existen en el catálogo, se abre un **modal de resolución** que permite decidir ejercicio a ejercicio:
+
+- **Combinar con uno existente**: elige del listado de candidatos del catálogo, ordenados por porcentaje de similitud. Si la similitud supera el **80%**, el ejercicio más parecido se preselecciona automáticamente (indicado con `✓ Sugerido`).
+- **Crear como nuevo**: el ejercicio se añade al catálogo (opción por defecto si no hay coincidencia suficiente).
+
+La similitud se calcula por **bigramas de caracteres** (Jaccard) sobre texto normalizado (minúsculas, sin tildes, sin símbolos), lo que funciona bien tanto para nombres en español como para los nombres en inglés típicos de apps como Hevy o Strong.
+
+El renombrado se aplica a **todas las sesiones del lote** antes de guardar, por lo que los ejercicios combinados quedan registrados con el nombre canónico del catálogo.
+
 ### 📊 Stats
 - Progresión por ejercicio: peso máximo, volumen máximo, gráfica temporal
 - Distribución por días de la semana con filtros
