@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const Anthropic = require('@anthropic-ai/sdk');
 const { body, query, validationResult } = require('express-validator');
 const { pool, queryOne, queryAll, withTransaction } = require('../database/init');
 const verifyToken = require('../middleware/verifyToken');
@@ -477,30 +478,14 @@ router.post('/ai/import', async (req, res) => {
     const model = 'claude-haiku-4-5-20251001';
     console.log('[AI] Llamando Anthropic model:', model, '| key prefix:', apiKey.slice(0,12)+'...');
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 2000,
-        messages: [{ role: 'user', content: prompt }]
-      })
+    const client = new Anthropic({ apiKey });
+    const message = await client.messages.create({
+      model,
+      max_tokens: 2000,
+      messages: [{ role: 'user', content: prompt }]
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('[AI] Error Anthropic HTTP', response.status, errText);
-      let msg = 'Error '+response.status;
-      try { const j=JSON.parse(errText); msg=j.error?.message||msg; } catch(x){}
-      return res.status(502).json({ ok: false, error: msg });
-    }
-
-    const data = await response.json();
-    const text = data.content?.[0]?.text || '';
+    const text = message.content?.[0]?.text || '';
     console.log('[AI] OK, chars:', text.length);
     res.json({ ok: true, text });
   } catch(e) {
