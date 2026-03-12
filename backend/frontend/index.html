@@ -4,6 +4,12 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>GyMy</title>
+<meta name="theme-color" content="#0a0a0f"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="GyMy"/>
+<link rel="manifest" href="/manifest.json"/>
+<link rel="apple-touch-icon" href="/assets/icon.svg"/>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -3037,7 +3043,7 @@ function wkFilterEj(){
   }
   const all=[];
   Object.values(db).forEach(ejs=>ejs.forEach(e=>{
-    if(_normQ(e.n).includes(q)||_normQ(e.m).includes(q))all.push(e);
+    if(_normQ(e.n).includes(q)||_normQ(e.m).includes(q)||_normQ(e.sg||'').includes(q))all.push(e);
   }));
   wkRenderEjList(all,true);
 }
@@ -3412,6 +3418,9 @@ function wkCancelStart(){
   // Tab workout sigue oculto, no hacer nada más
 }
 
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
 </script>
 <script src="/import.js"></script>
 
