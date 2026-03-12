@@ -1,6 +1,6 @@
 # 🏋️ GyMy
 
-**App web personal de registro de entrenamientos.** Autenticación por usuario, historial completo, estadísticas de progreso, workout activo con timer y detector de PR, catálogo de 268 ejercicios desde BD, plantillas personales, coach IA, soporte offline y temas visuales.
+**App web personal de registro de entrenamientos.** Autenticación por usuario, historial completo, estadísticas de progreso, workout activo con timer y detector de PR, catálogo de 262 ejercicios desde BD, plantillas personales, coach IA, soporte offline, PWA instalable y temas visuales.
 
 🔗 **Producción**: https://gymy-production.up.railway.app/
 
@@ -17,8 +17,10 @@ gymy/
     ├── server.js           ← Entry point Express
     ├── package.json
     ├── .env.example        ← Variables de entorno de ejemplo
+    ├── excel_to_json.js    ← Script: genera plantillas_ejercicios.json desde Excel
+    ├── check_dupes.js      ← Utilidad: detecta duplicados en el Excel
     ├── database/
-    │   ├── init.js         ← Pool PostgreSQL + schema + seeds
+    │   ├── init.js         ← Pool PostgreSQL + schema + seeds (upsert, no borra)
     │   └── migrate_ejercicios_catalogo.js ← Script standalone catálogo
     ├── middleware/
     │   └── verifyToken.js
@@ -26,10 +28,18 @@ gymy/
     │   ├── auth.routes.js  ← /api/auth/*
     │   └── gym.routes.js   ← /api/catalogo/* (público) + /api/* (JWT)
     └── frontend/
-        ├── index.html      ← SPA completa (toda la app en un archivo)
-        ├── actividad.html  ← Vista workout activo
+        ├── index.html      ← SPA completa (~3500 líneas)
+        ├── import.js       ← Lógica de importación de historial (extraída de index.html)
         ├── api.js          ← Cliente HTTP
-        └── assets/         ← Imágenes estáticas (SVGs de equipo, iconos ejercicios)
+        ├── sw.js           ← Service Worker (PWA)
+        ├── manifest.json   ← Web App Manifest (PWA)
+        └── assets/
+            ├── icon.svg                    ← Icono app (mancuerna)
+            ├── musculos.svg                ← Ilustración cuerpo humano
+            ├── plantillas_ejercicios.json  ← 262 ejercicios (fuente del catálogo)
+            ├── plantilla_ejercicios.xlsx   ← Excel fuente del catálogo
+            ├── equipo/                     ← SVGs de equipamiento
+            └── descarga.jpeg              ← Icono personalizado: Sentadilla Barra
 ```
 
 ---
@@ -69,6 +79,19 @@ node server.js
 
 ---
 
+## 📲 PWA (Progressive Web App)
+
+GyMy es instalable como app nativa en iOS y Android:
+
+- **`manifest.json`**: nombre, colores, icono, modo standalone
+- **`sw.js`**: service worker con cache-first para assets, network-first para HTML, bypass en `/api/`
+- Meta tags para iOS (`apple-mobile-web-app-capable`) y Android (`theme-color`)
+- Icono SVG (`/assets/icon.svg`) — mancuerna sobre fondo oscuro
+
+En Chrome/Safari: *Añadir a pantalla de inicio* o instalar desde el navegador.
+
+---
+
 ## 📱 Pantallas
 
 ### 🔐 Auth
@@ -78,80 +101,88 @@ node server.js
 ### 🏠 Dashboard
 - Estadísticas: sesiones totales, racha, horas, sesiones esta semana
 - Gráfica de progreso últimas 8 semanas + lista de sesiones recientes
-- **Coach Sasha**: frases motivacionales basadas en estadísticas reales; pulsación larga genera un plan de entrenamiento personalizado vía API de Claude (requiere `ANTHROPIC_API_KEY`)
+- **Coach Sasha**: frases motivacionales basadas en estadísticas reales; pulsación larga genera plan de entrenamiento personalizado vía API de Claude; el plan se **cachea 12h** en `localStorage`
+- Skeleton loaders mientras se cargan los datos; empty state ilustrado si no hay sesiones
 
 ### 🏋️ Workout activo
 - Selecciona grupo muscular → ejercicio del **catálogo desde BD** → registra series
 - **Preload de series**: precarga todas las series del último entrenamiento o del de máximo volumen
-- **Timer de descanso**: se activa automáticamente al marcar ✓ en una serie
-- **Detector de PR** en tiempo real
-- **Botón "+"** en el selector de ejercicios para crear un ejercicio nuevo y añadirlo al catálogo personal directamente desde el workout
-- **Iconos personalizados** por ejercicio (imagen desde `/assets/`) — actualmente: Sentadilla Barra
-- Tab "Workout" persiste en la barra de navegación hasta guardar o descartar
+- **Timer de descanso** con **progress ring SVG** animado; se activa al marcar ✓
+- **Dots de progreso** (●○○○) encima de cada ejercicio — verde = completada, amarillo = PR
+- **Steppers de kg/reps** en Bebas Neue 22px para leer desde lejos en el gimnasio
+- **Detector de PR** en tiempo real con badge y toast
+- **Haptic feedback**: vibración corta al marcar serie, triple al PR, al acabar timer
+- Botón "+" para crear ejercicio nuevo y añadirlo al catálogo personal
+- **Iconos personalizados** por ejercicio — actualmente: Sentadilla Barra
+- Tab "Workout" persiste hasta guardar o descartar
 
 ### 📋 Historial
-- **Buscador en tiempo real** contra toda la BD: busca en tipo, notas, nombres de ejercicios y fechas (ISO, DD/MM/YYYY y formato español `07 mar 2026`)
-- Filtros por tipo de sesión
-- Cards de sesión → pulsas → se abre **modal con el detalle completo**: fecha, duración, calorías, valoración, notas y ejercicios con series expandibles
-- **Repetir Workout**: recarga ejercicios y pesos de una sesión anterior directamente al workout activo
-- **Exportar CSV**: descarga todo el historial en formato propio
-- **Importar historial**: carga sesiones desde archivo externo (ver formatos abajo)
-- **Eliminar todo el historial**: borra todas las sesiones con confirmación
+- **Buscador en tiempo real** contra toda la BD: tipo, notas, ejercicios, fechas (3 formatos)
+- Filtros por **tipo de sesión** y por **grupo/subgrupo muscular** (chips dinámicos desde BD)
+- **Swipe-to-delete**: deslizar tarjeta a la izquierda → papelera roja → confirmación
+- **Barra de acento** lateral en cada tarjeta (color según grupo muscular)
+- Skeleton loaders y empty states ilustrados con `musculos.svg`
+- Modal de detalle: fecha, duración, calorías, valoración, notas y ejercicios con series expandibles
+- **Repetir Workout**: recarga ejercicios y pesos al workout activo
+- **Exportar CSV**, **Importar historial** (con barra de progreso), **Eliminar todo**
 
 #### Importación de historial
 
-El importador detecta automáticamente el formato del archivo:
-
 | Aspecto | Detalle |
 |---|---|
-| Separadores | Tab (`\t`), punto y coma (`;`), pipe (`\|`), coma (`,`) — autodetectado |
-| Formatos de fecha | `DD.MM.YYYY`, `DD/MM/YYYY`, `DD-MM-YYYY`, `YYYY-MM-DD`, ISO con hora |
-| Agrupación | Una sesión por día — múltiples series del mismo ejercicio se agrupan |
-| Series | Detecta columna `Set`/`Set Order` para contar series por ejercicio |
-| Duración | Lee columna `Duration`; si está vacía, calcula desde timestamps de inicio/fin |
-| Tipo de sesión | Detectado automáticamente por nombre de ejercicio si la columna es numérica |
-| Catálogo | Añade automáticamente ejercicios nuevos al catálogo de la BD |
+| Separadores | Tab, `;`, `|`, `,` — autodetectado |
+| Formatos de fecha | `DD.MM.YYYY`, `DD/MM/YYYY`, `YYYY-MM-DD`, ISO |
+| Agrupación | Una sesión por día; series del mismo ejercicio se agrupan |
+| Catálogo | Añade automáticamente ejercicios nuevos (`subgrupo: null`) |
+| Progreso | Barra de progreso durante la importación |
 
-Formatos compatibles (entre otros):
-- **Formato propio GyMy**: `fecha,tipo,duracion_min,calorias,ejercicio,series,reps,peso_kg,notas`
-- **Gymbook** y apps similares: TSV con columnas `Date, Time, Routine, Exercise, Set, Weight, Reps, ...`
-- **Hevy / Strong**: CSV con columna `set order` o `exercise name`
-- Cualquier CSV/TSV con columnas de fecha y ejercicio reconocibles
+Formatos compatibles: GyMy propio, Gymbook, Hevy, Strong, o cualquier CSV/TSV con fecha y ejercicio.
 
 #### Resolución de ejercicios desconocidos
 
-Antes de guardar, si el archivo contiene ejercicios que no existen en el catálogo, se abre un **modal de resolución** que permite decidir ejercicio a ejercicio:
+Antes de guardar, si el archivo tiene ejercicios fuera del catálogo, se abre un modal de resolución ejercicio a ejercicio:
+- **Combinar con existente**: candidatos ordenados por similitud. Si ≥ 80% se preselecciona (`✓ Sugerido`).
+- **Crear como nuevo**: se añade al catálogo.
 
-- **Combinar con uno existente**: elige del listado de candidatos del catálogo, ordenados por porcentaje de similitud. Si la similitud supera el **80%**, el ejercicio más parecido se preselecciona automáticamente (indicado con `✓ Sugerido`).
-- **Crear como nuevo**: el ejercicio se añade al catálogo (opción por defecto si no hay coincidencia suficiente).
-
-La similitud se calcula por **bigramas de caracteres** (Jaccard) sobre texto normalizado (minúsculas, sin tildes, sin símbolos), lo que funciona bien tanto para nombres en español como para los nombres en inglés típicos de apps como Hevy o Strong.
-
-El renombrado se aplica a **todas las sesiones del lote** antes de guardar, por lo que los ejercicios combinados quedan registrados con el nombre canónico del catálogo.
+Similitud calculada por **bigramas Jaccard** sobre texto normalizado.
 
 ### 📊 Stats
 - Progresión por ejercicio: peso máximo, volumen máximo, gráfica temporal
-- Distribución por días de la semana con filtros
+- Filtro por grupo/subgrupo muscular
+- Distribución por días de la semana
 
 ### 👤 Perfil
-- Datos personales: edad, género, altura, peso, nivel de actividad, objetivo
-- **Catálogo completo**: 268 ejercicios agrupados por músculo (acordeones)
-- **Mis ejercicios personalizados**: guardados en BD, solo visibles para el usuario
-  - Añadir individualmente con selector de grupo muscular dinámico
-  - **Importar desde archivo** (JSON, CSV o texto plano) con inferencia de grupo muscular y preview antes de confirmar
-  - Eliminar uno a uno o todos
-- Configuración: tema visual, modo preload de series, sync offline
-- Cerrar sesión
+- Datos personales: edad, género, peso, nivel, objetivo
+- **Catálogo completo**: 262 ejercicios agrupados por músculo
+- **Mis ejercicios personalizados**: añadir / importar archivo / eliminar
+- Configuración: tema visual, modo preload, sync offline
+- **Auto-tema**: claro entre 7–20h, oscuro el resto (si no hay preferencia guardada)
+
+---
+
+## 🎨 Diseño y UX
+
+| Mejora | Descripción |
+|---|---|
+| Skeleton loaders | Placeholders animados (shimmer) mientras cargan datos |
+| Empty states | Ilustración `musculos.svg` + texto si no hay sesiones |
+| Swipe-to-delete | Deslizar historial → papelera roja → confirmación |
+| Progress ring | SVG circular animado en el timer de descanso |
+| Dots de series | ●○○○ sobre cada ejercicio del workout |
+| Haptic feedback | Vibraciones nativas en acciones clave |
+| Slide tabs | Transición horizontal entre pantallas según dirección |
+| Drag handle | Pastilla visual en los bottom sheets |
+| Auto-tema | Claro/oscuro automático según la hora |
+| Barra acento | Línea lateral de color en tarjetas de sesión |
 
 ---
 
 ## 🤖 Coach Sasha (IA)
 
-Asistente de entrenamiento integrado en el Dashboard:
-
-- **Frases dinámicas**: basadas en estadísticas reales (racha, horas, PR, grupo favorito…)
-- **Plan de entrenamiento personalizado**: pulsación larga sobre la coach → genera un plan semanal adaptado al historial del usuario usando la API de Claude (modelo Haiku)
-- Requiere `ANTHROPIC_API_KEY` configurada en Railway
+- **Frases dinámicas**: basadas en estadísticas reales del usuario
+- **Plan personalizado**: pulsación larga → plan semanal con API de Claude (Haiku)
+- **Caché 12h** en `localStorage` — botón "Regenerar" para forzar nuevo plan
+- Requiere `ANTHROPIC_API_KEY` en Railway
 
 ---
 
@@ -159,15 +190,15 @@ Asistente de entrenamiento integrado en el Dashboard:
 
 | ID | Nombre |
 |---|---|
-| `dark` | 🌑 Oscuro (defecto) |
-| `light` | ☀️ Claro |
+| `dark` | 🌑 Oscuro (defecto nocturno) |
+| `light` | ☀️ Claro (defecto diurno 7–20h) |
 | `choni` | 💅 Choni-cani |
 | `material-dark` | ◐ Material Dark |
 | `material-light` | ○ Material Light |
 
 ---
 
-## 💪 Catálogo de ejercicios (268 ejercicios en BD)
+## 💪 Catálogo de ejercicios (262 ejercicios en BD)
 
 | Grupo | Subgrupos |
 |---|---|
@@ -179,32 +210,41 @@ Asistente de entrenamiento integrado en el Dashboard:
 | Brazos Tríceps | Tríceps |
 | Core | Recto abdominal |
 
-> El catálogo se borra y re-puebla automáticamente al arrancar el servidor desde `plantillas_ejercicios.json`. La importación de historial puede añadir ejercicios nuevos al catálogo.
+El catálogo se actualiza con **upsert** al arrancar desde `plantillas_ejercicios.json`. Los ejercicios añadidos vía API no se borran al reiniciar.
+
+### Actualizar catálogo desde Excel
+
+```bash
+cd backend
+node excel_to_json.js   # genera plantillas_ejercicios.json desde plantilla_ejercicios.xlsx
+```
+
+Luego commit + push a `main`. Railway hará upsert en el próximo reinicio.
 
 ---
 
 ## 📶 Offline
 
 - Sesiones guardadas en `localStorage` sin conexión
-- Badge naranja con número de sesiones pendientes
-- Sync manual desde Perfil → Configuración
-- Sync automático al recuperar conexión
+- Badge naranja con sesiones pendientes
+- Sync manual desde Perfil / Sync automático al recuperar conexión
+- Shell de la app cacheada por el service worker (funciona sin red)
 
 ---
 
 ## 🔒 Seguridad
 
 - Contraseñas hasheadas con **bcrypt**
-- **JWT**: access token (15 min) + refresh token (persistente)
-- Datos aislados por usuario con `user_id` en PostgreSQL
-- Rate limiting: 30 req/15min en auth, 120 req/min en el resto (`trust proxy = 1` para Railway)
+- **JWT**: access token (15 min) + refresh token
+- Datos aislados por `user_id` en PostgreSQL
+- Rate limiting: 30 req/15min en auth, 120 req/min en el resto
 - Endpoints `/api/catalogo/*` públicos (sin JWT)
 
 ---
 
 ## 🛠 Stack
 
-| | |
+| Capa | Tecnología |
 |---|---|
 | Frontend | HTML · CSS · JS vanilla (SPA sin frameworks) |
 | Backend | Node.js · Express 4 |
@@ -213,5 +253,6 @@ Asistente de entrenamiento integrado en el Dashboard:
 | Deploy | Railway + GitHub (auto-deploy) |
 | Gráficas | Chart.js 4 (CDN) |
 | IA | API de Claude (Anthropic) — Haiku |
+| PWA | Web App Manifest + Service Worker |
 
 > Para detalles técnicos completos (API, schema DB, convenciones de código), ver **[CLAUDE.md](./CLAUDE.md)**.
