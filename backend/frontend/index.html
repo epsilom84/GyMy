@@ -377,6 +377,67 @@ input:focus,select:focus{border-color:var(--accent);}
 .ej-item-n{font-weight:600;font-size:14px;}
 .ej-item-m{font-size:11px;color:var(--text2);}
 
+/* ── SKELETON LOADERS ── */
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skeleton{background:linear-gradient(90deg,var(--bg3) 25%,var(--bg2) 50%,var(--bg3) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:8px;}
+.skel-session{height:72px;border-radius:13px;margin-bottom:7px;}
+.skel-stat{border-radius:16px;height:80px;}
+.skel-bar{border-radius:5px;height:12px;}
+.skel-text{border-radius:4px;height:10px;}
+
+/* ── EMPTY STATES ── */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;gap:14px;text-align:center;}
+.empty-state-icon{width:72px;height:72px;opacity:.2;}
+.empty-state-title{font-family:var(--font-d);font-size:22px;color:var(--text2);}
+.empty-state-sub{font-size:13px;color:var(--text2);opacity:.7;max-width:260px;line-height:1.5;}
+
+/* ── SESSION CARD left accent bar ── */
+.session-item{position:relative;overflow:hidden;}
+.session-item::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--s-color,var(--accent));opacity:.7;border-radius:3px 0 0 3px;}
+.session-item:hover{transform:translateX(3px);}
+
+/* ── FAB active ── */
+.fab:active{transform:scale(.92);box-shadow:0 2px 10px rgba(232,255,71,.2);}
+
+/* ── STAT NUMBERS typography ── */
+.stat-number{letter-spacing:-.5px;}
+
+/* ── CARD accent left border ── */
+.card.card-accent{border-left:3px solid var(--accent);}
+
+/* ── REST TIMER RING ── */
+.rt-ring{width:26px;height:26px;flex-shrink:0;transform:rotate(-90deg);}
+.rt-ring circle{fill:none;stroke-width:3;stroke-linecap:round;}
+.rt-ring .rt-track{stroke:rgba(0,0,0,.22);}
+.rt-ring .rt-prog{stroke:#000;transition:stroke-dashoffset .9s linear;}
+
+/* ── MODAL DRAG HANDLE ── */
+.modal-drag-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px;}
+
+/* ── SETS PROGRESS DOTS ── */
+.sets-dots{display:flex;align-items:center;gap:5px;padding:2px 14px 8px;}
+.set-dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--border);background:transparent;transition:.25s;}
+.set-dot.done{background:var(--accent3,#47ffb2);border-color:var(--accent3,#47ffb2);}
+.set-dot.pr{background:var(--accent);border-color:var(--accent);}
+
+/* ── WORKOUT STEPPERS bigger ── */
+.st-val{font-size:22px!important;font-family:var(--font-d,"Bebas Neue",sans-serif)!important;letter-spacing:.5px;}
+
+/* ── CHECK CIRCLE bounce on done ── */
+@keyframes checkBounce{0%{transform:scale(.85)}55%{transform:scale(1.2)}100%{transform:scale(1)}}
+.check-circle.just-done{animation:checkBounce .28s ease forwards;}
+
+/* ── SWIPE-TO-DELETE wrapper ── */
+.swipe-wrap{position:relative;overflow:hidden;border-radius:13px;margin-bottom:7px;}
+.swipe-del-bg{position:absolute;right:0;top:0;bottom:0;width:76px;background:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;border-radius:0 13px 13px 0;pointer-events:none;}
+.swipe-wrap .session-item{margin-bottom:0;border-radius:13px;transition:transform .18s ease;touch-action:pan-y;will-change:transform;user-select:none;}
+
+/* ── TAB SLIDE TRANSITIONS ── */
+@keyframes slideInRight{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+@keyframes slideInLeft{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:none}}
+.page.slide-right{animation:slideInRight .2s ease;}
+.page.slide-left{animation:slideInLeft .2s ease;}
+
 </style>
 </head>
 <body>
@@ -454,7 +515,7 @@ input:focus,select:focus{border-color:var(--accent);}
         <div class="stat-card"><div class="stat-number" id="s-horas">—</div><div class="stat-label">Horas entreno</div></div>
         <div class="stat-card"><div class="stat-number" id="s-semana">—</div><div class="stat-label">Esta semana</div></div>
       </div>
-      <div class="card">
+      <div class="card card-accent">
         <div class="card-title">Progreso últimas 8 semanas</div>
         <div class="prog-chart" id="chart-progreso"></div>
       </div>
@@ -670,7 +731,10 @@ input:focus,select:focus{border-color:var(--accent);}
         <span id="wk-date-bar"></span>
         <div style="display:flex;align-items:center;gap:8px">
           <div class="rest-timer" id="rest-timer" onclick="wkSkipRest()">
-            <span class="rt-label">DESCANSO</span>
+            <svg class="rt-ring" id="rt-ring" viewBox="0 0 26 26">
+              <circle class="rt-track" cx="13" cy="13" r="10" stroke-dasharray="62.83" stroke-dashoffset="0"/>
+              <circle class="rt-prog" id="rt-prog" cx="13" cy="13" r="10" stroke-dasharray="62.83" stroke-dashoffset="62.83"/>
+            </svg>
             <span id="rt-display">00:00</span>
           </div>
           <span class="session-timer" id="wk-session-secs">⏱ 00:00</span>
@@ -720,6 +784,7 @@ input:focus,select:focus{border-color:var(--accent);}
 <!-- Coach Plan -->
 <div class="modal-overlay bottom" id="modal-coach-plan">
   <div class="modal bottom-sheet">
+    <div class="modal-drag-handle"></div>
     <div class="modal-header">
       <div class="modal-title">🏋️‍♀️ Plan de Sasha</div>
       <button class="close-btn" onclick="closeModal('modal-coach-plan')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
@@ -731,6 +796,7 @@ input:focus,select:focus{border-color:var(--accent);}
 <!-- Detalle sesión -->
 <div class="modal-overlay bottom" id="modal-detalle">
   <div class="modal bottom-sheet">
+    <div class="modal-drag-handle"></div>
     <div class="modal-header">
       <div class="modal-title" id="md-tipo">Sesión</div>
       <button class="close-btn" onclick="closeModal('modal-detalle')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
@@ -1022,7 +1088,20 @@ function getPendientesOffline(){return JSON.parse(localStorage.getItem('gymy_off
 let currentPage=1,currentTipoFilter='',currentGrupoFilter='',currentSubgrupoFilter='',statsCache=null,ejCount=0;
 let currentStatsType='ejercicio',selectedStatsEj=null,chartEjPeso=null,chartEjVol=null,chartDias=null;
 
+// ── Haptic feedback ──
+function haptic(ms){if('vibrate' in navigator){try{navigator.vibrate(ms||12);}catch(e){}}}
+
+// ── Auto-tema por hora del día ──
+function autoThemeByHour(){
+  const saved=localStorage.getItem('gymy_theme');
+  if(saved)return; // respeta preferencia manual
+  const h=new Date().getHours();
+  const theme=(h>=7&&h<20)?'light':'dark';
+  document.documentElement.setAttribute('data-theme',theme);
+}
+
 window.onload=()=>{
+  autoThemeByHour();
   applyTheme();
   if(isLoggedIn())initApp();
   else {
@@ -1157,10 +1236,17 @@ function setLoading(id,loading,text){const b=document.getElementById(id);if(!b)r
 // ══════════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════════
+const _TAB_ORDER=['dashboard','workout','historial','stats','perfil'];
+let _lastTabIdx=0;
 function goTab(name,btn){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const newIdx=_TAB_ORDER.indexOf(name);
+  const dir=newIdx>_lastTabIdx?'slide-right':'slide-left';
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active','slide-right','slide-left'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
+  const page=document.getElementById('page-'+name);
+  page.classList.add('active',dir);
+  setTimeout(()=>page.classList.remove('slide-right','slide-left'),220);
+  if(newIdx>=0)_lastTabIdx=newIdx;
   btn.classList.add('active');
   // Workout FABs: visible on ALL tabs when workout is active
   const fabs=document.getElementById('wk-fabs');
@@ -1175,6 +1261,7 @@ function goTab(name,btn){
 
 // ── WORKOUT BUTTON ──
 function iniciarWorkout(){
+  haptic(15);
   const btn=document.getElementById('tab-workout');
   // Si ya hay workout activo, simplemente ir a la vista
   if(wkIsActive()){goTab('workout',btn);return;}
@@ -1197,6 +1284,11 @@ function updateOfflineBadge(){
 // DASHBOARD
 // ══════════════════════════════════════════════
 async function loadDashboard(){
+  // Skeleton stats
+  const skelStat=(id)=>{const el=document.getElementById(id);if(el){el.innerHTML='<div class="skeleton skel-bar" style="width:60%;height:28px;margin:0 auto"></div>';}};
+  ['s-total','s-racha','s-semana','s-horas'].forEach(skelStat);
+  const recEl=document.getElementById('dash-recientes');
+  if(recEl)recEl.innerHTML=Array(2).fill('<div class="skeleton skel-session"></div>').join('');
   const{data}=await getStats();if(!data.ok)return;
   statsCache=data.stats;const s=data.stats;
   const horas=Math.floor(s.totalMinutos/60)+'h';
@@ -1435,7 +1527,10 @@ function renderProgreso(semanas){
 }
 function renderRecientes(sesiones){
   const el=document.getElementById('dash-recientes');
-  if(!sesiones||!sesiones.length){el.innerHTML='<p style="color:var(--text2);font-size:13px">Aún no hay sesiones.</p>';return;}
+  if(!sesiones||!sesiones.length){
+    el.innerHTML='<div class="empty-state" style="padding:28px 20px"><img class="empty-state-icon" src="/assets/musculos.svg" alt=""/><div class="empty-state-title">Sin sesiones</div><div class="empty-state-sub">Pulsa ＋ para empezar tu primer entrenamiento</div></div>';
+    return;
+  }
   el.innerHTML=sesiones.map(s=>sessionCard(s)).join('');
 }
 
@@ -1443,6 +1538,44 @@ function renderRecientes(sesiones){
 // HISTORIAL
 // ══════════════════════════════════════════════
 let _histSearchTimer=null;
+
+// ── Swipe-to-delete ──
+function _initSwipeDelete(){
+  document.querySelectorAll('.swipe-wrap').forEach(wrap=>{
+    const item=wrap.querySelector('.session-item');
+    if(!item||wrap._swipeInit)return;
+    wrap._swipeInit=true;
+    let sx=0,dx=0,dragging=false;
+    const threshold=60;
+    item.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;dx=0;dragging=true;},{passive:true});
+    item.addEventListener('touchmove',e=>{
+      if(!dragging)return;
+      dx=e.touches[0].clientX-sx;
+      if(dx<0){item.style.transform='translateX('+Math.max(dx,-76)+'px)';}
+      else{item.style.transform='translateX(0)';}
+    },{passive:true});
+    item.addEventListener('touchend',()=>{
+      dragging=false;
+      if(dx<-threshold){
+        item.style.transform='translateX(-76px)';
+        const id=+wrap.dataset.id;
+        setTimeout(()=>showConfirm('¿Eliminar sesión?','Esta acción no se puede deshacer.','Eliminar',async()=>{
+          const{data}=await eliminarSesion(id);
+          if(data.ok){
+            wrap.style.transition='opacity .25s,max-height .3s';
+            wrap.style.opacity='0';wrap.style.maxHeight='0';wrap.style.overflow='hidden';
+            setTimeout(()=>{wrap.remove();loadDashboard();},320);
+            showToast('Sesión eliminada','info');
+          } else {item.style.transform='';showToast(data.error,'error');}
+        }),150);
+      } else {
+        item.style.transition='transform .18s ease';
+        item.style.transform='';
+        setTimeout(()=>item.style.transition='',200);
+      }
+    });
+  });
+}
 function onHistSearch(){
   clearTimeout(_histSearchTimer);
   _histSearchTimer=setTimeout(()=>{currentPage=1;loadHistorial();},320);
@@ -1454,15 +1587,19 @@ async function loadHistorial(){
   if(currentGrupoFilter)params.grupo=currentGrupoFilter;
   if(currentSubgrupoFilter)params.subgrupo=currentSubgrupoFilter;
   if(q)params.q=q;
-  const{data}=await getSesiones(params);if(!data.ok)return;
   const el=document.getElementById('historial-lista');
+  // Skeleton while loading
+  el.innerHTML=Array(4).fill('<div class="skeleton skel-session"></div>').join('');
+  const{data}=await getSesiones(params);if(!data.ok){el.innerHTML='';return;}
   if(!data.sesiones.length){
-    el.innerHTML='<p style="color:var(--text2);font-size:13px">'+(q?'Sin resultados para "'+q+'"':'No hay sesiones.')+'</p>';
+    const emptyMsg=q?`Sin resultados para <em>"${q}"</em>`:'Aún no tienes sesiones registradas.<br>¡Empieza tu primer entrenamiento!';
+    el.innerHTML='<div class="empty-state"><img class="empty-state-icon" src="/assets/musculos.svg" alt=""/><div class="empty-state-title">'+(q?'Sin resultados':'Sin sesiones')+'</div><div class="empty-state-sub">'+emptyMsg+'</div></div>';
     document.getElementById('pagination').innerHTML='';
     document.querySelector('.section-sub[id="hist-sub"]')&&(document.getElementById('hist-sub').textContent='Todas tus sesiones');
     return;
   }
   el.innerHTML=data.sesiones.map(s=>sessionCard(s)).join('');
+  _initSwipeDelete();
   // Mostrar total
   const subEl=document.getElementById('hist-sub');
   if(subEl){
@@ -1587,14 +1724,18 @@ function sessionCard(s){
     :'<span style="font-weight:600;font-size:14px">'+tipo+'</span>';
   const meta1=[formatFecha(s.fecha),ejCount?ejCount+' ej.':null].filter(Boolean).join(' · ');
   const meta2=[s.duracion_min?s.duracion_min+' min':null,volKg>0?volKg.toLocaleString()+'kg vol':null,s.calorias?s.calorias+' kcal':null].filter(Boolean).join(' · ');
-  return'<div class="session-item" onclick="openDetalle('+s.id+')">'
+  const sColor=GRUPO_COLORS[grupos[0]]||GRUPO_COLORS[tipo]||'var(--accent)';
+  return'<div class="swipe-wrap" data-id="'+s.id+'">'
+    +'<div class="swipe-del-bg">🗑</div>'
+    +'<div class="session-item" style="--s-color:'+sColor+'" onclick="openDetalle('+s.id+')">'
     +sessionIconHtml(grupos,tipo)
     +'<div class="session-info">'
     +'<div class="session-tipo">'+gruposHtml+'</div>'
     +'<div class="session-meta">'+meta1+'</div>'
     +(meta2?'<div class="session-meta">'+meta2+'</div>':'')
     +(stars?'<div class="session-stars" style="font-size:11px;letter-spacing:1px">'+stars+'</div>':'')
-    +'</div></div>';
+    +'</div></div>'
+  +'</div>';
 }
 
 // ══════════════════════════════════════════════
@@ -3202,6 +3343,10 @@ function wkCardHTML(ex){
       +'<button class="del-btn" onclick="wkDelSet('+ex.id+','+i+')">✕</button>'
     +'</div>';
   }).join('');
+  const dotsHtml='<div class="sets-dots">'+ex.sets.map((s,i)=>{
+    const isPRDot=s.done&&prKg>0&&s.kg>prKg;
+    return'<div class="set-dot'+(s.done?(isPRDot?' pr':' done')+'':'')+'" title="Serie '+(i+1)+(s.done?' ✓':'')+'"></div>';
+  }).join('')+'</div>';
   return '<div class="ex-card" id="wk-ex-'+ex.id+'">'
     +'<div class="ex-header">'
       +'<div class="ex-left"><div class="ex-emoji">'+ejIconHtml(ex.n,ex.equipo,28)+'</div>'
@@ -3211,6 +3356,7 @@ function wkCardHTML(ex){
         +'<button class="ex-del-btn" onclick="wkDelExercise('+ex.id+')">🗑</button>'
       +'</div>'
     +'</div>'
+    +dotsHtml
     +vsHtml
     +(hist.length>=3?'<div class="gauss-wrap"><canvas id="wk-gauss-cv-'+ex.id+'"></canvas><div class="gauss-pct" id="wk-gauss-pct-'+ex.id+'"></div></div>':'')
     +'<div class="col-heads"><span>SET</span><span>KG</span><span>REPS</span><span></span><span></span></div>'
@@ -3261,19 +3407,27 @@ function wkToggleDone(exId,si){
     ex.sets[si].pre=false;
     const restDef=parseInt(localStorage.getItem('gymy_rest_secs')||'90');
     ex.sets[si].kcal=calcKcalSerie(ex.sets[si].kg,ex.sets[si].reps,ex.m,restDef);
+    haptic(18);
     wkStartRestTimer();
     const hist=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]').filter(h=>h.nombre===ex.n);
     const prKg=hist.length?Math.max(...hist.map(h=>h.kg)):0;
     const isPR=prKg>0&&ex.sets[si].kg>prKg;
-    if(isPR)showToast('🏆 Nuevo PR en '+ex.n+'!','success');
+    if(isPR){haptic([30,20,30]);showToast('🏆 Nuevo PR en '+ex.n+'!','success');}
     else showToast('Serie completada ✓ +'+ex.sets[si].kcal+'kcal');
-  } else { delete ex.sets[si].kcal; wkSkipRest(); }
-  wkReRenderCard(ex);wkRefreshStats();wkSaveState();
+  } else { delete ex.sets[si].kcal; haptic(8); wkSkipRest(); }
+  wkReRenderCard(ex);
+  // Bounce animation on check circle
+  setTimeout(()=>{
+    const cc=document.querySelector('#wk-sr-'+exId+'-'+si+' .check-circle');
+    if(cc&&ex.sets[si].done){cc.classList.add('just-done');setTimeout(()=>cc.classList.remove('just-done'),300);}
+  },10);
+  wkRefreshStats();wkSaveState();
 }
 function wkAddSet(exId){
   const ex=wkExs.find(e=>e.id===exId);if(!ex)return;
   const l=ex.sets[ex.sets.length-1];
   ex.sets.push({kg:l.kg,reps:l.reps,done:false,pre:false});
+  haptic(10);
   wkReRenderCard(ex);wkSaveState();
 }
 function wkDelSet(exId,si){
@@ -3300,10 +3454,18 @@ function wkRefreshStats(){
 }
 
 // ── Rest timer ──
+const RT_CIRCUMFERENCE=62.83;
+function _rtUpdateRing(secs,total){
+  const prog=document.getElementById('rt-prog');if(!prog)return;
+  const offset=RT_CIRCUMFERENCE*(1-secs/total);
+  prog.style.strokeDashoffset=RT_CIRCUMFERENCE-offset;
+}
 function wkStartRestTimer(){
   const def=parseInt(localStorage.getItem('gymy_rest_secs')||'90');
   wkRestSecs=def;wkRestRunning=true;
   document.getElementById('rest-timer').classList.add('active');
+  _rtUpdateRing(def,def);
+  haptic(12);
   clearInterval(wkRestInterval);
   wkRestInterval=setInterval(()=>{
     if(!wkRestRunning)return;
@@ -3311,19 +3473,18 @@ function wkStartRestTimer(){
     if(wkRestSecs<=0){
       clearInterval(wkRestInterval);wkRestRunning=false;
       document.getElementById('rest-timer').classList.remove('active');
+      haptic([50,30,50]);
       showToast('¡Descanso terminado! 💪');return;
     }
     const m=String(Math.floor(wkRestSecs/60)).padStart(2,'0');
     const s=String(wkRestSecs%60).padStart(2,'0');
-    const str=m+':'+s;
-    document.getElementById('rt-display').textContent=str;
-    // rest display removed
+    document.getElementById('rt-display').textContent=m+':'+s;
+    _rtUpdateRing(wkRestSecs,def);
   },1000);
 }
 function wkSkipRest(){
   clearInterval(wkRestInterval);wkRestRunning=false;
   document.getElementById('rest-timer').classList.remove('active');
-  // rest display removed
 }
 
 // ── Save / Discard ──
@@ -3427,6 +3588,7 @@ if('serviceWorker' in navigator){
 <!-- Modal selector ejercicio stats -->
 <div class="modal-overlay" id="modal-stats-ej" style="align-items:flex-end;justify-content:center">
   <div class="modal bottom-sheet" style="max-height:85vh;display:flex;flex-direction:column">
+    <div class="modal-drag-handle"></div>
     <div class="modal-header">
       <div class="modal-title" id="stats-modal-title">Grupo muscular</div>
       <button class="close-btn" onclick="closeModal('modal-stats-ej')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
