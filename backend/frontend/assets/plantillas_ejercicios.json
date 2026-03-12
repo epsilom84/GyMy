@@ -1,12 +1,5 @@
 [
   {
-    "nombre": "Curl de piernas acostado femoral",
-    "grupo_muscular": "Piernas",
-    "subgrupo": "Femoral",
-    "equipo": "máquina",
-    "tipo": "fuerza"
-  },
-  {
     "nombre": "Curl de piernas de pie femoral",
     "grupo_muscular": "Piernas",
     "subgrupo": "Femoral",
@@ -105,7 +98,7 @@
     "tipo": "fuerza"
   },
   {
-    "nombre": "Zancadas estocadas con barra",
+    "nombre": "StepUps Zancadas estocadas con barra",
     "grupo_muscular": "Piernas",
     "subgrupo": "Cuádriceps",
     "equipo": "barra",
@@ -241,6 +234,13 @@
     "nombre": "Sentadilla de rodillas con barra",
     "grupo_muscular": "Piernas",
     "subgrupo": "Glúteo",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Zancadas estocadas con barra",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
     "equipo": "barra",
     "tipo": "fuerza"
   },
@@ -1015,10 +1015,10 @@
     "tipo": "fuerza"
   },
   {
-    "nombre": "Curl de bíceps con barra",
+    "nombre": "Curl de bíceps con barra Z",
     "grupo_muscular": "Brazos Bíceps",
-    "subgrupo": null,
-    "equipo": null,
+    "subgrupo": "Bíceps",
+    "equipo": "barra",
     "tipo": "fuerza"
   },
   {
@@ -1099,20 +1099,6 @@
     "tipo": "fuerza"
   },
   {
-    "nombre": "Curl",
-    "grupo_muscular": "Brazos Bíceps",
-    "subgrupo": "Femoral",
-    "equipo": "máquina",
-    "tipo": "fuerza"
-  },
-  {
-    "nombre": "Curl barra Z agarre ancho",
-    "grupo_muscular": "Brazos Bíceps",
-    "subgrupo": null,
-    "equipo": null,
-    "tipo": "fuerza"
-  },
-  {
     "nombre": "Curl barra Z agarre cerrado",
     "grupo_muscular": "Brazos Bíceps",
     "subgrupo": "Bíceps",
@@ -1162,10 +1148,10 @@
     "tipo": "fuerza"
   },
   {
-    "nombre": "Press francés con barra",
+    "nombre": "Press francés con barra Z",
     "grupo_muscular": "Brazos Tríceps",
-    "subgrupo": null,
-    "equipo": null,
+    "subgrupo": "Tríceps",
+    "equipo": "barra",
     "tipo": "fuerza"
   },
   {
@@ -1183,10 +1169,10 @@
     "tipo": "fuerza"
   },
   {
-    "nombre": "Press francés sentado con barra",
+    "nombre": "Press francés sentado con barra Z",
     "grupo_muscular": "Brazos Tríceps",
-    "subgrupo": null,
-    "equipo": null,
+    "subgrupo": "Tríceps",
+    "equipo": "barra",
     "tipo": "fuerza"
   },
   {
@@ -1435,10 +1421,10 @@
     "tipo": "fuerza"
   },
   {
-    "nombre": "Pullover con barra",
+    "nombre": "Pullover con barra EZ",
     "grupo_muscular": "Pecho",
-    "subgrupo": null,
-    "equipo": null,
+    "subgrupo": "Pectoral",
+    "equipo": "barra",
     "tipo": "fuerza"
   },
   {
