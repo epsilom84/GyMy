@@ -1580,12 +1580,11 @@ async function openDetalle(id){
     const ejList=ejOrd.map(k=>ejIdx[k]);
     html+='<div class="card-title" style="margin-bottom:8px">Ejercicios ('+ejList.length+')</div>';
     html+=ejList.map(e=>{
-      // Series reales: 1) sets_data, 2) múltiples filas antiguas (una fila por serie), 3) sintéticas desde agregados
+      // Series reales: 1) sets_data JSON, 2) múltiples filas antiguas (una fila por serie)
       let sets=null;
       const firstWithData=e._rows.find(r=>r.sets_data);
       if(firstWithData?.sets_data){try{sets=JSON.parse(firstWithData.sets_data);}catch(x){}}
       if(!sets&&e._rows.length>1){sets=e._rows.map(r=>({reps:r.reps??0,kg:r.peso_kg??0}));}
-      if(!sets&&(e.series>0||e.reps>0||e.peso_kg>0)){const n=e.series||1;sets=Array.from({length:n},()=>({reps:e.reps??0,kg:e.peso_kg??0}));}
       const hasSets=sets?.length>0;
 
       // Calcular resumen desde sets_data cuando está disponible (más preciso que el MAX del DB)
