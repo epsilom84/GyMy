@@ -2622,15 +2622,22 @@ function _agruparSeries(ejercicios){
     const k=e.nombre.toLowerCase().trim();
     if(!bloques[k]){
       bloques[k]={nombre:e.nombre,grupo_muscular:e.grupo_muscular,
-        series:1,reps:e.reps,peso_kg:e.peso_kg};
+        series:1,reps:e.reps,peso_kg:e.peso_kg,
+        _sets:[{reps:e.reps,kg:e.peso_kg}]};
       orden.push(k);
     } else {
       bloques[k].series++;
       if(e.reps>bloques[k].reps)bloques[k].reps=e.reps;
       if(e.peso_kg>bloques[k].peso_kg)bloques[k].peso_kg=e.peso_kg;
+      bloques[k]._sets.push({reps:e.reps,kg:e.peso_kg});
     }
   });
-  return orden.map(k=>bloques[k]);
+  return orden.map(k=>{
+    const b=bloques[k];
+    b.sets_data=JSON.stringify(b._sets);
+    delete b._sets;
+    return b;
+  });
 }
 
 // Parsea texto libre como notas de entreno escritas a mano
@@ -2742,7 +2749,8 @@ async function runImport(){
           nombre:e.nombre,
           series:e.series||1,
           reps:e.reps||0,
-          peso_kg:e.peso_kg||0
+          peso_kg:e.peso_kg||0,
+          sets_data:e.sets_data||null
         }))
       };
       if(!navigator.onLine){guardarOffline(sesion);imported++;}
