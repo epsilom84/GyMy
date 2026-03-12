@@ -1580,8 +1580,7 @@ async function openDetalle(id){
     const ejList=ejOrd.map(k=>ejIdx[k]);
     html+='<div class="card-title" style="margin-bottom:8px">Ejercicios ('+ejList.length+')</div>';
     html+=ejList.map(e=>{
-      // Series reales: 1) sets_data, 2) múltiples filas antiguas (una fila por serie)
-      // NO generar series sintéticas idénticas (produce "mismo peso y reps" en todas)
+      // Series reales: 1) sets_data JSON, 2) múltiples filas antiguas (una fila por serie)
       let sets=null;
       const firstWithData=e._rows.find(r=>r.sets_data);
       if(firstWithData?.sets_data){try{sets=JSON.parse(firstWithData.sets_data);}catch(x){}}
