@@ -102,22 +102,25 @@ async function initDB() {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_plantillas_user  ON plantillas_ejercicios(user_id);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_plantillas_grupo ON plantillas_ejercicios(grupo_muscular);`);
 
-    // Seed catálogo desde plantillas_ejercicios.json (borra y re-inserta en cada arranque)
+    // Seed catálogo desde plantillas_ejercicios.json — upsert, no borra ejercicios existentes
     const seedFile = path.join(__dirname, '../frontend/assets/plantillas_ejercicios.json');
     if (fs.existsSync(seedFile)) {
       try {
         const seedData = JSON.parse(fs.readFileSync(seedFile, 'utf8'));
         const ejs = Array.isArray(seedData) ? seedData.filter(e => e.nombre && e.grupo_muscular) : [];
         if (ejs.length > 0) {
-          await client.query(`DELETE FROM ejercicios_catalogo`);
+          let upserted = 0;
           for (const e of ejs) {
             await client.query(
               `INSERT INTO ejercicios_catalogo (nombre, grupo_muscular, subgrupo, equipo, tipo)
-               VALUES ($1,$2,$3,$4,$5) ON CONFLICT (nombre) DO NOTHING`,
+               VALUES ($1,$2,$3,$4,$5)
+               ON CONFLICT (nombre) DO UPDATE
+                 SET grupo_muscular=$2, subgrupo=$3, equipo=$4, tipo=$5`,
               [e.nombre, e.grupo_muscular, e.subgrupo||null, e.equipo||null, e.tipo||'fuerza']
             );
+            upserted++;
           }
-          console.log(`[DB] Catálogo poblado: ${ejs.length} ejercicios ✓`);
+          console.log(`[DB] Catálogo sincronizado: ${upserted} ejercicios ✓`);
         }
       } catch(e) {
         console.warn('[DB] plantillas_ejercicios.json no se pudo leer:', e.message);

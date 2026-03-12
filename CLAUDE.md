@@ -340,6 +340,28 @@ _resolverCombinaciones(sesiones)    // Promise → Map | null (abre/cierra modal
 
 ---
 
+## Actualizar catálogo de ejercicios desde Excel
+
+El catálogo (`ejercicios_catalogo`) se puebla al arrancar desde `plantillas_ejercicios.json`.
+Para actualizarlo cuando se modifica `plantilla_ejercicios.xlsx`:
+
+```bash
+cd backend
+node excel_to_json.js   # genera plantillas_ejercicios.json a partir del xlsx
+```
+
+El script (`backend/excel_to_json.js`):
+- Lee `frontend/assets/plantilla_ejercicios.xlsx` (hoja "Rutina")
+- Deduplica y filtra nombres inválidos
+- Preserva `subgrupo` y `equipo` de ejercicios ya existentes en el JSON
+- Infiere `subgrupo` y `equipo` para ejercicios nuevos por keywords del nombre
+- Escribe `frontend/assets/plantillas_ejercicios.json`
+
+Tras generarlo, commitear y pushear a `main`. En el próximo arranque de Railway
+se hará upsert (no borra ejercicios añadidos manualmente vía API).
+
+---
+
 ## Flujo de despliegue
 
 ```
