@@ -557,6 +557,7 @@ input:focus,select:focus{border-color:var(--accent);}
       <div class="stats-selector">
         <button class="stats-type-btn active" id="stype-ej" onclick="setStatsType('ejercicio')">Por ejercicio</button>
         <button class="stats-type-btn" id="stype-dias" onclick="setStatsType('dias')">Por días</button>
+        <button class="stats-type-btn" id="stype-mus" onclick="setStatsType('musculos')">Por músculo</button>
       </div>
       <!-- Ejercicio view -->
       <div id="stats-ejercicio-view">
@@ -597,6 +598,17 @@ input:focus,select:focus{border-color:var(--accent);}
           <div class="chart-container"><canvas id="chart-dias"></canvas></div>
         </div>
         <div id="dias-sesiones"></div>
+      </div>
+      <!-- Músculo view -->
+      <div id="stats-musculos-view" style="display:none">
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-title">Distribución muscular (series)</div>
+          <div style="position:relative;height:260px"><canvas id="chart-mus-donut"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Volumen acumulado por músculo (kg)</div>
+          <div id="chart-mus-bar-wrap" style="position:relative"><canvas id="chart-mus-bar"></canvas></div>
+        </div>
       </div>
     </div>
 
@@ -1118,7 +1130,7 @@ function getPendientesOffline(){return JSON.parse(localStorage.getItem(_uk('offl
 // INIT
 // ══════════════════════════════════════════════
 let currentPage=1,currentTipoFilter='',currentGrupoFilter='',currentSubgrupoFilter='',statsCache=null,ejCount=0;
-let currentStatsType='ejercicio',selectedStatsEj=null,chartEjPeso=null,chartEjVol=null,chartDias=null;
+let currentStatsType='ejercicio',selectedStatsEj=null,chartEjPeso=null,chartEjVol=null,chartDias=null,chartMusDonut=null,chartMusBar=null;
 
 // ── Haptic feedback ──
 function haptic(ms){if('vibrate' in navigator){try{navigator.vibrate(ms||12);}catch(e){}}}
@@ -1923,9 +1935,12 @@ function setStatsType(type){
   currentStatsType=type;
   document.getElementById('stype-ej').classList.toggle('active',type==='ejercicio');
   document.getElementById('stype-dias').classList.toggle('active',type==='dias');
+  document.getElementById('stype-mus').classList.toggle('active',type==='musculos');
   document.getElementById('stats-ejercicio-view').style.display=type==='ejercicio'?'block':'none';
   document.getElementById('stats-dias-view').style.display=type==='dias'?'block':'none';
+  document.getElementById('stats-musculos-view').style.display=type==='musculos'?'block':'none';
   if(type==='dias')loadStatssDias();
+  if(type==='musculos')loadStatsMusculos();
 }
 
 async function initStatsView(){
@@ -2176,6 +2191,104 @@ function _renderDiasChart(){
 function setDiasMetric(m){
   window._diasMetric=m;
   _renderDiasChart();
+}
+
+// ── POR MÚSCULO ───────────────────────────────────
+function _getMusculoLabel(nombreEj){
+  if(_catalogoCache){
+    const n=nombreEj.toLowerCase();
+    for(const[grupo,ejs]of Object.entries(_catalogoCache)){
+      const found=ejs.find(e=>(e.n||'').toLowerCase()===n);
+      if(found)return found.sg||grupo;
+    }
+  }
+  return 'Otros';
+}
+
+async function loadStatsMusculos(){
+  if(!window._statsAllSessions){
+    const{data}=await getSesiones({limit:500});
+    if(!data.ok)return;
+    window._statsAllSessions=data.sesiones||[];
+  }
+  await loadCatalogo();
+  _renderMusculosCharts();
+}
+
+function _renderMusculosCharts(){
+  const all=window._statsAllSessions||[];
+  if(!all.length){
+    document.getElementById('chart-mus-bar-wrap').innerHTML='<div style="text-align:center;padding:32px;color:var(--text2);font-size:13px">Sin datos todavía</div>';
+    return;
+  }
+  const seriesCount={};
+  const volumeMap={};
+  all.forEach(s=>{
+    (s.ejercicios||[]).forEach(e=>{
+      const lbl=_getMusculoLabel(e.nombre);
+      const series=e.series||1;
+      const vol=(e.peso_kg||0)*(e.reps||1)*series;
+      seriesCount[lbl]=(seriesCount[lbl]||0)+series;
+      volumeMap[lbl]=(volumeMap[lbl]||0)+vol;
+    });
+  });
+  const entries=Object.entries(seriesCount).sort((a,b)=>b[1]-a[1]);
+  const labels=entries.map(([k])=>k);
+  const counts=entries.map(([,v])=>v);
+  const totalSeries=counts.reduce((a,b)=>a+b,0);
+  const PALETTE=['#ef5350','#42a5f5','#66bb6a','#ab47bc','#ffa726','#26c6da','#ec407a','#8d6e63','#78909c','#d4e157','#ff7043','#29b6f6'];
+  const colors=labels.map((_,i)=>PALETTE[i%PALETTE.length]);
+  const isDark=!document.body.classList.contains('theme-light')&&!document.body.classList.contains('theme-material-light');
+  const tooltipBg=isDark?'rgba(18,18,28,.95)':'rgba(255,255,255,.98)';
+  const tooltipBorder=isDark?'rgba(255,255,255,.08)':'rgba(0,0,0,.08)';
+  const tickC=isDark?'#8888a0':'#999';
+  const gridC=isDark?'rgba(255,255,255,.05)':'rgba(0,0,0,.06)';
+  const legendC=isDark?'#ccc':'#444';
+  const tooltipTitle=isDark?'#fff':'#111';
+  const tooltipBody=isDark?'#aaa':'#555';
+
+  // DONUT — series distribution
+  if(chartMusDonut)chartMusDonut.destroy();
+  chartMusDonut=new Chart(document.getElementById('chart-mus-donut').getContext('2d'),{
+    type:'doughnut',
+    data:{labels,datasets:[{data:counts,backgroundColor:colors,borderWidth:2,borderColor:isDark?'#1a1a2e':'#fff',hoverOffset:8}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'60%',
+      animation:{duration:600,easing:'easeInOutQuart'},
+      plugins:{
+        legend:{display:true,position:'right',labels:{color:legendC,font:{size:11},boxWidth:12,padding:8}},
+        tooltip:{backgroundColor:tooltipBg,borderColor:tooltipBorder,borderWidth:1,titleColor:tooltipTitle,bodyColor:tooltipBody,padding:12,cornerRadius:10,
+          callbacks:{label:ctx=>{const pct=totalSeries>0?Math.round(ctx.parsed/totalSeries*100):0;return ' '+ctx.parsed+' series ('+pct+'%)';}}}
+      }
+    }
+  });
+
+  // HORIZONTAL BAR — volume per muscle
+  const volEntries=Object.entries(volumeMap).sort((a,b)=>b[1]-a[1]);
+  const volLabels=volEntries.map(([k])=>k);
+  const volData=volEntries.map(([,v])=>Math.round(v));
+  const barColors=volLabels.map(l=>{const i=labels.indexOf(l);return i>=0?colors[i]:'#888';});
+  const barH=Math.max(240,volLabels.length*36);
+  const wrap=document.getElementById('chart-mus-bar-wrap');
+  wrap.style.height=barH+'px';
+  if(chartMusBar)chartMusBar.destroy();
+  chartMusBar=new Chart(document.getElementById('chart-mus-bar').getContext('2d'),{
+    type:'bar',
+    data:{labels:volLabels,datasets:[{data:volData,backgroundColor:barColors.map(c=>c+'cc'),borderColor:barColors,borderWidth:1.5,borderRadius:5,borderSkipped:false}]},
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      animation:{duration:600,easing:'easeInOutQuart'},
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:tooltipBg,borderColor:tooltipBorder,borderWidth:1,titleColor:tooltipTitle,bodyColor:tooltipBody,padding:12,cornerRadius:10,displayColors:false,
+          callbacks:{label:ctx=>' '+ctx.parsed.x.toLocaleString()+' kg vol'}}
+      },
+      scales:{
+        x:{grid:{color:gridC,drawTicks:false},border:{display:false},ticks:{color:tickC,font:{size:10},padding:4}},
+        y:{grid:{display:false},border:{display:false},ticks:{color:isDark?'#ddd':'#333',font:{size:11},padding:6}}
+      }
+    }
+  });
 }
 
 
