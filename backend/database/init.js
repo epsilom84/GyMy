@@ -2,6 +2,7 @@ const { Pool } = require('pg');
 const fs     = require('fs');
 const path   = require('path');
 const crypto = require('crypto');
+const log    = require('../logger');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -14,7 +15,7 @@ const pool = new Pool({
 });
 
 pool.on('error', (err) => {
-  console.error('[DB] Error en pool:', err.message || JSON.stringify(err));
+  log.error({ err }, 'DB pool error');
 });
 
 async function initDB() {
@@ -64,6 +65,17 @@ async function initDB() {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_ejercicios_nombre_lower ON ejercicios(LOWER(nombre));`);
     // Migración: añadir columna sets_data si no existe
     await client.query(`ALTER TABLE ejercicios ADD COLUMN IF NOT EXISTS sets_data TEXT;`);
+    // Migración: FK al catálogo de ejercicios (evita JOINs por nombre en texto)
+    await client.query(`ALTER TABLE ejercicios ADD COLUMN IF NOT EXISTS catalog_id INTEGER REFERENCES ejercicios_catalogo(id) ON DELETE SET NULL;`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_ejercicios_catalog_id ON ejercicios(catalog_id);`);
+    // Backfill: rellenar catalog_id para ejercicios históricos que ya estén en el catálogo
+    await client.query(`
+      UPDATE ejercicios e
+      SET catalog_id = ec.id
+      FROM ejercicios_catalogo ec
+      WHERE e.catalog_id IS NULL
+        AND LOWER(e.nombre) = LOWER(ec.nombre)
+    `);
     // Migración: campos de perfil físico en users
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS edad INT;`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS genero TEXT;`);
@@ -141,12 +153,12 @@ async function initDB() {
              ON CONFLICT (key) DO UPDATE SET value=$1`,
             [newHash]
           );
-          console.log(`[DB] Catálogo sincronizado: ${upserted} ejercicios ✓`);
+          log.info({ upserted }, 'Catálogo sincronizado');
         } else {
-          console.log('[DB] Catálogo sin cambios, seed omitido ✓');
+          log.info('Catálogo sin cambios, seed omitido');
         }
       } catch(e) {
-        console.warn('[DB] plantillas_ejercicios.json no se pudo leer:', e.message);
+        log.warn({ err: e }, 'plantillas_ejercicios.json no se pudo leer');
       }
     }
 
@@ -154,10 +166,10 @@ async function initDB() {
     await client.query(`DELETE FROM plantillas_ejercicios WHERE user_id IS NULL`);
 
     await client.query('COMMIT');
-    console.log('[DB] PostgreSQL listo ✓');
+    log.info('PostgreSQL listo');
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('[DB] Error al inicializar tablas:', err.message || JSON.stringify(err));
+    log.error({ err }, 'Error al inicializar tablas');
     throw err;
   } finally {
     client.release();

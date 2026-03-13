@@ -7,6 +7,7 @@ const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const { queryOne, queryAll } = require('../database/init');
 const verifyToken = require('../middleware/verifyToken');
+const log = require('../logger');
 const router = express.Router();
 
 const forgotPasswordLimiter = rateLimit({
@@ -143,7 +144,7 @@ router.post('/forgot-password', forgotPasswordLimiter, [body('email').isEmail().
         html: `<p>Haz clic para resetear tu contraseña (caduca en 1h):</p><a href="${resetUrl}">${resetUrl}</a>`
       });
     } else {
-      console.log('\n[DEV] Reset link:', resetUrl, '\n');
+      log.info({ resetUrl }, 'DEV reset link (no mailer configured)');
     }
     res.json({ ok: true, mensaje: 'Si el email existe recibirás un enlace' });
   } catch(e) { res.status(500).json({ ok: false, error: e.message }); }

@@ -5,6 +5,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const { body, query, validationResult } = require('express-validator');
 const { pool, queryOne, queryAll, withTransaction } = require('../database/init');
 const verifyToken = require('../middleware/verifyToken');
+const log = require('../logger');
 const router = express.Router();
 
 // ─── GRUPOS Y SUBGRUPOS FIJOS (no editables por usuario ni por imports) ───────
@@ -176,24 +177,33 @@ const validateSesion = [
 ];
 
 // ── Helper: cargar ejercicios de una sesión ────────────────
+// JOIN por catalog_id (FK) cuando existe; fallback a LOWER(nombre) para
+// ejercicios antiguos o personalizados que no están en el catálogo
 async function loadEjercicios(sesionId) {
   return queryAll(
-    `SELECT e.*, ec.grupo_muscular, ec.subgrupo, ec.equipo AS equipo_catalogo
+    `SELECT e.*,
+            COALESCE(ec.grupo_muscular, ecf.grupo_muscular) AS grupo_muscular,
+            COALESCE(ec.subgrupo,       ecf.subgrupo)       AS subgrupo,
+            COALESCE(ec.equipo,         ecf.equipo)         AS equipo_catalogo
      FROM ejercicios e
-     LEFT JOIN ejercicios_catalogo ec ON LOWER(ec.nombre) = LOWER(e.nombre)
+     LEFT JOIN ejercicios_catalogo ec  ON e.catalog_id = ec.id
+     LEFT JOIN ejercicios_catalogo ecf ON ec.id IS NULL AND LOWER(ecf.nombre) = LOWER(e.nombre)
      WHERE e.sesion_id=$1 ORDER BY e.id`,
     [sesionId]
   );
 }
 
 // ── Helper: cargar ejercicios de varias sesiones en 1 query ─
-// Evita N+1: en lugar de 1 query por sesión, hace 1 sola con ANY($1)
 async function loadEjerciciosBatch(sesionIds) {
   if (!sesionIds.length) return {};
   const rows = await queryAll(
-    `SELECT e.*, ec.grupo_muscular, ec.subgrupo, ec.equipo AS equipo_catalogo
+    `SELECT e.*,
+            COALESCE(ec.grupo_muscular, ecf.grupo_muscular) AS grupo_muscular,
+            COALESCE(ec.subgrupo,       ecf.subgrupo)       AS subgrupo,
+            COALESCE(ec.equipo,         ecf.equipo)         AS equipo_catalogo
      FROM ejercicios e
-     LEFT JOIN ejercicios_catalogo ec ON LOWER(ec.nombre) = LOWER(e.nombre)
+     LEFT JOIN ejercicios_catalogo ec  ON e.catalog_id = ec.id
+     LEFT JOIN ejercicios_catalogo ecf ON ec.id IS NULL AND LOWER(ecf.nombre) = LOWER(e.nombre)
      WHERE e.sesion_id = ANY($1) ORDER BY e.sesion_id, e.id`,
     [sesionIds]
   );
@@ -208,13 +218,21 @@ async function loadEjerciciosBatch(sesionIds) {
 // ── Helper: insertar ejercicios en transacción ─────────────
 async function insertEjercicios(client, sesionId, ejercicios) {
   if (!Array.isArray(ejercicios) || !ejercicios.length) return;
+  // Resolver catalog_id para todos los nombres en una sola query
+  const nombres = [...new Set(ejercicios.map(e => e.nombre.toLowerCase()))];
+  const catRes = await client.query(
+    `SELECT id, LOWER(nombre) AS n FROM ejercicios_catalogo WHERE LOWER(nombre) = ANY($1)`,
+    [nombres]
+  );
+  const catMap = Object.fromEntries(catRes.rows.map(r => [r.n, r.id]));
   for (const e of ejercicios) {
     const setsData = e.sets_data
       ? (typeof e.sets_data === 'string' ? e.sets_data : JSON.stringify(e.sets_data))
       : null;
+    const catalogId = catMap[e.nombre.toLowerCase()] ?? null;
     await client.query(
-      'INSERT INTO ejercicios (sesion_id,nombre,series,reps,peso_kg,sets_data) VALUES ($1,$2,$3,$4,$5,$6)',
-      [sesionId, e.nombre, e.series || null, e.reps ?? null, e.peso_kg ?? null, setsData]
+      'INSERT INTO ejercicios (sesion_id,nombre,series,reps,peso_kg,sets_data,catalog_id) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+      [sesionId, e.nombre, e.series || null, e.reps ?? null, e.peso_kg ?? null, setsData, catalogId]
     );
   }
 }
@@ -502,7 +520,7 @@ router.post('/ai/import', [
     if (!apiKey) return res.status(503).json({ ok: false, error: 'IA no configurada (falta ANTHROPIC_API_KEY en Railway)' });
 
     const model = 'claude-haiku-4-5-20251001';
-    console.log('[AI] Llamando Anthropic model:', model, '| key prefix:', apiKey.slice(0,12)+'...');
+    log.info({ model, keyPrefix: apiKey.slice(0,12) }, 'AI import request');
 
     const client = new Anthropic({ apiKey });
     const message = await client.messages.create({
@@ -512,10 +530,10 @@ router.post('/ai/import', [
     });
 
     const text = message.content?.[0]?.text || '';
-    console.log('[AI] OK, chars:', text.length);
+    log.info({ chars: text.length }, 'AI import OK');
     res.json({ ok: true, text });
   } catch(e) {
-    console.error('[AI] Excepción:', e.message);
+    log.error({ err: e }, 'AI import error');
     res.status(500).json({ ok: false, error: 'Error de red: '+e.message });
   }
 });
