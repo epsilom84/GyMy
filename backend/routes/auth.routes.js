@@ -150,12 +150,18 @@ router.post('/forgot-password', forgotPasswordLimiter, [body('email').isEmail().
 });
 
 // ── RESET PASSWORD ────────────────────────────────────────
-router.post('/reset-password', [body('password').isLength({ min: 6 })], async (req, res) => {
+router.post('/reset-password', [
+  body('email').isEmail().normalizeEmail().withMessage('Email no válido'),
+  body('password').isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres'),
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ ok: false, error: errors.array()[0].msg });
   try {
-    const { token, password } = req.body;
+    const { token, email, password } = req.body;
     if (!token) return res.status(400).json({ ok: false, error: 'Token requerido' });
     const user = await queryOne('SELECT * FROM users WHERE reset_token=$1', [token]);
-    if (!user || new Date(user.reset_token_exp) < new Date())
+    // Verificar token válido, no expirado y que el email coincide con el propietario del token
+    if (!user || new Date(user.reset_token_exp) < new Date() || user.email !== email)
       return res.status(400).json({ ok: false, error: 'Token inválido o expirado' });
     const hash = await bcrypt.hash(password, 12);
     await queryOne('UPDATE users SET password=$1, reset_token=NULL, reset_token_exp=NULL WHERE id=$2', [hash, user.id]);

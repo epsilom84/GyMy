@@ -1073,7 +1073,7 @@ async function exportarCSV(){
   const a=document.createElement('a');a.href=u;a.download='gymy_export.csv';a.click();URL.revokeObjectURL(u);
 }
 async function forgotPassword(e){return apiCall('POST','/auth/forgot-password',{email:e});}
-async function resetPassword(t,p){return apiCall('POST','/auth/reset-password',{token:t,password:p});}
+async function resetPassword(t,e,p){return apiCall('POST','/auth/reset-password',{token:t,email:e,password:p});}
 async function register(u,e,p){
   const r=await apiCall('POST','/auth/register',{username:u,email:e,password:p});
   if(r.data.ok){setTokens(r.data.accessToken,r.data.refreshToken);localStorage.setItem('gymy_user',JSON.stringify(r.data.usuario));}
@@ -1246,7 +1246,8 @@ async function handleForgot(){
 function showResetForm(token){
   document.getElementById('auth-screen').style.display='flex';
   document.getElementById('login-form').innerHTML=[
-    '<p style="color:var(--text2);font-size:13px;margin-bottom:14px">Introduce tu nueva contraseña.</p>',
+    '<p style="color:var(--text2);font-size:13px;margin-bottom:14px">Introduce tu email y la nueva contraseña.</p>',
+    '<div class="form-group"><label>Email</label><input type="email" id="rp-email" placeholder="Tu email"/></div>',
     '<div class="form-group"><label>Nueva contraseña</label><input type="password" id="rp-pass" placeholder="Mínimo 6 caracteres"/></div>',
     '<button class="btn btn-primary" id="btn-reset">Guardar contraseña</button>'
   ].join('');
@@ -1254,9 +1255,11 @@ function showResetForm(token){
   document.getElementById('auth-tabs-bar').style.display='none';
 }
 async function doReset(token){
+  const email=document.getElementById('rp-email').value.trim();
   const pass=document.getElementById('rp-pass').value;
+  if(!email)return setAuthError('Introduce tu email');
   if(!pass||pass.length<6)return setAuthError('Mínimo 6 caracteres');
-  const{data}=await resetPassword(token,pass);
+  const{data}=await resetPassword(token,email,pass);
   if(data.ok){setAuthError('✓ Contraseña actualizada');setTimeout(()=>{history.replaceState({},'','/');switchAuthTab('login');},2000);}
   else setAuthError(data.error);
 }

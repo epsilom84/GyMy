@@ -169,6 +169,10 @@ const validateSesion = [
   body('calorias').optional({ nullable: true }).isInt({ min: 0, max: 10000 }),
   body('valoracion').optional({ nullable: true }).isInt({ min: 1, max: 5 }),
   body('ejercicios').optional().isArray(),
+  body('ejercicios.*.nombre').optional().isString().trim().isLength({ max: 200 }),
+  body('ejercicios.*.series').optional({ nullable: true }).isInt({ min: 0, max: 100 }),
+  body('ejercicios.*.reps').optional({ nullable: true }).isInt({ min: 0, max: 200 }),
+  body('ejercicios.*.peso_kg').optional({ nullable: true }).isFloat({ min: 0, max: 600 }),
 ];
 
 // ── Helper: cargar ejercicios de una sesión ────────────────
@@ -486,10 +490,13 @@ router.get('/ejercicios/historial', async (req, res) => {
 
 
 // ── POST /api/ai/import — proxy to Anthropic API ──────────────────
-router.post('/ai/import', async (req, res) => {
+router.post('/ai/import', [
+  body('prompt').notEmpty().withMessage('prompt required').isLength({ max: 6000 }).withMessage('El texto no puede superar 6000 caracteres'),
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ ok: false, error: errors.array()[0].msg });
   try {
     const { prompt } = req.body;
-    if (!prompt) return res.status(400).json({ ok: false, error: 'prompt required' });
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return res.status(503).json({ ok: false, error: 'IA no configurada (falta ANTHROPIC_API_KEY en Railway)' });

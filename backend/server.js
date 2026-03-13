@@ -48,6 +48,16 @@ console.log('[DB] Conectando a:', dbHost);
 initDB()
   .then(() => {
     app.listen(PORT, '0.0.0.0', () => console.log(`GyMy v3 (PostgreSQL) → http://0.0.0.0:${PORT}`));
+    // Limpiar reset_tokens expirados cada 6 horas
+    const { pool } = require('./database/init');
+    setInterval(async () => {
+      try {
+        const r = await pool.query(
+          `UPDATE users SET reset_token=NULL, reset_token_exp=NULL WHERE reset_token IS NOT NULL AND reset_token_exp < NOW()`
+        );
+        if (r.rowCount > 0) console.log(`[Cleanup] ${r.rowCount} reset token(s) expirado(s) eliminado(s)`);
+      } catch(e) { console.error('[Cleanup] Error:', e.message); }
+    }, 6 * 60 * 60 * 1000);
   })
   .catch(err => {
     console.error('No se pudo conectar a PostgreSQL:', err.message || err.code || JSON.stringify(err));
