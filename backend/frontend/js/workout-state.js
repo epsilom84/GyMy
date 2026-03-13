@@ -10,7 +10,6 @@ let wkCurTipo='',wkCurEjGrupo='',wkStarted=false,wkSecInterval=null,wkAutoSaveIn
 const WK_KEY='gymy_workout_live';
 
 function wkIsActive(){return!!localStorage.getItem('gymy_workout_active');}
-function wkGetPreloadMode(){return localStorage.getItem('gymy_preload_mode')||'ultimo';}
 
 function wkSaveState(){
   if(!wkStarted)return;
