@@ -28,11 +28,24 @@ gymy/
     │   ├── auth.routes.js  ← /api/auth/*
     │   └── gym.routes.js   ← /api/catalogo/* (público) + /api/* (JWT)
     └── frontend/
-        ├── index.html      ← SPA completa (~3500 líneas)
-        ├── import.js       ← Lógica de importación de historial (extraída de index.html)
-        ├── api.js          ← Cliente HTTP
+        ├── index.html      ← HTML estructural + carga de scripts/CSS
         ├── sw.js           ← Service Worker (PWA)
         ├── manifest.json   ← Web App Manifest (PWA)
+        ├── css/            ← Estilos por responsabilidad (base, components, layout, auth…)
+        ├── js/             ← Módulos JS por pantalla/dominio
+        │   ├── api.js          ← Cliente HTTP (apiCall)
+        │   ├── config.js       ← Constantes globales
+        │   ├── utils.js        ← Helpers (formatFecha, ejIconHtml…)
+        │   ├── app.js          ← Init, showToast, haptic, autoTheme
+        │   ├── auth.js         ← Login / register / logout
+        │   ├── dashboard.js    ← Dashboard y sesiones recientes
+        │   ├── workout*.js     ← Workout activo (state, selector, card, orquestación)
+        │   ├── history*.js     ← Historial (card, detalle, lista/filtros)
+        │   ├── stats.js        ← Progresión y gráficas
+        │   ├── catalog.js      ← Catálogo BD en perfil
+        │   ├── profile.js      ← Perfil y configuración
+        │   ├── coach.js        ← Coach Sasha (IA)
+        │   └── import*.js      ← Importación CSV/Excel (parse, match, run)
         └── assets/
             ├── icon.svg                    ← Icono app (mancuerna)
             ├── musculos.svg                ← Ilustración cuerpo humano
