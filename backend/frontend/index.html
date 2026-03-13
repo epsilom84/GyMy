@@ -1793,6 +1793,8 @@ async function openDetalle(id){
       else{ejIdx[k]._rows.push(e);ejIdx[k].series=(ejIdx[k].series||0)+(e.series||1);ejIdx[k].reps=Math.max(ejIdx[k].reps||0,e.reps||0);ejIdx[k].peso_kg=Math.max(ejIdx[k].peso_kg||0,e.peso_kg||0);}
     });
     const ejList=ejOrd.map(k=>ejIdx[k]);
+    // Pre-calcular totales de la sesión para distribuir duración y calorías por ejercicio
+    const _totalSeriesSesion=ejList.reduce((a,e)=>a+(e.series||1),0);
     html+='<div class="card-title" style="margin-bottom:8px">Ejercicios ('+ejList.length+')</div>';
     html+=ejList.map(e=>{
       // Series: 1) sets_data JSON (workout nativo), 2) filas legacy (una por serie), 3) agregados BD (importados)
@@ -1816,6 +1818,14 @@ async function openDetalle(id){
       if(maxKg>0)partes.push(maxKg+'kg');
       const resumen=partes.length?partes.join(' · '):'Sin datos';
 
+      // Duración y calorías estimadas para este ejercicio
+      // Duración: 3 min/serie (ejecución + descanso) + 1 min transición — misma fórmula que el importador
+      const _ejDurMin=Math.max(1,Math.round(nSeries*3+1));
+      // Calorías: proporcional a las series de este ejercicio respecto al total de la sesión
+      const _ejCal=(_totalSeriesSesion>0&&s.calorias)
+        ?Math.round((nSeries/_totalSeriesSesion)*s.calorias):0;
+      const _ejMetaExtra=[_ejDurMin?'⏱ ~'+_ejDurMin+' min':null,_ejCal?'🔥 ~'+_ejCal+' kcal':null].filter(Boolean).join(' · ');
+
       const setsHtml=hasSets?sets.map((st,i)=>{
         const kg=st.kg??st.peso_kg??0;
         const reps=st.reps??0;
@@ -1831,7 +1841,9 @@ async function openDetalle(id){
         +'<div class="session-icon" style="background:var(--bg2);width:38px;height:38px;flex-shrink:0;">'+ejIconHtml(e.nombre,e.equipo,26)+'</div>'
         +'<div class="session-info"><div class="session-tipo">'+e.nombre+'</div>'
         +(e.subgrupo?'<div style="font-size:11px;color:var(--text2);line-height:1.3;margin-bottom:1px">'+e.subgrupo+'</div>':'')
-        +'<div class="session-meta">'+resumen+'</div></div>'
+        +'<div class="session-meta">'+resumen+'</div>'
+        +(_ejMetaExtra?'<div style="font-size:11px;color:var(--text2);margin-top:1px">'+_ejMetaExtra+'</div>':'')
+        +'</div>'
         +(hasSets?'<svg class="ej-expand-arrow" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>':'')
         +'</div>'
         +(hasSets?'<div class="ej-sets-collapse">'+setsHtml+'</div>':'')
