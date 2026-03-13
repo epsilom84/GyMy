@@ -39,13 +39,28 @@ function openImportPreview(rawText,filename){
   let sesiones=[];
   try{sesiones=parsearCSV(rawText);}catch(e){console.warn('parsearCSV error:',e);}
 
+  // Pre-calcular estimaciones para mostrarlas en el preview
+  if(sesiones.length){
+    sesiones.forEach(s=>{
+      if(!s.duracion_min){s.duracion_min=_estimarDuracion(s.ejercicios,s.tipo);s._duracion_estimada=true;}
+      if(!s.calorias&&s.duracion_min){s.calorias=_estimarCalorias(s.tipo,s.duracion_min);s._calorias_estimadas=true;}
+    });
+  }
+
   let resumenHtml='';
   if(sesiones.length){
     const totalEj=sesiones.reduce((a,s)=>a+(s.ejercicios||[]).length,0);
     const totalSeries=sesiones.reduce((a,s)=>(s.ejercicios||[]).reduce((b,e)=>b+(e.series||1),a),0);
+    const conEstimacion=sesiones.filter(s=>s._duracion_estimada).length;
     resumenHtml='<div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:12px">'
       +'<div style="font-size:13px;font-weight:600;color:var(--accent3);margin-bottom:8px">'
       +'✓ '+sesiones.length+' sesión(es) · '+totalEj+' ejercicio(s) · '+totalSeries+' serie(s)</div>';
+    if(conEstimacion>0){
+      resumenHtml+='<div style="font-size:11px;color:var(--text2);margin-bottom:10px;padding:6px 8px;'
+        +'background:var(--bg2);border-radius:6px;border-left:3px solid var(--accent)">'
+        +'⏱ Duración y calorías estimadas automáticamente en '+conEstimacion+' sesión(es) '
+        +'(se ajustan al guardar el perfil físico)</div>';
+    }
     sesiones.slice(0,5).forEach(s=>{
       const ejList=(s.ejercicios||[]).slice(0,4).map(e=>{
         const peso=e.peso_kg?(' — '+e.peso_kg+'kg'):'';
@@ -54,9 +69,13 @@ function openImportPreview(rawText,filename){
       }).join('<br>');
       const masEj=(s.ejercicios||[]).length>4
         ?'<br><span style="color:var(--text2);font-size:11px">+'+(s.ejercicios.length-4)+' más...</span>':'';
+      const durStr=s.duracion_min?(s.duracion_min+'min'+(s._duracion_estimada?' ~':'')):'';
+      const calStr=s.calorias?(s.calorias+'kcal'+(s._calorias_estimadas?' ~':'')):'';
+      const meta=[durStr,calStr].filter(Boolean).join(' · ');
       resumenHtml+='<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">'
-        +'<div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px">'
+        +'<div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px">'
         +'📅 '+formatFecha(s.fecha)+(s.tipo?' · '+s.tipo:'')+'</div>'
+        +(meta?'<div style="font-size:11px;color:var(--text2);margin-bottom:3px">'+meta+'</div>':'')
         +'<div style="font-size:11px;line-height:1.7;padding-left:8px">'+ejList+masEj+'</div></div>';
     });
     if(sesiones.length>5)resumenHtml+='<div style="font-size:12px;color:var(--text2);text-align:center">...y '+(sesiones.length-5)+' sesión(es) más</div>';
@@ -111,6 +130,43 @@ function detectarTipoSesion(ejercicios){
   const mapa={'Pecho':'Pecho','Espalda':'Espalda','Piernas':'Piernas','Hombros':'Hombros',
     'Brazos Bíceps':'Brazos','Brazos Tríceps':'Brazos','Core':'Core','Cardio':'Cardio'};
   return mapa[g]||g;
+}
+
+// ── ESTIMACIÓN DE DURACIÓN Y CALORÍAS ────────────────────────────────────────
+// MET (Metabolic Equivalent of Task) por tipo de sesión — valores estándar ACSM
+const _MET_POR_TIPO = {
+  'Fuerza':    4.5,
+  'Pecho':     4.5, 'Espalda':  4.5, 'Piernas': 5.0,
+  'Hombros':   4.5, 'Brazos':   4.0, 'Core':    3.5,
+  'Cardio':    8.0, 'Correr':   9.0, 'Ciclismo':7.0,
+  'HIIT':      9.0, 'Crossfit': 8.0,
+  'Yoga':      2.5, 'Movilidad':2.5, 'Pilates': 3.5,
+  'Stretching':2.0,
+};
+
+// Estima duración en minutos a partir de ejercicios de una sesión de fuerza.
+// Fórmula: 5 min calentamiento + 3 min por serie (ejecución + descanso) + 1 min entre ejercicios.
+// Para cardio sin series reconocibles usa 30 min por defecto.
+function _estimarDuracion(ejercicios, tipo){
+  if(!ejercicios||!ejercicios.length){
+    return /cardio|correr|bici|hiit|crossfit/i.test(tipo||'')?30:20;
+  }
+  const totalSeries=ejercicios.reduce((a,e)=>a+(e.series||1),0);
+  const numEj=ejercicios.length;
+  const min=Math.round(5 + totalSeries*3 + (numEj-1)*1);
+  return Math.max(15,Math.min(min,180)); // entre 15 y 180 min
+}
+
+// Estima calorías usando MET × peso_corporal × horas.
+// Usa el peso corporal del perfil del usuario si está disponible; 70 kg por defecto.
+function _estimarCalorias(tipo, duracion_min){
+  const pd=JSON.parse(localStorage.getItem(_uk('profile_data'))||'{}');
+  const kg=pd.peso_corporal||70;
+  const tipoKey=Object.keys(_MET_POR_TIPO).find(k=>
+    (tipo||'').toLowerCase().includes(k.toLowerCase())
+  )||'Fuerza';
+  const met=_MET_POR_TIPO[tipoKey]||4.5;
+  return Math.round(met*kg*(duracion_min/60));
 }
 
 // ── PARSEO CSV ───────────────────────────────────────────────────────────────
@@ -537,6 +593,20 @@ async function runImport(){
       btn.disabled=false;btn.textContent='📥 Importar';
       return;
     }
+
+    // Estimar duración y calorías para sesiones que no las traen en el archivo
+    let estimadas=0;
+    sesiones.forEach(s=>{
+      if(!s.duracion_min){
+        s.duracion_min=_estimarDuracion(s.ejercicios,s.tipo);
+        s._duracion_estimada=true;estimadas++;
+      }
+      if(!s.calorias&&s.duracion_min){
+        s.calorias=_estimarCalorias(s.tipo,s.duracion_min);
+        s._calorias_estimadas=true;
+      }
+    });
+    if(estimadas>0)status.textContent='Estimando duración y calorías...';
 
     status.textContent='Comprobando ejercicios en catálogo...';
     const mapaCombinaciones=await _resolverCombinaciones(sesiones);
