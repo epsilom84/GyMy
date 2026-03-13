@@ -232,7 +232,6 @@ async function loadStatssDias(){
   window._statsDiasAll=data.sesiones||[];
   if(!window._diasMetric)window._diasMetric='vol';
   _renderDiasChart();
-  _renderHeatmap();
 }
 
 function _renderDiasChart(){
@@ -240,7 +239,6 @@ function _renderDiasChart(){
   const metric=window._diasMetric||'vol';
   const metricData=all.map(s=>{
     if(metric==='cal')return s.calorias||0;
-    if(metric==='freq')return 1;
     return(s.ejercicios||[]).reduce((sum,e)=>sum+(e.peso_kg||0)*(e.reps||1)*(e.series||1),0);
   });
   const labels=all.map((s,i)=>{
@@ -248,7 +246,7 @@ function _renderDiasChart(){
     return(i===0||yr!==all[i-1].fecha.slice(0,4))?yr:'';
   });
   const titleEl=document.getElementById('dias-chart-title');
-  if(titleEl)titleEl.textContent=metric==='cal'?'Calorías a lo largo del tiempo':metric==='freq'?'Frecuencia de entrenamiento':'Volumen a lo largo del tiempo (kg)';
+  if(titleEl)titleEl.textContent=metric==='cal'?'Calorías a lo largo del tiempo':'Volumen a lo largo del tiempo (kg)';
   const volBtn=document.getElementById('dias-metric-vol');
   const calBtn=document.getElementById('dias-metric-cal');
   if(volBtn)volBtn.classList.toggle('active',metric==='vol');
@@ -268,138 +266,5 @@ function _renderDiasChart(){
 
 function setDiasMetric(m){
   window._diasMetric=m;
-  const freqBtn=document.getElementById('dias-metric-freq');
-  if(freqBtn)freqBtn.classList.toggle('active',m==='freq');
   _renderDiasChart();
-  _renderHeatmap();
-}
-
-// ── Heatmap anual ──
-function _renderHeatmap(){
-  const all=window._statsDiasAll||[];
-  const metric=window._diasMetric||'vol';
-  const isDark=!document.body.classList.contains('theme-light')&&!document.body.classList.contains('theme-material-light');
-
-  // Build map: 'YYYY-MM-DD' → value
-  const dayMap={};
-  all.forEach(s=>{
-    const d=s.fecha.slice(0,10);
-    let val=0;
-    if(metric==='cal') val=s.calorias||0;
-    else if(metric==='freq') val=1;
-    else val=(s.ejercicios||[]).reduce((sum,e)=>sum+(e.peso_kg||0)*(e.reps||1)*(e.series||1),0);
-    dayMap[d]=(dayMap[d]||0)+val;
-  });
-
-  // Date range: last 52 weeks aligned to Monday
-  const today=new Date();
-  today.setHours(0,0,0,0);
-  const startDate=new Date(today);
-  startDate.setDate(today.getDate()-364);
-  const dow=startDate.getDay();
-  const offset=dow===0?-6:1-dow;
-  startDate.setDate(startDate.getDate()+offset);
-
-  // Build weeks array: each week is [Mon..Sun]
-  const weeks=[];
-  let d=new Date(startDate);
-  while(d<=today){
-    const week=[];
-    for(let i=0;i<7;i++){
-      const ds=d.toISOString().slice(0,10);
-      week.push({date:new Date(d),ds,val:dayMap[ds]||0,inRange:d<=today});
-      d.setDate(d.getDate()+1);
-    }
-    weeks.push(week);
-  }
-
-  const maxVal=Math.max(1,...Object.values(dayMap));
-  const emptyC=isDark?'#1e1e2e':'#e8e8e0';
-
-  let colors;
-  if(metric==='freq'){
-    colors=[isDark?'#1e3a1e':'#d4f0d4',isDark?'#2d6b2d':'#a8e0a8',isDark?'#3d9a3d':'#6cc96c',isDark?'#47ff7a':'#22a83a'];
-  } else if(metric==='cal'){
-    colors=[isDark?'#3a1e2a':'#f0d4e0',isDark?'#7a2a4a':'#e08ab8',isDark?'#cc3a70':'#d44a80','#ff4747'];
-  } else {
-    colors=[isDark?'#1e2a1e':'#d4e8d4',isDark?'#2a4a2a':'#8ec88e',isDark?'#3a7a3a':'#4a9f4a','#e8ff47'];
-  }
-
-  function getColor(val){
-    if(!val)return emptyC;
-    const pct=val/maxVal;
-    if(pct<0.25)return colors[0];
-    if(pct<0.5)return colors[1];
-    if(pct<0.75)return colors[2];
-    return colors[3];
-  }
-
-  const cellSz=window.innerWidth<380?10:11;
-  document.documentElement.style.setProperty('--hm-cell',cellSz+'px');
-
-  // Weekday labels
-  const wdEl=document.getElementById('heatmap-weekdays');
-  if(wdEl){
-    const wdLabels=['L','','M','','J','','S'];
-    wdEl.innerHTML=wdLabels.map(l=>`<div class="hm-wd-lbl" style="height:${cellSz}px">${l}</div>`).join('');
-  }
-
-  // Month labels
-  const monthEl=document.getElementById('heatmap-months');
-  if(monthEl){
-    const mNames=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-    let lastM=-1;
-    monthEl.innerHTML=weeks.map(wk=>{
-      const m=wk[0].date.getMonth();
-      const lbl=m!==lastM?mNames[m]:'';
-      lastM=m;
-      return`<div class="hm-month-lbl" style="width:${cellSz+3}px">${lbl}</div>`;
-    }).join('');
-  }
-
-  // Grid
-  const grid=document.getElementById('heatmap-grid');
-  if(!grid)return;
-  grid.innerHTML=weeks.map(wk=>{
-    const cells=wk.map(day=>{
-      if(!day.inRange)return`<div style="width:${cellSz}px;height:${cellSz}px"></div>`;
-      const bg=getColor(day.val);
-      const label=day.val?(metric==='freq'?'1 sesión':`${Math.round(day.val)}${metric==='cal'?' kcal':' kg'}`):'Sin entreno';
-      return`<div class="hm-cell" style="width:${cellSz}px;height:${cellSz}px;background:${bg}" title="${day.ds}: ${label}" onclick="_heatmapClickDay('${day.ds}')"></div>`;
-    }).join('');
-    return`<div class="hm-col">${cells}</div>`;
-  }).join('');
-
-  // Streak
-  let streak=0;const cur=new Date(today);
-  while(true){
-    const ds=cur.toISOString().slice(0,10);
-    if(dayMap[ds]){streak++;cur.setDate(cur.getDate()-1);}
-    else break;
-  }
-  const streakEl=document.getElementById('heatmap-streak');
-  if(streakEl)streakEl.textContent=streak>1?`🔥 ${streak} días seguidos`
-    :streak===1?'🔥 1 día seguido'
-    :`${Object.keys(dayMap).length} días entrenados`;
-
-  // Legend
-  const legEl=document.getElementById('heatmap-legend');
-  if(legEl){
-    const ls=cellSz;
-    legEl.innerHTML=`<span style="font-size:9px;color:var(--text2)">Menos</span>`
-      +[emptyC,...colors].map(c=>`<div class="hm-legend-cell" style="width:${ls}px;height:${ls}px;background:${c}"></div>`).join('')
-      +`<span style="font-size:9px;color:var(--text2)">Más</span>`;
-  }
-}
-
-function _heatmapClickDay(ds){
-  const all=window._statsDiasAll||[];
-  if(!all.some(s=>s.fecha.slice(0,10)===ds)){showToast('Sin entreno ese día','info');return;}
-  const parts=ds.split('-');
-  const mNames=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  const displayDate=`${parseInt(parts[2])} ${mNames[parseInt(parts[1])-1]} ${parts[0]}`;
-  const qEl=document.getElementById('hist-search');
-  if(qEl)qEl.value=displayDate;
-  goTab('historial',document.getElementById('tab-historial'));
-  loadHistorial();
 }

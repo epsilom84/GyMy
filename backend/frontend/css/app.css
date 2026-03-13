@@ -416,14 +416,6 @@ input:focus,select:focus{border-color:var(--accent);}
 .swipe-del-bg{position:absolute;right:0;top:0;bottom:0;width:76px;background:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;border-radius:0 13px 13px 0;pointer-events:none;}
 .swipe-wrap .session-item{margin-bottom:0;border-radius:13px;transition:transform .18s ease;touch-action:pan-y;will-change:transform;user-select:none;}
 
-/* ── HEATMAP ── */
-.hm-cell{border-radius:3px;flex-shrink:0;cursor:pointer;transition:opacity .15s;}
-.hm-cell:hover{opacity:.7;}
-.hm-col{display:flex;flex-direction:column;gap:3px;}
-.hm-month-lbl{font-size:9px;color:var(--text2);white-space:nowrap;flex:1;}
-.hm-wd-lbl{font-size:9px;color:var(--text2);height:var(--hm-cell,11px);display:flex;align-items:center;justify-content:flex-end;}
-.hm-legend-cell{border-radius:2px;}
-
 /* ── TAB SLIDE TRANSITIONS ── */
 @keyframes slideInRight{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
 @keyframes slideInLeft{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:none}}
