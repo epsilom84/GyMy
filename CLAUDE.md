@@ -16,6 +16,8 @@ Guía técnica completa para Claude Code. Léela entera antes de modificar cualq
 
 ## Estructura del proyecto
 
+### Estado actual (en migración)
+
 ```
 gymy/
 ├── CLAUDE.md                  ← Este archivo
@@ -38,11 +40,25 @@ gymy/
     │   ├── auth.routes.js     ← /api/auth/*
     │   └── gym.routes.js      ← /api/catalogo/* (PÚBLICO, antes de verifyToken) + /api/* (JWT)
     └── frontend/
-        ├── index.html         ← SPA completa (~3500 líneas)
-        ├── import.js          ← Lógica de importación de historial (cargada via <script src>)
+        ├── index.html         ← HTML estructural + carga de scripts/CSS
         ├── api.js             ← Cliente HTTP: apiCall(method, endpoint, body)
+        ├── import.js          ← Lógica de importación de historial
         ├── sw.js              ← Service Worker (PWA)
         ├── manifest.json      ← Web App Manifest (PWA)
+        ├── css/               ← Estilos separados por responsabilidad
+        │   ├── base.css       ← Reset, variables CSS, tipografía, temas
+        │   ├── components.css ← Botones, cards, modales, chips, toasts, skeletons
+        │   └── layout.css     ← Navbar, pages, FABs, grid
+        ├── js/                ← Módulos JS por pantalla/dominio
+        │   ├── app.js         ← Init, navegación (goTab), globals, helpers (formatFecha, showToast…)
+        │   ├── auth.js        ← Login, register, logout, refresh token
+        │   ├── store.js       ← Estado global, cachés (_catalogoCache, _plantillasCache, _uk)
+        │   ├── dashboard.js   ← Dashboard, stats resumen, sesiones recientes
+        │   ├── workout.js     ← Workout activo, timer, series, PR detector
+        │   ├── historial.js   ← Historial, filtros, swipe-to-delete, export
+        │   ├── stats.js       ← Progresión por ejercicio, gráficas
+        │   ├── perfil.js      ← Perfil usuario, catálogo BD, plantillas personales, temas
+        │   └── coach.js       ← Coach Sasha, caché del plan, proxy IA
         └── assets/
             ├── icon.svg                    ← Icono PWA (mancuerna SVG)
             ├── musculos.svg               ← Ilustración cuerpo humano (empty states)
@@ -51,6 +67,17 @@ gymy/
             ├── equipo/                    ← SVGs de equipamiento
             └── descarga.jpeg             ← Icono personalizado: Sentadilla Barra
 ```
+
+### Objetivo de arquitectura escalable
+
+El frontend está migrando de un único `index.html` monolítico (~3500 líneas) a una estructura modular. **Cada nueva funcionalidad se crea en el archivo correspondiente**, nunca añadiéndola al montón en `index.html`. La migración es incremental: no hay que reescribir todo de golpe, pero todo código nuevo sigue la estructura modular.
+
+**Principios:**
+- Un archivo por responsabilidad — una pantalla o dominio por módulo JS
+- El CSS se separa del JS y del HTML
+- `index.html` solo contiene la estructura HTML y las etiquetas `<link>`/`<script>`
+- Los módulos se cargan en orden explícito al final del `<body>` (sin bundler, sin imports ES modules obligatorios)
+- Las funciones que usen módulos del mismo fichero no necesitan `export`; las compartidas entre módulos se exponen en `window` o en un objeto global `App`
 
 ---
 
@@ -199,13 +226,33 @@ Rate limit general: 120 req / min.
 
 ---
 
-## Frontend — index.html + import.js
+## Frontend — arquitectura modular
 
-El frontend es una SPA de ~3500 líneas repartida en dos archivos:
-- **`index.html`**: toda la UI, CSS, lógica de app, workout, historial, stats, perfil
-- **`import.js`**: lógica de importación de historial (cargado via `<script src="/import.js">` al final del body)
+El frontend es una SPA sin framework, organizada en módulos JS y CSS independientes:
 
-**No crear más archivos JS separados** a menos que se pida explícitamente.
+| Archivo | Responsabilidad |
+|---|---|
+| `index.html` | Solo HTML estructural + `<link>` CSS + `<script>` en orden al final del `<body>` |
+| `api.js` | Cliente HTTP (`apiCall`) y gestión de tokens |
+| `js/store.js` | Estado global compartido: cachés, `_uk()`, `invalidatePlantillas()` |
+| `js/app.js` | Inicialización, `goTab()`, helpers de UI (`showToast`, `formatFecha`, `haptic`) |
+| `js/auth.js` | Login, register, logout, `_clearUserCaches()` |
+| `js/dashboard.js` | Pantalla dashboard, stats resumen, `renderRecientes()` |
+| `js/workout.js` | Workout activo completo: timer, series, PR detector, preload |
+| `js/historial.js` | Historial, filtros, swipe-to-delete, exportar CSV |
+| `js/stats.js` | Progresión por ejercicio, gráficas Chart.js |
+| `js/perfil.js` | Perfil usuario, catálogo BD, plantillas personales, temas |
+| `js/coach.js` | Coach Sasha: caché del plan, llamada a IA |
+| `import.js` | Importación de historial CSV/Excel/IA (mantiene su nombre actual) |
+| `css/base.css` | Variables CSS (`--bg`, `--accent`…), reset, tipografía, temas dark/light |
+| `css/components.css` | Botones, cards, modales, chips, toasts, skeletons, swipe |
+| `css/layout.css` | Navbar, páginas `.page`, FABs, grid de ejercicios |
+
+**Cómo añadir funcionalidad nueva:**
+1. Si pertenece a una pantalla existente → editar el módulo JS correspondiente
+2. Si es una pantalla nueva → crear `js/nueva-pantalla.js` y añadir `<script src="/js/nueva-pantalla.js">` en `index.html`
+3. CSS nuevo → añadir al archivo CSS más apropiado (nunca inline en JS salvo casos puntuales)
+4. Nunca volver a añadir lógica de negocio directamente en `index.html`
 
 ### Funciones clave
 
@@ -397,7 +444,7 @@ const GRUPO_COLORS = {
 
 ```js
 const COACH_PLAN_TTL = 12 * 60 * 60 * 1000; // 12h en ms
-// localStorage: 'gymy_coach_plan' → { text: "...", ts: Date.now() }
+// localStorage: _uk('coach_plan') → { text: "...", ts: Date.now() }  (clave privada por usuario)
 ```
 
 Al abrir el modal del plan: si hay caché válida se muestra directamente con botón "Regenerar".
@@ -464,19 +511,35 @@ URL activa en ~60 segundos: https://gymy-production.up.railway.app/
 
 ## Convenciones de código
 
-- **Sin TypeScript**, sin transpilación. JS vanilla en frontend, CommonJS en backend.
+### General
+- **Sin TypeScript**, sin transpilación, sin bundler. JS vanilla en frontend, CommonJS en backend.
 - **Sin ORM**. SQL directo con `queryOne` / `queryAll` / `withTransaction`.
-- **Sin frameworks CSS**. CSS custom properties para temas (variables `--bg`, `--accent`, etc.).
+- **Sin frameworks CSS**. CSS custom properties para temas (`--bg`, `--accent`, etc.).
 - El frontend es una SPA. Los cambios de pantalla son manipulación de DOM con `.page.active`.
 - Toda la lógica de autenticación usa `localStorage` para tokens en el cliente.
 - Los iconos de ejercicio se sirven desde `/assets/` — imágenes estáticas.
-- La lógica de importación está en `import.js` (cargado como `<script src="/import.js">`). El resto de la lógica va en `index.html`.
+
+### Estructura de archivos
+- **Un módulo JS por pantalla o dominio** — no añadir código a `index.html`.
+- **CSS separado del HTML y del JS** — los estilos van en `css/`.
+- Cada módulo nuevo se carga con `<script src="/js/modulo.js">` en `index.html`, en el orden correcto (dependencias primero).
+- Las funciones necesarias en múltiples módulos se declaran en `js/app.js` o `js/store.js`.
+- Los módulos no usan `import`/`export` (compatibilidad máxima sin bundler); las funciones públicas se asignan a `window` cuando sea necesario.
+
+### Backend
+- Las rutas se organizan por dominio. Si `gym.routes.js` supera ~600 líneas, extraer en subrutas (`sesiones.routes.js`, `plantillas.routes.js`, etc.) y montarlas en `server.js`.
+- Cada endpoint valida que el recurso pertenece al usuario autenticado (`WHERE id=$1 AND user_id=$2`).
+
+### Privacidad y datos de usuario
+- Todos los datos sensibles en `localStorage` se prefijan con el userId mediante `_uk(key)`.
+- Las cachés en memoria se limpian en `_clearUserCaches()` antes de cualquier logout.
+- Claves no sensibles que pueden ser compartidas entre cuentas: `gymy_theme`, `gymy_preload`.
 
 ---
 
 ## Errores comunes a evitar
 
-- ❌ No crear archivos JS separados (excepto `import.js` que ya existe)
+- ❌ No añadir lógica de negocio o CSS en `index.html` — usar los módulos `js/` y `css/`
 - ❌ No usar `sqlite3` — la app usa PostgreSQL
 - ❌ No importar `DATABASE_PUBLIC_URL` — usar siempre `DATABASE_URL`
 - ❌ No hacer `process.exit(1)` en middleware — solo en `initDB()` si falla la conexión
