@@ -1,12 +1,5 @@
 [
   {
-    "nombre": "Curl de piernas acostado femoral",
-    "grupo_muscular": "Piernas",
-    "subgrupo": "Femoral",
-    "equipo": "máquina",
-    "tipo": "fuerza"
-  },
-  {
     "nombre": "Curl de piernas de pie femoral",
     "grupo_muscular": "Piernas",
     "subgrupo": "Femoral",
@@ -105,7 +98,7 @@
     "tipo": "fuerza"
   },
   {
-    "nombre": "Zancadas estocadas con barra",
+    "nombre": "StepUps Zancadas estocadas con barra",
     "grupo_muscular": "Piernas",
     "subgrupo": "Cuádriceps",
     "equipo": "barra",
@@ -189,14 +182,7 @@
     "tipo": "fuerza"
   },
   {
-    "nombre": "Extensión de cuádriceps",
-    "grupo_muscular": "Piernas",
-    "subgrupo": "Cuádriceps",
-    "equipo": "máquina",
-    "tipo": "fuerza"
-  },
-  {
-    "nombre": "Leg extension",
+    "nombre": "Extensión de cuádriceps Leg extension",
     "grupo_muscular": "Piernas",
     "subgrupo": "Cuádriceps",
     "equipo": "máquina",
@@ -248,6 +234,13 @@
     "nombre": "Sentadilla de rodillas con barra",
     "grupo_muscular": "Piernas",
     "subgrupo": "Glúteo",
+    "equipo": "barra",
+    "tipo": "fuerza"
+  },
+  {
+    "nombre": "Zancadas estocadas con barra",
+    "grupo_muscular": "Piernas",
+    "subgrupo": "Cuádriceps",
     "equipo": "barra",
     "tipo": "fuerza"
   },
@@ -413,13 +406,6 @@
     "tipo": "fuerza"
   },
   {
-    "nombre": "Row",
-    "grupo_muscular": "Espalda",
-    "subgrupo": "Dorsal",
-    "equipo": "máquina",
-    "tipo": "fuerza"
-  },
-  {
     "nombre": "Pull down máquina",
     "grupo_muscular": "Espalda",
     "subgrupo": "Dorsal",
@@ -434,7 +420,7 @@
     "tipo": "fuerza"
   },
   {
-    "nombre": "remo máquina unilateral",
+    "nombre": "Remo máquina unilateral",
     "grupo_muscular": "Espalda",
     "subgrupo": "Dorsal",
     "equipo": "máquina",
@@ -651,9 +637,9 @@
     "tipo": "fuerza"
   },
   {
-    "nombre": "Pullover de pie en polea alta jo",
+    "nombre": "Pullover de pie en polea alta",
     "grupo_muscular": "Core",
-    "subgrupo": "Recto abdominal",
+    "subgrupo": "Pectoral",
     "equipo": "cable",
     "tipo": "fuerza"
   },
@@ -917,7 +903,7 @@
     "tipo": "fuerza"
   },
   {
-    "nombre": "Curl predicador con mancuerna",
+    "nombre": "Curl predicador con mancuerna (scott)",
     "grupo_muscular": "Brazos Bíceps",
     "subgrupo": "Bíceps",
     "equipo": "mancuernas",
@@ -935,13 +921,6 @@
     "grupo_muscular": "Brazos Bíceps",
     "subgrupo": "Bíceps",
     "equipo": "cable",
-    "tipo": "fuerza"
-  },
-  {
-    "nombre": "Dominadas agarre prono medio a",
-    "grupo_muscular": "Brazos Bíceps",
-    "subgrupo": "Bíceps",
-    "equipo": "peso_corporal",
     "tipo": "fuerza"
   },
   {
@@ -1120,13 +1099,6 @@
     "tipo": "fuerza"
   },
   {
-    "nombre": "Curl dao Curl barra Z agarre ancho",
-    "grupo_muscular": "Brazos Bíceps",
-    "subgrupo": "Bíceps",
-    "equipo": "barra",
-    "tipo": "fuerza"
-  },
-  {
     "nombre": "Curl barra Z agarre cerrado",
     "grupo_muscular": "Brazos Bíceps",
     "subgrupo": "Bíceps",
@@ -1288,9 +1260,9 @@
     "tipo": "fuerza"
   },
   {
-    "nombre": "Press de banca en máquina Smith inclinado e",
+    "nombre": "Press de banca en máquina Smith inclinado",
     "grupo_muscular": "Brazos Tríceps",
-    "subgrupo": "Tríceps",
+    "subgrupo": "Pectoral",
     "equipo": "máquina",
     "tipo": "fuerza"
   },
@@ -1477,21 +1449,7 @@
     "tipo": "fuerza"
   },
   {
-    "nombre": "Pullover de pie en polea alta",
-    "grupo_muscular": "Pecho",
-    "subgrupo": "Pectoral",
-    "equipo": "cable",
-    "tipo": "fuerza"
-  },
-  {
-    "nombre": "Pecho máquina inclinado",
-    "grupo_muscular": "Pecho",
-    "subgrupo": "Pectoral",
-    "equipo": "máquina",
-    "tipo": "fuerza"
-  },
-  {
-    "nombre": "Press de banca en máquina Smith inclinado",
+    "nombre": "Press de pecho en máquina inclinado",
     "grupo_muscular": "Pecho",
     "subgrupo": "Pectoral",
     "equipo": "máquina",
@@ -1764,7 +1722,7 @@
     "tipo": "fuerza"
   },
   {
-    "nombre": "Elevaciones laterales en máquina sentado e",
+    "nombre": "Elevaciones laterales en máquina sentado",
     "grupo_muscular": "Hombros",
     "subgrupo": "Deltoides",
     "equipo": "máquina",

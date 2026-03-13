@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth.routes');
 const gymRoutes = require('./routes/gym.routes');
 
 const app = express();
+app.set('trust proxy', 1); // Railway usa un proxy inverso
 const PORT = process.env.PORT || 3000;
 const FRONTEND = path.resolve(__dirname, 'frontend');
 

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0a0a0f"/>
+  <!-- barra -->
+  <rect x="96" y="232" width="320" height="48" rx="24" fill="#e8ff47"/>
+  <!-- disco izquierdo exterior -->
+  <rect x="64" y="180" width="48" height="152" rx="20" fill="#e8ff47"/>
+  <!-- disco izquierdo interior -->
+  <rect x="128" y="200" width="32" height="112" rx="14" fill="#e8ff47"/>
+  <!-- disco derecho interior -->
+  <rect x="352" y="200" width="32" height="112" rx="14" fill="#e8ff47"/>
+  <!-- disco derecho exterior -->
+  <rect x="400" y="180" width="48" height="152" rx="20" fill="#e8ff47"/>
+</svg>

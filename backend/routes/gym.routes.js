@@ -1,8 +1,23 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const Anthropic = require('@anthropic-ai/sdk');
 const { body, query, validationResult } = require('express-validator');
 const { pool, queryOne, queryAll, withTransaction } = require('../database/init');
 const verifyToken = require('../middleware/verifyToken');
 const router = express.Router();
+
+// ─── GRUPOS Y SUBGRUPOS FIJOS (no editables por usuario ni por imports) ───────
+const GRUPOS_VALIDOS = ['Piernas','Espalda','Core','Brazos Bíceps','Brazos Tríceps','Hombros','Pecho'];
+const SUBGRUPOS_POR_GRUPO = {
+  'Piernas':       ['Cuádriceps','Femoral','Gemelos','Glúteo'],
+  'Espalda':       ['Dorsal','Lumbar','Trapecio'],
+  'Core':          ['Recto abdominal'],
+  'Brazos Bíceps': ['Bíceps'],
+  'Brazos Tríceps':['Tríceps'],
+  'Hombros':       ['Deltoides'],
+  'Pecho':         ['Pectoral'],
+};
 
 // ─── CATÁLOGO DE EJERCICIOS ────────────────────────────────────────────────
 
@@ -33,7 +48,7 @@ router.get('/catalogo', async (req, res) => {
   }
 });
 
-// GET /api/catalogo/grupos - Lista de grupos musculares disponibles
+// GET /api/catalogo/grupos - Lista de grupos musculares y subgrupos disponibles (fijos)
 router.get('/catalogo/grupos', async (req, res) => {
   try {
     const rows = await queryAll(
@@ -41,7 +56,12 @@ router.get('/catalogo/grupos', async (req, res) => {
        FROM ejercicios_catalogo WHERE activo = TRUE
        GROUP BY grupo_muscular ORDER BY grupo_muscular`
     );
-    res.json({ ok: true, grupos: rows });
+    // También devolver la estructura fija de subgrupos
+    const estructura = GRUPOS_VALIDOS.map(g => ({
+      grupo: g,
+      subgrupos: SUBGRUPOS_POR_GRUPO[g] || [],
+    }));
+    res.json({ ok: true, grupos: rows, estructura });
   } catch(e) {
     res.status(500).json({ ok: false, error: e.message });
   }
@@ -63,23 +83,81 @@ router.get('/catalogo/:id', async (req, res) => {
 
 
 // POST /api/catalogo - Crear nuevo ejercicio en el catálogo (requiere JWT)
+// grupo_muscular debe ser uno de GRUPOS_VALIDOS; subgrupo lo fija el servidor
 router.post('/catalogo', verifyToken, async (req, res) => {
   try {
-    const { nombre, grupo_muscular, subgrupo, equipo, tipo, descripcion } = req.body;
+    const { nombre, grupo_muscular, equipo, tipo, descripcion } = req.body;
     if (!nombre || !grupo_muscular) return res.status(400).json({ ok: false, error: 'nombre y grupo_muscular requeridos' });
+    if (!GRUPOS_VALIDOS.includes(grupo_muscular))
+      return res.status(400).json({ ok: false, error: `grupo_muscular debe ser uno de: ${GRUPOS_VALIDOS.join(', ')}` });
     // Verificar si ya existe (case-insensitive)
     const existing = await queryOne(
-      `SELECT id FROM ejercicios_catalogo WHERE nombre ILIKE $1 AND grupo_muscular ILIKE $2 AND activo = TRUE`,
-      [nombre, grupo_muscular]
+      `SELECT id FROM ejercicios_catalogo WHERE nombre ILIKE $1 AND activo = TRUE`,
+      [nombre]
     );
     if (existing) return res.json({ ok: true, id: existing.id, created: false });
+    // subgrupo: primer subgrupo fijo del grupo (no lo decide el usuario)
+    const subgrupo = (SUBGRUPOS_POR_GRUPO[grupo_muscular] || [])[0] || grupo_muscular;
     const row = await queryOne(
       `INSERT INTO ejercicios_catalogo (nombre, grupo_muscular, subgrupo, equipo, tipo, descripcion, activo)
        VALUES ($1, $2, $3, $4, $5, $6, TRUE) RETURNING id`,
-      [nombre, grupo_muscular, subgrupo||grupo_muscular, equipo||'Libre', tipo||'Fuerza', descripcion||'Importado']
+      [nombre, grupo_muscular, subgrupo, equipo||null, tipo||'genérico', descripcion||null]
     );
     res.status(201).json({ ok: true, id: row.id, created: true });
   } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// PATCH /api/catalogo/:id - Editar solo el tipo (y descripcion) de un ejercicio del catálogo
+router.patch('/catalogo/:id', verifyToken, async (req, res) => {
+  try {
+    const { tipo, descripcion } = req.body;
+    if (!tipo && descripcion === undefined)
+      return res.status(400).json({ ok: false, error: 'Nada que actualizar. Solo tipo y descripcion son editables.' });
+    const updates = [];
+    const params = [];
+    if (tipo)              { params.push(tipo);        updates.push(`tipo=$${params.length}`); }
+    if (descripcion !== undefined) { params.push(descripcion); updates.push(`descripcion=$${params.length}`); }
+    params.push(req.params.id);
+    const row = await queryOne(
+      `UPDATE ejercicios_catalogo SET ${updates.join(',')} WHERE id=$${params.length} AND activo=TRUE RETURNING id`,
+      params
+    );
+    if (!row) return res.status(404).json({ ok: false, error: 'Ejercicio no encontrado' });
+    res.json({ ok: true, id: row.id });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// POST /api/catalogo/import — Reemplaza todo el catálogo desde un array de ejercicios (requiere JWT)
+router.post('/catalogo/import', verifyToken, async (req, res) => {
+  try {
+    const { ejercicios } = req.body;
+    if (!Array.isArray(ejercicios) || ejercicios.length === 0)
+      return res.status(400).json({ ok: false, error: 'ejercicios debe ser un array no vacío' });
+
+    const validos = ejercicios.filter(e => e.nombre && e.grupo_muscular);
+    if (validos.length === 0)
+      return res.status(400).json({ ok: false, error: 'Ningún ejercicio tiene nombre y grupo_muscular' });
+
+    await withTransaction(async (client) => {
+      await client.query(`DELETE FROM ejercicios_catalogo`);
+      for (const e of validos) {
+        await client.query(
+          `INSERT INTO ejercicios_catalogo (nombre, grupo_muscular, subgrupo, equipo, tipo, descripcion, activo)
+           VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (nombre) DO NOTHING`,
+          [e.nombre, e.grupo_muscular, e.subgrupo||null, e.equipo||null, e.tipo||'fuerza', e.descripcion||null, e.activo !== false]
+        );
+      }
+    });
+
+    // Persistir en JSON para sobrevivir reinicios del servidor
+    const seedFile = path.join(__dirname, '../frontend/assets/plantillas_ejercicios.json');
+    fs.writeFileSync(seedFile, JSON.stringify(validos, null, 2), 'utf8');
+
+    const grupos = [...new Set(validos.map(e => e.grupo_muscular))].sort();
+    res.json({ ok: true, insertados: validos.length, grupos });
+  } catch(e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 router.use(verifyToken);
@@ -87,15 +165,21 @@ router.use(verifyToken);
 const validateSesion = [
   body('fecha').isDate().withMessage('Fecha no válida (YYYY-MM-DD)'),
   body('tipo').notEmpty().withMessage('Tipo obligatorio'),
-  body('duracion_min').optional().isInt({ min: 1, max: 600 }),
-  body('calorias').optional().isInt({ min: 0, max: 10000 }),
-  body('valoracion').optional().isInt({ min: 1, max: 5 }),
+  body('duracion_min').optional({ nullable: true }).isInt({ min: 0, max: 600 }),
+  body('calorias').optional({ nullable: true }).isInt({ min: 0, max: 10000 }),
+  body('valoracion').optional({ nullable: true }).isInt({ min: 1, max: 5 }),
   body('ejercicios').optional().isArray(),
 ];
 
 // ── Helper: cargar ejercicios de una sesión ────────────────
 async function loadEjercicios(sesionId) {
-  return queryAll('SELECT * FROM ejercicios WHERE sesion_id=$1 ORDER BY id', [sesionId]);
+  return queryAll(
+    `SELECT e.*, ec.grupo_muscular, ec.subgrupo, ec.equipo AS equipo_catalogo
+     FROM ejercicios e
+     LEFT JOIN ejercicios_catalogo ec ON LOWER(ec.nombre) = LOWER(e.nombre)
+     WHERE e.sesion_id=$1 ORDER BY e.id`,
+    [sesionId]
+  );
 }
 
 // ── Helper: insertar ejercicios en transacción ─────────────
@@ -107,7 +191,7 @@ async function insertEjercicios(client, sesionId, ejercicios) {
       : null;
     await client.query(
       'INSERT INTO ejercicios (sesion_id,nombre,series,reps,peso_kg,sets_data) VALUES ($1,$2,$3,$4,$5,$6)',
-      [sesionId, e.nombre, e.series || null, e.reps || null, e.peso_kg || null, setsData]
+      [sesionId, e.nombre, e.series || null, e.reps ?? null, e.peso_kg ?? null, setsData]
     );
   }
 }
@@ -120,12 +204,14 @@ router.get('/sesiones', [
   query('desde').optional().isDate(),
   query('hasta').optional().isDate(),
   query('q').optional().isString(),
+  query('grupo').optional().isString(),
+  query('subgrupo').optional().isString(),
 ], async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
     const offset = (page - 1) * limit;
-    const { tipo, desde, hasta, q } = req.query;
+    const { tipo, desde, hasta, q, grupo, subgrupo } = req.query;
     const uid = req.user.id;
 
     let where = 'WHERE s.user_id=$1';
@@ -157,6 +243,22 @@ router.get('/sesiones', [
       params.push('%'+q+'%');
       pi++;
     }
+    if (grupo) {
+      where += ` AND EXISTS (
+        SELECT 1 FROM ejercicios ej2
+        JOIN ejercicios_catalogo ec ON LOWER(ec.nombre) = LOWER(ej2.nombre)
+        WHERE ej2.sesion_id = s.id AND ec.grupo_muscular = $${pi++}
+      )`;
+      params.push(grupo);
+    }
+    if (subgrupo) {
+      where += ` AND EXISTS (
+        SELECT 1 FROM ejercicios ej2
+        JOIN ejercicios_catalogo ec ON LOWER(ec.nombre) = LOWER(ej2.nombre)
+        WHERE ej2.sesion_id = s.id AND ec.subgrupo = $${pi++}
+      )`;
+      params.push(subgrupo);
+    }
 
     const totalRow = await queryOne(`SELECT COUNT(*) as n FROM sesiones s ${where}`, params);
     const total = parseInt(totalRow.n);
@@ -166,9 +268,7 @@ router.get('/sesiones', [
       [...params, limit, offset]
     );
 
-    for (const s of sesiones) {
-      s.ejercicios = await loadEjercicios(s.id);
-    }
+    await Promise.all(sesiones.map(async s => { s.ejercicios = await loadEjercicios(s.id); }));
 
     res.json({ ok: true, total, page, pages: Math.ceil(total / limit), sesiones });
   } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
@@ -253,11 +353,11 @@ router.post('/sesiones', validateSesion, async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ ok: false, error: errors.array()[0].msg });
   try {
-    const { fecha, tipo, duracion_min, notas, calorias, valoracion, ejercicios } = req.body;
+    const { fecha, tipo, duracion_min, notas, calorias, valoracion, ejercicios, importado } = req.body;
     const sesion = await withTransaction(async (client) => {
       const row = await client.query(
-        'INSERT INTO sesiones (user_id,fecha,tipo,duracion_min,notas,calorias,valoracion) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
-        [req.user.id, fecha, tipo, duracion_min||null, notas||null, calorias||null, valoracion||null]
+        'INSERT INTO sesiones (user_id,fecha,tipo,duracion_min,notas,calorias,valoracion,importado) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',
+        [req.user.id, fecha, tipo, duracion_min||null, notas||null, calorias||null, valoracion||null, importado||false]
       );
       const s = row.rows[0];
       await insertEjercicios(client, s.id, ejercicios);
@@ -353,11 +453,14 @@ router.get('/ejercicios/historial', async (req, res) => {
     const { nombre } = req.query;
     if (!nombre) return res.status(400).json({ ok: false, error: 'Nombre requerido' });
     const rows = await queryAll(`
-      SELECT e.nombre, e.peso_kg, e.reps, e.series, s.fecha
+      SELECT e.nombre, e.peso_kg, e.reps, e.series, e.sets_data,
+             s.fecha::text, s.id AS sesion_id
       FROM ejercicios e
-      JOIN sesiones s ON s.id=e.sesion_id
-      WHERE s.user_id=$1 AND e.nombre ILIKE $2
-      ORDER BY s.fecha ASC`, [req.user.id, '%'+nombre+'%']);
+      JOIN sesiones s ON s.id = e.sesion_id
+      WHERE s.user_id = $1
+        AND LOWER(e.nombre) = LOWER($2)
+      ORDER BY s.fecha DESC, s.id DESC
+      LIMIT 50`, [req.user.id, nombre]);
     res.json({ ok: true, historial: rows });
   } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
 });
@@ -369,41 +472,36 @@ router.post('/ai/import', async (req, res) => {
     const { prompt } = req.body;
     if (!prompt) return res.status(400).json({ ok: false, error: 'prompt required' });
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY || '',
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4000,
-        messages: [{ role: 'user', content: prompt }]
-      })
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return res.status(503).json({ ok: false, error: 'IA no configurada (falta ANTHROPIC_API_KEY en Railway)' });
+
+    const model = 'claude-haiku-4-5-20251001';
+    console.log('[AI] Llamando Anthropic model:', model, '| key prefix:', apiKey.slice(0,12)+'...');
+
+    const client = new Anthropic({ apiKey });
+    const message = await client.messages.create({
+      model,
+      max_tokens: 2000,
+      messages: [{ role: 'user', content: prompt }]
     });
 
-    if (!response.ok) {
-      const err = await response.text();
-      return res.status(502).json({ ok: false, error: 'AI error: ' + err.slice(0, 200) });
-    }
-
-    const data = await response.json();
-    const text = data.content?.[0]?.text || '';
+    const text = message.content?.[0]?.text || '';
+    console.log('[AI] OK, chars:', text.length);
     res.json({ ok: true, text });
   } catch(e) {
-    res.status(500).json({ ok: false, error: e.message });
+    console.error('[AI] Excepción:', e.message);
+    res.status(500).json({ ok: false, error: 'Error de red: '+e.message });
   }
 });
 
-// ── GET /api/plantillas — genéricas + propias del usuario ──────────────────
+// ── GET /api/plantillas — propias del usuario ──────────────────────────────
 router.get('/plantillas', async (req, res) => {
   try {
     const rows = await queryAll(
       `SELECT id, nombre, grupo_muscular, subgrupo, equipo, tipo, user_id,
-              (user_id = $1) AS propia
+              TRUE AS propia
        FROM plantillas_ejercicios
-       WHERE activo = TRUE AND (user_id IS NULL OR user_id = $1)
+       WHERE activo = TRUE AND user_id = $1
        ORDER BY grupo_muscular, nombre`,
       [req.user.id]
     );
@@ -412,26 +510,36 @@ router.get('/plantillas', async (req, res) => {
 });
 
 // ── POST /api/plantillas — crear plantilla personal ─────────────────────────
+// grupo_muscular debe ser de GRUPOS_VALIDOS; subgrupo no lo elige el usuario
 router.post('/plantillas', async (req, res) => {
   try {
-    const { nombre, grupo_muscular, subgrupo, equipo, tipo } = req.body;
+    const { nombre, grupo_muscular, equipo, tipo } = req.body;
     if (!nombre || !grupo_muscular)
       return res.status(400).json({ ok: false, error: 'nombre y grupo_muscular requeridos' });
+    if (!GRUPOS_VALIDOS.includes(grupo_muscular))
+      return res.status(400).json({ ok: false, error: `grupo_muscular debe ser uno de: ${GRUPOS_VALIDOS.join(', ')}` });
     const existing = await queryOne(
       `SELECT id FROM plantillas_ejercicios WHERE lower(nombre)=lower($1) AND user_id=$2 AND activo=TRUE`,
       [nombre, req.user.id]
     );
     if (existing) return res.json({ ok: true, id: existing.id, created: false });
+    // Si el ejercicio está en el catálogo, heredar su subgrupo; si no, usar el primero del grupo
+    const catEj = await queryOne(
+      `SELECT subgrupo FROM ejercicios_catalogo WHERE nombre ILIKE $1 AND activo=TRUE LIMIT 1`, [nombre]
+    );
+    const subgrupo = catEj?.subgrupo || (SUBGRUPOS_POR_GRUPO[grupo_muscular] || [])[0] || grupo_muscular;
     const row = await queryOne(
       `INSERT INTO plantillas_ejercicios (nombre, grupo_muscular, subgrupo, equipo, tipo, user_id)
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
-      [nombre, grupo_muscular, subgrupo||grupo_muscular, equipo||'libre', tipo||'fuerza', req.user.id]
+      [nombre, grupo_muscular, subgrupo, equipo||null, tipo||'genérico', req.user.id]
     );
     res.status(201).json({ ok: true, id: row.id, created: true });
   } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
 // ── POST /api/plantillas/bulk — importar varias plantillas ──────────────────
+// grupo_muscular y subgrupo: se toman del catálogo si existe el ejercicio;
+// si no, grupo debe ser válido y subgrupo se asigna automáticamente.
 router.post('/plantillas/bulk', async (req, res) => {
   try {
     const { ejercicios } = req.body;
@@ -439,7 +547,15 @@ router.post('/plantillas/bulk', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'ejercicios array requerido' });
     let count = 0;
     for (const e of ejercicios) {
-      if (!e.nombre || !e.grupo_muscular) continue;
+      if (!e.nombre) continue;
+      // Buscar en catálogo para obtener grupo/subgrupo canónicos
+      const catEj = await queryOne(
+        `SELECT grupo_muscular, subgrupo FROM ejercicios_catalogo WHERE nombre ILIKE $1 AND activo=TRUE LIMIT 1`,
+        [e.nombre]
+      );
+      const grupo = catEj?.grupo_muscular || e.grupo_muscular;
+      if (!grupo || !GRUPOS_VALIDOS.includes(grupo)) continue; // grupo inválido → saltar
+      const subgrupo = catEj?.subgrupo || (SUBGRUPOS_POR_GRUPO[grupo] || [])[0] || grupo;
       const exists = await queryOne(
         `SELECT id FROM plantillas_ejercicios WHERE lower(nombre)=lower($1) AND user_id=$2`,
         [e.nombre, req.user.id]
@@ -448,7 +564,7 @@ router.post('/plantillas/bulk', async (req, res) => {
       await queryOne(
         `INSERT INTO plantillas_ejercicios (nombre, grupo_muscular, subgrupo, equipo, tipo, user_id)
          VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
-        [e.nombre, e.grupo_muscular, e.subgrupo||e.grupo_muscular, e.equipo||'libre', e.tipo||'fuerza', req.user.id]
+        [e.nombre, grupo, subgrupo, e.equipo||null, e.tipo||'genérico', req.user.id]
       );
       count++;
     }
