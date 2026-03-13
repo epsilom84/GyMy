@@ -31,10 +31,9 @@ async function initDB() {
         reset_token_exp  TIMESTAMPTZ,
         created_at       TIMESTAMPTZ DEFAULT NOW(),
         last_login       TIMESTAMPTZ,
-        nivel_usuario    INT DEFAULT 1
+        nivel_usuario    INT DEFAULT 2
       );
     `);
-    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS nivel_usuario INT DEFAULT 1;`);
     await client.query(`
       CREATE TABLE IF NOT EXISTS sesiones (
         id           SERIAL PRIMARY KEY,

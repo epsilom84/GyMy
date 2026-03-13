@@ -72,7 +72,7 @@ router.post('/login', validateLogin, async (req, res) => {
     if (!user || !(await bcrypt.compare(password, user.password)))
       return res.status(401).json({ ok: false, error: 'Email o contraseña incorrectos' });
     await queryOne('UPDATE users SET last_login=NOW() WHERE id=$1', [user.id]);
-    const payload = { id: user.id, username: user.username, email: user.email, nivel_usuario: user.nivel_usuario || 1 };
+    const payload = { id: user.id, username: user.username, email: user.email, nivel_usuario: user.nivel_usuario || 2 };
     const { accessToken, refreshToken } = generateTokens(payload);
     await queryOne('UPDATE users SET refresh_token=$1 WHERE id=$2', [refreshToken, user.id]);
     res.json({ ok: true, accessToken, refreshToken, usuario: payload });
