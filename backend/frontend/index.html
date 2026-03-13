@@ -3487,15 +3487,22 @@ function grupoSVGHtml(grupo, width){
 // Heatmap versión de grupoSVGHtml — misma estructura, colores por calor según series
 function bodyHeatmapSVGHtml(seriesMap){
   const RM={
+    // Nombres de grupo (fallback cuando sg=null)
     'Pecho':['fp'],'Core':['fc'],
     'Hombros':['fdl','fdr','bdl','bdr'],
     'Brazos Bíceps':['fbl','fbr','ffl','ffr'],
     'Brazos Tríceps':['btl','btr','bfl','bfr'],
     'Brazos':['fbl','fbr','ffl','ffr','btl','btr','bfl','bfr'],
-    'Espalda':['be'],'Dorsal':['be'],'Trapecio':['be'],'Lumbar':['be'],
+    'Espalda':['be'],'Piernas':['fql','fqr','fcl','fcr','bg','bhl','bhr','bcl','bcr'],
+    // Subgrupos reales del catálogo (sg field)
+    'Pectoral':['fp'],                          // Pecho + algunos Core/Tríceps
+    'Deltoides':['fdl','fdr','bdl','bdr'],      // Hombros
+    'Bíceps':['fbl','fbr','ffl','ffr'],         // Brazos Bíceps
+    'Tríceps':['btl','btr','bfl','bfr'],        // Brazos Tríceps
+    'Recto abdominal':['fc'],                   // Core
+    'Dorsal':['be'],'Trapecio':['be'],'Lumbar':['be'],
     'Cuádriceps':['fql','fqr'],'Femoral':['bhl','bhr'],
     'Glúteo':['bg'],'Gemelos':['fcl','fcr','bcl','bcr'],
-    'Piernas':['fql','fqr','fcl','fcr','bg','bhl','bhr','bcl','bcr'],
   };
   const IL={fp:'Pecho',fc:'Core',fdl:'Hombros',fdr:'Hombros',bdl:'Hombros',bdr:'Hombros',fbl:'Bíceps',fbr:'Bíceps',ffl:'Antebrazos',ffr:'Antebrazos',btl:'Tríceps',btr:'Tríceps',bfl:'Antebrazos',bfr:'Antebrazos',fql:'Cuádriceps',fqr:'Cuádriceps',fcl:'Gemelos',fcr:'Gemelos',be:'Espalda',bg:'Glúteo',bhl:'Femoral',bhr:'Femoral',bcl:'Gemelos',bcr:'Gemelos'};
   const rs={};
