@@ -383,7 +383,7 @@ router.put('/sesiones/:id', validateSesion, async (req, res) => {
       );
       await client.query('DELETE FROM ejercicios WHERE sesion_id=$1', [req.params.id]);
       await insertEjercicios(client, req.params.id, ejercicios);
-      const row = await client.query('SELECT * FROM sesiones WHERE id=$1', [req.params.id]);
+      const row = await client.query('SELECT * FROM sesiones WHERE id=$1 AND user_id=$2', [req.params.id, req.user.id]);
       return row.rows[0];
     });
     sesion.ejercicios = await loadEjercicios(sesion.id);
