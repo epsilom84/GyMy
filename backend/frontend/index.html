@@ -184,12 +184,13 @@
       </div>
       <!-- Músculo view -->
       <div id="stats-musculos-view" style="display:none">
-        <div class="card" style="margin-bottom:12px">
-          <div class="card-title">Mapa de calor muscular <span style="font-size:11px;font-weight:400;color:var(--text2)">(por series)</span></div>
-          <div id="body-heatmap-container" style="padding:8px 0"></div>
-          <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:2px;font-size:11px;color:var(--text2)">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0">
+        <div class="card" style="margin-bottom:0">
+          <div class="card-title" style="font-size:12px">Mapa de calor <span style="font-size:10px;font-weight:400;color:var(--text2)">(series)</span></div>
+          <div id="body-heatmap-container" style="padding:4px 0"></div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:2px;font-size:10px;color:var(--text2)">
             <span>Poco</span>
-            <div style="width:100px;height:7px;border-radius:4px;background:linear-gradient(to right,#66bb6a,#ffd740,#ff9800,#ef5350)"></div>
+            <div style="width:70px;height:6px;border-radius:4px;background:linear-gradient(to right,#66bb6a,#ffd740,#ff9800,#ef5350)"></div>
             <span>Máximo</span>
           </div>
           <!--
@@ -354,13 +355,10 @@
             Divider
           -->
         </div>
-        <div class="card" style="margin-bottom:12px">
-          <div class="card-title">Distribución muscular (series)</div>
-          <div style="position:relative;height:260px"><canvas id="chart-mus-donut"></canvas></div>
+        <div class="card" style="margin-bottom:0">
+          <div class="card-title" style="font-size:12px">Distribución muscular <span style="font-size:10px;font-weight:400;color:var(--text2)">(series)</span></div>
+          <div style="position:relative;height:220px"><canvas id="chart-mus-donut"></canvas></div>
         </div>
-        <div class="card">
-          <div class="card-title">Volumen acumulado por músculo (kg)</div>
-          <div id="chart-mus-bar-wrap" style="position:relative"><canvas id="chart-mus-bar"></canvas></div>
         </div>
       </div>
     </div>
@@ -883,7 +881,7 @@ function getPendientesOffline(){return JSON.parse(localStorage.getItem(_uk('offl
 // INIT
 // ══════════════════════════════════════════════
 let currentPage=1,currentTipoFilter='',currentGrupoFilter='',currentSubgrupoFilter='',statsCache=null,ejCount=0;
-let currentStatsType='ejercicio',selectedStatsEj=null,chartEjPeso=null,chartEjVol=null,chartDias=null,chartMusDonut=null,chartMusBar=null;
+let currentStatsType='ejercicio',selectedStatsEj=null,chartEjPeso=null,chartEjVol=null,chartDias=null,chartMusDonut=null;
 
 // ── Haptic feedback ──
 function haptic(ms){if('vibrate' in navigator){try{navigator.vibrate(ms||12);}catch(e){}}}
@@ -1991,19 +1989,11 @@ async function loadStatsMusculos(){
 
 function _renderMusculosCharts(){
   const all=window._statsAllSessions||[];
-  if(!all.length){
-    document.getElementById('chart-mus-bar-wrap').innerHTML='<div style="text-align:center;padding:32px;color:var(--text2);font-size:13px">Sin datos todavía</div>';
-    return;
-  }
   const seriesCount={};
-  const volumeMap={};
   all.forEach(s=>{
     (s.ejercicios||[]).forEach(e=>{
       const lbl=_getMusculoLabel(e.nombre);
-      const series=e.series||1;
-      const vol=(e.peso_kg||0)*(e.reps||1)*series;
-      seriesCount[lbl]=(seriesCount[lbl]||0)+series;
-      volumeMap[lbl]=(volumeMap[lbl]||0)+vol;
+      seriesCount[lbl]=(seriesCount[lbl]||0)+(e.series||1);
     });
   });
   const entries=Object.entries(seriesCount).sort((a,b)=>b[1]-a[1]);
@@ -2015,13 +2005,10 @@ function _renderMusculosCharts(){
   const isDark=!document.body.classList.contains('theme-light')&&!document.body.classList.contains('theme-material-light');
   const tooltipBg=isDark?'rgba(18,18,28,.95)':'rgba(255,255,255,.98)';
   const tooltipBorder=isDark?'rgba(255,255,255,.08)':'rgba(0,0,0,.08)';
-  const tickC=isDark?'#8888a0':'#999';
-  const gridC=isDark?'rgba(255,255,255,.05)':'rgba(0,0,0,.06)';
   const legendC=isDark?'#ccc':'#444';
   const tooltipTitle=isDark?'#fff':'#111';
   const tooltipBody=isDark?'#aaa':'#555';
 
-  // DONUT — series distribution
   if(chartMusDonut)chartMusDonut.destroy();
   chartMusDonut=new Chart(document.getElementById('chart-mus-donut').getContext('2d'),{
     type:'doughnut',
@@ -2030,36 +2017,9 @@ function _renderMusculosCharts(){
       responsive:true,maintainAspectRatio:false,cutout:'60%',
       animation:{duration:600,easing:'easeInOutQuart'},
       plugins:{
-        legend:{display:true,position:'right',labels:{color:legendC,font:{size:11},boxWidth:12,padding:8}},
-        tooltip:{backgroundColor:tooltipBg,borderColor:tooltipBorder,borderWidth:1,titleColor:tooltipTitle,bodyColor:tooltipBody,padding:12,cornerRadius:10,
+        legend:{display:true,position:'bottom',labels:{color:legendC,font:{size:10},boxWidth:10,padding:6}},
+        tooltip:{backgroundColor:tooltipBg,borderColor:tooltipBorder,borderWidth:1,titleColor:tooltipTitle,bodyColor:tooltipBody,padding:10,cornerRadius:10,
           callbacks:{label:ctx=>{const pct=totalSeries>0?Math.round(ctx.parsed/totalSeries*100):0;return ' '+ctx.parsed+' series ('+pct+'%)';}}}
-      }
-    }
-  });
-
-  // HORIZONTAL BAR — volume per muscle
-  const volEntries=Object.entries(volumeMap).sort((a,b)=>b[1]-a[1]);
-  const volLabels=volEntries.map(([k])=>k);
-  const volData=volEntries.map(([,v])=>Math.round(v));
-  const barColors=volLabels.map(l=>{const i=labels.indexOf(l);return i>=0?colors[i]:'#888';});
-  const barH=Math.max(240,volLabels.length*36);
-  const wrap=document.getElementById('chart-mus-bar-wrap');
-  wrap.style.height=barH+'px';
-  if(chartMusBar)chartMusBar.destroy();
-  chartMusBar=new Chart(document.getElementById('chart-mus-bar').getContext('2d'),{
-    type:'bar',
-    data:{labels:volLabels,datasets:[{data:volData,backgroundColor:barColors.map(c=>c+'cc'),borderColor:barColors,borderWidth:1.5,borderRadius:5,borderSkipped:false}]},
-    options:{
-      indexAxis:'y',responsive:true,maintainAspectRatio:false,
-      animation:{duration:600,easing:'easeInOutQuart'},
-      plugins:{
-        legend:{display:false},
-        tooltip:{backgroundColor:tooltipBg,borderColor:tooltipBorder,borderWidth:1,titleColor:tooltipTitle,bodyColor:tooltipBody,padding:12,cornerRadius:10,displayColors:false,
-          callbacks:{label:ctx=>' '+ctx.parsed.x.toLocaleString()+' kg vol'}}
-      },
-      scales:{
-        x:{grid:{color:gridC,drawTicks:false},border:{display:false},ticks:{color:tickC,font:{size:10},padding:4}},
-        y:{grid:{display:false},border:{display:false},ticks:{color:isDark?'#ddd':'#333',font:{size:11},padding:6}}
       }
     }
   });
