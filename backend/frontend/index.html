@@ -1963,8 +1963,28 @@ async function openDetalle(id){
   const s=data.sesion;
   const _tipo=normTipo(s);
   document.getElementById('md-tipo').textContent=tipoIcon(_tipo)+' '+_tipo;
-  const cells=[['Fecha',formatFecha(s.fecha)],['Duración',s.duracion_min?s.duracion_min+' min':'—'],['Calorías',s.calorias?s.calorias+' kcal':'—'],['Valoración',s.valoracion?'⭐'.repeat(s.valoracion):'—']];
-  let html='<div class="detail-grid">'+cells.map(([l,v])=>'<div class="detail-cell"><div class="detail-cell-label">'+l+'</div><div class="detail-cell-val">'+v+'</div></div>').join('')+'</div>';
+  // Estimar duración y calorías cuando no están guardadas
+  const _ejs0=s.ejercicios||[];
+  let _estDur=s.duracion_min;
+  let _estCal=s.calorias;
+  const _isEstDur=!_estDur&&_ejs0.length>0;
+  const _isEstCal=!_estCal&&_ejs0.length>0;
+  if(_isEstDur)_estDur=Math.min(180,Math.max(15,5+_ejs0.reduce((a,e)=>a+(e.series||1)*3+1,0)));
+  if(_isEstCal&&_estDur){
+    let _w=70;try{const _pd=JSON.parse(localStorage.getItem(_uk('profile_data'))||'{}');_w=parseFloat(_pd.peso_corporal)||70;}catch(e){}
+    _estCal=Math.round(5*_w*(_estDur/60));
+  }
+  const _durStr=_estDur?(_isEstDur?'~':'')+_estDur+' min':'—';
+  const _calStr=_estCal?(_isEstCal?'~':'')+_estCal+' kcal':'—';
+  const _totalVol=_ejs0.reduce((a,e)=>a+(e.peso_kg||0)*(e.reps||1)*(e.series||1),0);
+
+  let html='<div class="detail-grid" style="grid-template-columns:1fr 1fr">'
+    +'<div class="detail-cell"><div class="detail-cell-label">Fecha</div><div class="detail-cell-val">'+formatFecha(s.fecha)+'</div></div>'
+    +'<div class="detail-cell"><div class="detail-cell-label">Valoración</div><div class="detail-cell-val">'+(s.valoracion?'⭐'.repeat(s.valoracion):'—')+'</div></div>'
+    +'<div class="detail-cell" style="background:linear-gradient(135deg,var(--bg3),color-mix(in srgb,var(--accent) 8%,var(--bg3)))"><div class="detail-cell-label">⏱ Tiempo</div><div class="detail-cell-val" style="color:var(--accent)">'+_durStr+'</div>'+(_isEstDur?'<div style="font-size:10px;color:var(--text2);margin-top:2px">estimado</div>':'')+'</div>'
+    +'<div class="detail-cell" style="background:linear-gradient(135deg,var(--bg3),color-mix(in srgb,#ef5350 8%,var(--bg3)))"><div class="detail-cell-label">🔥 Calorías</div><div class="detail-cell-val" style="color:#ef5350">'+_calStr+'</div>'+(_isEstCal?'<div style="font-size:10px;color:var(--text2);margin-top:2px">estimado</div>':'')+'</div>'
+    +'</div>'
+    +(_totalVol>0?'<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg3);border-radius:11px;margin-bottom:16px;font-size:13px"><span style="color:var(--text2)">Volumen total</span><span style="font-weight:700;color:var(--text)">'+(_totalVol>=1000?((_totalVol/1000).toFixed(1)+'t'):_totalVol.toLocaleString()+' kg')+'</span></div>':'');
   if(s.notas)html+='<div class="card" style="margin-bottom:14px"><div class="card-title">Notas</div><p style="font-size:14px;line-height:1.65">'+s.notas+'</p></div>';
   if(s.ejercicios?.length){
     // Agrupar filas por nombre (retrocompat: datos anteriores tienen 1 fila por serie)
