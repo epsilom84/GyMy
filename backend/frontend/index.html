@@ -413,7 +413,7 @@ input:focus,select:focus{border-color:var(--accent);}
       <div class="section-title">Dashboard</div>
       <div class="section-sub" id="dash-greeting">Tu progreso</div>
       <div class="coach-card" id="coach-card">
-        <div class="coach-avatar-wrap">🏋️‍♀️</div>
+        <div class="coach-avatar-wrap" id="coach-avatar" style="cursor:pointer;user-select:none;" title="Mantén pulsado para consejo de IA">🏋️‍♀️</div>
         <div class="coach-body">
           <div class="coach-name">COACH SASHA</div>
           <div class="coach-bubble" id="coach-phrase"> </div>
@@ -1198,6 +1198,62 @@ function refreshCoach(){
   el.style.opacity='0';
   setTimeout(()=>{el.textContent=phrases[idx];el.style.opacity='1';},160);
 }
+
+// ── COACH IA (long-press en avatar) ──────────────────────────────────
+async function coachAI(){
+  const u=getUser();
+  if((u&&u.nivel_usuario)===2){
+    showToast('Función de IA no disponible en tu plan 🔒','error');
+    return;
+  }
+  const el=document.getElementById('coach-phrase');
+  if(!el)return;
+  el.style.opacity='0';
+  setTimeout(()=>{el.textContent='✨ Consultando a la IA...';el.style.opacity='1';},160);
+  try{
+    const s=_coachStats||{};
+    const total=s.total||0,racha=s.racha||0,semana=s.ultimasSemana||0;
+    const horas=Math.floor((s.totalMinutos||0)/60);
+    const nombre=(u&&u.username)||'atleta';
+    const prompt=
+      'Eres una entrenadora personal sarcástica y motivadora llamada Sasha. '+
+      'Da un consejo personalizado MUY breve (máx 2 frases), directo y con personalidad para este usuario:\n'+
+      'Usuario: '+nombre+'\n'+
+      'Sesiones totales: '+total+'\n'+
+      'Racha actual: '+racha+' días\n'+
+      'Sesiones esta semana: '+semana+'\n'+
+      'Horas totales entrenadas: '+horas+'h\n'+
+      'Responde solo con el consejo, sin presentación.';
+    const r=await apiCall('POST','/ai/import',{prompt});
+    const texto=r.data&&r.data.ok?r.data.text:'No puedo conectar con la IA ahora.';
+    el.style.opacity='0';
+    setTimeout(()=>{el.textContent=texto;el.style.opacity='1';},160);
+  }catch(e){
+    el.style.opacity='0';
+    setTimeout(()=>{el.textContent='Error al conectar con la IA. Inténtalo más tarde.';el.style.opacity='1';},160);
+  }
+}
+
+// Long-press en el avatar de la entrenadora
+(function(){
+  let _pressTimer=null;
+  function _startPress(){
+    _pressTimer=setTimeout(()=>{_pressTimer=null;coachAI();},600);
+  }
+  function _cancelPress(){
+    if(_pressTimer){clearTimeout(_pressTimer);_pressTimer=null;}
+  }
+  document.addEventListener('DOMContentLoaded',()=>{
+    const av=document.getElementById('coach-avatar');
+    if(!av)return;
+    av.addEventListener('mousedown',_startPress);
+    av.addEventListener('mouseup',_cancelPress);
+    av.addEventListener('mouseleave',_cancelPress);
+    av.addEventListener('touchstart',e=>{e.preventDefault();_startPress();},{passive:false});
+    av.addEventListener('touchend',_cancelPress);
+    av.addEventListener('touchcancel',_cancelPress);
+  });
+})();
 
 function renderProgreso(semanas){
   const el=document.getElementById('chart-progreso');
