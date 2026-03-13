@@ -445,11 +445,30 @@ async function _resolverCombinaciones(sesiones){
         +'border-radius:8px;color:var(--text);font-size:12px">'
         +'<option value="__nuevo__">➕ Crear como nuevo</option>';
 
-      cands.forEach(({e,sim})=>{
-        const nombre=e.n||e.nombre||'';
-        const pct=Math.round(sim*100);
-        const sel=(autoSuggest&&nombre===topNombre)?' selected':'';
-        html+='<option value="'+_escH(nombre)+'"'+sel+'>'+_escH(nombre)+' ('+pct+'%)</option>';
+      // Sugerencias al principio (con porcentaje de coincidencia)
+      if(cands.length){
+        html+='<optgroup label="── Sugerencias ──">';
+        cands.forEach(({e,sim})=>{
+          const nombre=e.n||e.nombre||'';
+          const pct=Math.round(sim*100);
+          const sel=(autoSuggest&&nombre===topNombre)?' selected':'';
+          html+='<option value="'+_escH(nombre)+'"'+sel+'>'+_escH(nombre)+' ('+pct+'%)</option>';
+        });
+        html+='</optgroup>';
+      }
+
+      // Todos los ejercicios del catálogo, agrupados por grupo muscular
+      const candNamesLow=new Set(cands.map(c=>(c.e.n||c.e.nombre||'').toLowerCase()));
+      const porGrupo=_catalogoCache||{};
+      Object.entries(porGrupo).sort(([a],[b])=>a.localeCompare(b)).forEach(([grupo,ejs])=>{
+        const ejsOrdenados=[...ejs].sort((a,b)=>(a.n||'').localeCompare(b.n||''));
+        html+='<optgroup label="'+_escH(grupo)+'">';
+        ejsOrdenados.forEach(e=>{
+          const nombre=e.n||e.nombre||'';
+          if(candNamesLow.has(nombre.toLowerCase()))return; // ya aparece en sugerencias
+          html+='<option value="'+_escH(nombre)+'">'+_escH(nombre)+'</option>';
+        });
+        html+='</optgroup>';
       });
       html+='</select>';
 
