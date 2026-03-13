@@ -1,6 +1,7 @@
 const { Pool } = require('pg');
-const fs   = require('fs');
-const path = require('path');
+const fs     = require('fs');
+const path   = require('path');
+const crypto = require('crypto');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -59,6 +60,8 @@ async function initDB() {
       );
     `);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_ejercicios_sesion ON ejercicios(sesion_id);`);
+    // Índice para búsquedas por nombre de ejercicio (historial por ejercicio + JOINs con catálogo)
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_ejercicios_nombre_lower ON ejercicios(LOWER(nombre));`);
     // Migración: añadir columna sets_data si no existe
     await client.query(`ALTER TABLE ejercicios ADD COLUMN IF NOT EXISTS sets_data TEXT;`);
     // Migración: campos de perfil físico en users
@@ -84,6 +87,8 @@ async function initDB() {
     `);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_catalogo_grupo ON ejercicios_catalogo(grupo_muscular);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_catalogo_activo ON ejercicios_catalogo(activo);`);
+    // Índice para JOINs por nombre en minúsculas (LOWER(ec.nombre) = LOWER(e.nombre))
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_catalogo_nombre_lower ON ejercicios_catalogo(LOWER(nombre));`);
 
     // Plantillas de ejercicios: genéricas (user_id NULL) + personales por usuario
     await client.query(`
@@ -102,13 +107,24 @@ async function initDB() {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_plantillas_user  ON plantillas_ejercicios(user_id);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_plantillas_grupo ON plantillas_ejercicios(grupo_muscular);`);
 
-    // Seed catálogo desde plantillas_ejercicios.json — upsert, no borra ejercicios existentes
+    // Seed catálogo desde plantillas_ejercicios.json — upsert solo si el JSON cambió
+    // Se guarda el hash SHA-1 del fichero en app_meta para no repetir upsert en cada arranque
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS app_meta (
+        key   TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+    `);
     const seedFile = path.join(__dirname, '../frontend/assets/plantillas_ejercicios.json');
     if (fs.existsSync(seedFile)) {
       try {
-        const seedData = JSON.parse(fs.readFileSync(seedFile, 'utf8'));
-        const ejs = Array.isArray(seedData) ? seedData.filter(e => e.nombre && e.grupo_muscular) : [];
-        if (ejs.length > 0) {
+        const rawJson = fs.readFileSync(seedFile, 'utf8');
+        const newHash = crypto.createHash('sha1').update(rawJson).digest('hex');
+        const metaRow = await client.query(`SELECT value FROM app_meta WHERE key='catalogo_hash'`);
+        const oldHash = metaRow.rows[0]?.value;
+
+        if (newHash !== oldHash) {
+          const ejs = (JSON.parse(rawJson)||[]).filter(e => e.nombre && e.grupo_muscular);
           let upserted = 0;
           for (const e of ejs) {
             await client.query(
@@ -120,7 +136,14 @@ async function initDB() {
             );
             upserted++;
           }
+          await client.query(
+            `INSERT INTO app_meta (key, value) VALUES ('catalogo_hash',$1)
+             ON CONFLICT (key) DO UPDATE SET value=$1`,
+            [newHash]
+          );
           console.log(`[DB] Catálogo sincronizado: ${upserted} ejercicios ✓`);
+        } else {
+          console.log('[DB] Catálogo sin cambios, seed omitido ✓');
         }
       } catch(e) {
         console.warn('[DB] plantillas_ejercicios.json no se pudo leer:', e.message);

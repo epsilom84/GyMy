@@ -182,6 +182,25 @@ async function loadEjercicios(sesionId) {
   );
 }
 
+// ── Helper: cargar ejercicios de varias sesiones en 1 query ─
+// Evita N+1: en lugar de 1 query por sesión, hace 1 sola con ANY($1)
+async function loadEjerciciosBatch(sesionIds) {
+  if (!sesionIds.length) return {};
+  const rows = await queryAll(
+    `SELECT e.*, ec.grupo_muscular, ec.subgrupo, ec.equipo AS equipo_catalogo
+     FROM ejercicios e
+     LEFT JOIN ejercicios_catalogo ec ON LOWER(ec.nombre) = LOWER(e.nombre)
+     WHERE e.sesion_id = ANY($1) ORDER BY e.sesion_id, e.id`,
+    [sesionIds]
+  );
+  const map = {};
+  for (const row of rows) {
+    if (!map[row.sesion_id]) map[row.sesion_id] = [];
+    map[row.sesion_id].push(row);
+  }
+  return map;
+}
+
 // ── Helper: insertar ejercicios en transacción ─────────────
 async function insertEjercicios(client, sesionId, ejercicios) {
   if (!Array.isArray(ejercicios) || !ejercicios.length) return;
@@ -268,7 +287,8 @@ router.get('/sesiones', [
       [...params, limit, offset]
     );
 
-    await Promise.all(sesiones.map(async s => { s.ejercicios = await loadEjercicios(s.id); }));
+    const ejMap = await loadEjerciciosBatch(sesiones.map(s => s.id));
+    sesiones.forEach(s => { s.ejercicios = ejMap[s.id] || []; });
 
     res.json({ ok: true, total, page, pages: Math.ceil(total / limit), sesiones });
   } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
@@ -319,10 +339,9 @@ router.get('/sesiones/stats', async (req, res) => {
       }
     }
 
-    // Cargar ejercicios de recientes
-    for (const s of recientes) {
-      s.ejercicios = await loadEjercicios(s.id);
-    }
+    // Cargar ejercicios de recientes en 1 query
+    const ejMap = await loadEjerciciosBatch(recientes.map(s => s.id));
+    recientes.forEach(s => { s.ejercicios = ejMap[s.id] || []; });
 
     res.json({ ok: true, stats: {
       total: parseInt(totales.total),
