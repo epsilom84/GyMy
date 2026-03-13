@@ -469,6 +469,9 @@ router.get('/ejercicios/historial', async (req, res) => {
 // ── POST /api/ai/import — proxy to Anthropic API ──────────────────
 router.post('/ai/import', async (req, res) => {
   try {
+    if ((req.user.nivel_usuario || 2) === 2)
+      return res.status(403).json({ ok: false, error: 'Función de IA no disponible en tu plan' });
+
     const { prompt } = req.body;
     if (!prompt) return res.status(400).json({ ok: false, error: 'prompt required' });
 
