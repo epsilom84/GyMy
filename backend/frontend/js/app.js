@@ -30,39 +30,7 @@ async function syncOffline(){
   setTimeout(()=>{if(statusEl)statusEl.textContent='';},4000);
 }
 
-// ── Export ──
-async function doExport(){showToast('Descargando CSV...','info');await exportarCSV();closeModal('modal-export');}
-
-// ── Historial CSV export ──
-async function exportHistorialCSV(){
-  showToast('Preparando CSV...','info');
-  const{data}=await getSesiones({limit:1000});
-  let rows=['fecha,tipo,duracion_min,calorias,ejercicio,series,reps,peso_kg,notas'];
-  const sesiones=data.ok?data.sesiones:[];
-  if(!sesiones.length){showToast('No hay sesiones para exportar','error');return;}
-  sesiones.forEach(s=>{
-    if(s.ejercicios&&s.ejercicios.length){
-      s.ejercicios.forEach(e=>{
-        rows.push([s.fecha,s.tipo,s.duracion_min||'',s.calorias||'',
-          '"'+(e.nombre||'')+'"',e.series||1,e.reps||0,e.peso_kg||0,
-          '"'+(s.notas||'')+'"'].join(','));
-      });
-    } else {
-      rows.push([s.fecha,s.tipo,s.duracion_min||'',s.calorias||'','',0,0,0,'"'+(s.notas||'')+'"'].join(','));
-    }
-  });
-  const csv=rows.join('\n');
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;a.download='gymy_historial_'+new Date().toISOString().slice(0,10)+'.csv';
-  a.click();URL.revokeObjectURL(url);
-  showToast('CSV exportado','success');
-}
-
 // ── App bootstrap ──
-function showAuth(){document.getElementById('auth-screen').style.display='flex';document.getElementById('app-screen').style.display='none';}
-
 function initApp(){
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app-screen').style.display='flex';

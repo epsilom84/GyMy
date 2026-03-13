@@ -70,26 +70,3 @@ async function sincronizarOffline(){
 }
 function getPendientesOffline(){return JSON.parse(localStorage.getItem('gymy_offline_queue')||'[]');}
 
-function updateOfflineBadge(){
-  const bar=document.getElementById('offline-bar');
-  const pending=getPendientesOffline().length;
-  if(!navigator.onLine){bar.style.display='flex';bar.className='offline-badge offline';bar.innerHTML='⚡ Sin conexión — datos guardados localmente';}
-  else if(pending>0){bar.style.display='flex';bar.className='offline-badge online';bar.innerHTML='🔄 '+pending+' sesión(es) pendientes <a href="#" onclick="syncOffline()" style="color:inherit;margin-left:6px">Sincronizar</a>';}
-  else{bar.style.display='none';}
-}
-
-async function syncOffline(){
-  const statusEl=document.getElementById('sync-status');
-  if(statusEl)statusEl.textContent='Sincronizando...';
-  const r=await sincronizarOffline();
-  if(r.sincronizadas>0){
-    showToast(r.sincronizadas+' sesiones sincronizadas','success');
-    loadDashboard();statsCache=null;
-    if(statusEl)statusEl.textContent='✓ '+r.sincronizadas+' sesiones sincronizadas';
-  } else {
-    showToast('No hay datos pendientes','info');
-    if(statusEl)statusEl.textContent='Sin datos pendientes';
-  }
-  updateOfflineBadge();
-  setTimeout(()=>{if(statusEl)statusEl.textContent='';},4000);
-}

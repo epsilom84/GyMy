@@ -37,7 +37,6 @@ async function loadStatsEjercicios(){
   window._statsEjMap=ejMap;
   window._statsAllSessions=all;
   renderStatsGrupoChips();
-  renderStatsEjList(Object.values(ejMap));
 }
 
 // ── Stats ejercicio modal ──
@@ -133,13 +132,6 @@ function selectStatsEjFromModal(nombre){
   selectStatsEj(nombre);
 }
 
-function renderStatsEjList(list){
-  // No-op: lista ahora se muestra en modal
-}
-
-function filterStatsEjercicios(){
-  // No-op: búsqueda ahora en modal
-}
 
 function selectStatsEj(nombre){
   selectedStatsEj=nombre;
@@ -181,7 +173,6 @@ function selectStatsEj(nombre){
   chartEjVol=new Chart(volCtx,{type:'line',data:{labels,datasets:[{data:volData,borderColor:'#6c47ff',backgroundColor:volGrad,fill:true,tension:.4,borderWidth:2.5,pointRadius:3,pointHoverRadius:7,pointBackgroundColor:'#6c47ff',pointBorderColor:isDark?'#1a1a2e':'#fff',pointBorderWidth:2}]},options:{...commonOpts,plugins:{...commonOpts.plugins,tooltip:{...commonOpts.plugins.tooltip,callbacks:{title:ctx=>{const e=entries[ctx[0].dataIndex];return e?formatFecha(e.fecha):'';},label:ctx=>{const e=entries[ctx.dataIndex];return e?ctx.parsed.y+'kg vol · '+e.reps+' reps':''+ctx.parsed.y+'kg vol';}}}}}});
   _setupChartLongPress('chart-ej-peso',entries);
   _setupChartLongPress('chart-ej-vol',entries);
-  renderStatsEjList(Object.values(window._statsEjMap||{}));
 }
 
 function _setupChartLongPress(canvasId,entries){
