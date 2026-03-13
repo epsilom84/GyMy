@@ -602,6 +602,78 @@ input:focus,select:focus{border-color:var(--accent);}
       <!-- Músculo view -->
       <div id="stats-musculos-view" style="display:none">
         <div class="card" style="margin-bottom:12px">
+          <div class="card-title">Mapa de calor muscular <span style="font-size:11px;font-weight:400;color:var(--text2)">(por tiempo)</span></div>
+          <svg id="body-heatmap-svg" viewBox="0 0 400 490" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:400px;display:block;margin:0 auto">
+            <!-- LABELS -->
+            <text x="100" y="15" text-anchor="middle" font-size="11" fill="var(--text2)" font-family="sans-serif">FRENTE</text>
+            <text x="300" y="15" text-anchor="middle" font-size="11" fill="var(--text2)" font-family="sans-serif">ESPALDA</text>
+            <!-- ===== FRONT BODY OUTLINE ===== -->
+            <circle cx="100" cy="43" r="22" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <rect x="92" y="64" width="16" height="15" rx="4" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <path d="M 70,79 C 58,84 50,102 50,130 C 48,158 54,192 62,212 L 64,242 L 78,242 C 80,238 88,234 100,234 C 112,234 120,238 122,242 L 136,242 L 138,212 C 146,192 152,158 150,130 C 150,102 142,84 130,79 Z" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="57" cy="122" rx="13" ry="32" transform="rotate(-10 57 122)" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="143" cy="122" rx="13" ry="32" transform="rotate(10 143 122)" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="46" cy="186" rx="10" ry="26" transform="rotate(-5 46 186)" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="154" cy="186" rx="10" ry="26" transform="rotate(5 154 186)" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="42" cy="224" rx="9" ry="12" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="158" cy="224" rx="9" ry="12" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="84" cy="292" rx="21" ry="44" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="116" cy="292" rx="21" ry="44" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="81" cy="386" rx="14" ry="33" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="119" cy="386" rx="14" ry="33" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="75" cy="432" rx="18" ry="9" transform="rotate(14 75 432)" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="125" cy="432" rx="18" ry="9" transform="rotate(-14 125 432)" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <!-- FRONT MUSCLE REGIONS -->
+            <ellipse id="hm-hombro-fl" cx="57" cy="96" rx="16" ry="13" transform="rotate(-25 57 96)" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-hombro-fr" cx="143" cy="96" rx="16" ry="13" transform="rotate(25 143 96)" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-pecho-l" cx="86" cy="122" rx="22" ry="18" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-pecho-r" cx="114" cy="122" rx="22" ry="18" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-bicep-l" cx="57" cy="120" rx="11" ry="27" transform="rotate(-10 57 120)" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-bicep-r" cx="143" cy="120" rx="11" ry="27" transform="rotate(10 143 120)" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-core" cx="100" cy="176" rx="22" ry="30" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-quad-l" cx="84" cy="290" rx="20" ry="42" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-quad-r" cx="116" cy="290" rx="20" ry="42" fill="transparent" opacity="0.85"/>
+            <!-- ===== BACK BODY OUTLINE ===== -->
+            <circle cx="300" cy="43" r="22" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <rect x="292" y="64" width="16" height="15" rx="4" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <path d="M 270,79 C 258,84 250,102 250,130 C 248,158 254,192 262,212 L 264,242 L 278,242 C 280,238 288,234 300,234 C 312,234 320,238 322,242 L 336,242 L 338,212 C 346,192 352,158 350,130 C 350,102 342,84 330,79 Z" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="257" cy="122" rx="13" ry="32" transform="rotate(10 257 122)" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="343" cy="122" rx="13" ry="32" transform="rotate(-10 343 122)" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="246" cy="186" rx="10" ry="26" transform="rotate(5 246 186)" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="354" cy="186" rx="10" ry="26" transform="rotate(-5 354 186)" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="242" cy="224" rx="9" ry="12" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="358" cy="224" rx="9" ry="12" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="284" cy="292" rx="21" ry="44" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="316" cy="292" rx="21" ry="44" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="281" cy="386" rx="14" ry="33" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="319" cy="386" rx="14" ry="33" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="275" cy="432" rx="18" ry="9" transform="rotate(-14 275 432)" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <ellipse cx="325" cy="432" rx="18" ry="9" transform="rotate(14 325 432)" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+            <!-- BACK MUSCLE REGIONS -->
+            <path id="hm-trapecio" d="M 275,82 C 282,76 290,74 300,74 C 310,74 318,76 325,82 L 320,98 C 314,106 308,112 300,114 C 292,112 286,106 280,98 Z" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-hombro-bl" cx="258" cy="96" rx="16" ry="13" transform="rotate(25 258 96)" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-hombro-br" cx="342" cy="96" rx="16" ry="13" transform="rotate(-25 342 96)" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-tricep-l" cx="257" cy="120" rx="11" ry="27" transform="rotate(10 257 120)" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-tricep-r" cx="343" cy="120" rx="11" ry="27" transform="rotate(-10 343 120)" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-dorsal-l" cx="272" cy="150" rx="20" ry="36" transform="rotate(8 272 150)" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-dorsal-r" cx="328" cy="150" rx="20" ry="36" transform="rotate(-8 328 150)" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-lumbar" cx="300" cy="204" rx="22" ry="20" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-gluteo-l" cx="284" cy="248" rx="22" ry="24" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-gluteo-r" cx="316" cy="248" rx="22" ry="24" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-femoral-l" cx="284" cy="300" rx="18" ry="40" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-femoral-r" cx="316" cy="300" rx="18" ry="40" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-gemelo-l" cx="281" cy="385" rx="13" ry="30" fill="transparent" opacity="0.85"/>
+            <ellipse id="hm-gemelo-r" cx="319" cy="385" rx="13" ry="30" fill="transparent" opacity="0.85"/>
+            <!-- Divider line -->
+            <line x1="200" y1="20" x2="200" y2="470" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="4,4"/>
+          </svg>
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;font-size:11px;color:var(--text2)">
+            <span>Poco</span>
+            <div style="width:90px;height:7px;border-radius:4px;background:linear-gradient(to right,#66bb6a,#ffd740,#ff9800,#ef5350)"></div>
+            <span>Máximo</span>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:12px">
           <div class="card-title">Distribución muscular (series)</div>
           <div style="position:relative;height:260px"><canvas id="chart-mus-donut"></canvas></div>
         </div>
@@ -2212,6 +2284,7 @@ async function loadStatsMusculos(){
     window._statsAllSessions=data.sesiones||[];
   }
   await loadCatalogo();
+  _renderBodyHeatmap();
   _renderMusculosCharts();
 }
 
@@ -2291,6 +2364,69 @@ function _renderMusculosCharts(){
   });
 }
 
+const BODY_REGION_MAP={
+  'Pecho':['hm-pecho-l','hm-pecho-r'],
+  'Hombros':['hm-hombro-fl','hm-hombro-fr','hm-hombro-bl','hm-hombro-br'],
+  'Brazos Bíceps':['hm-bicep-l','hm-bicep-r'],
+  'Brazos Tríceps':['hm-tricep-l','hm-tricep-r'],
+  'Core':['hm-core'],
+  'Dorsal':['hm-dorsal-l','hm-dorsal-r'],
+  'Trapecio':['hm-trapecio'],
+  'Lumbar':['hm-lumbar'],
+  'Cuádriceps':['hm-quad-l','hm-quad-r'],
+  'Femoral':['hm-femoral-l','hm-femoral-r'],
+  'Glúteo':['hm-gluteo-l','hm-gluteo-r'],
+  'Gemelos':['hm-gemelo-l','hm-gemelo-r'],
+  // Fallbacks when no subgroup
+  'Espalda':['hm-dorsal-l','hm-dorsal-r','hm-trapecio','hm-lumbar'],
+  'Piernas':['hm-quad-l','hm-quad-r','hm-femoral-l','hm-femoral-r','hm-gluteo-l','hm-gluteo-r'],
+  'Brazos':['hm-bicep-l','hm-bicep-r','hm-tricep-l','hm-tricep-r'],
+};
+
+function _heatColor(ratio){
+  if(ratio<=0)return null;
+  let r,g,b;
+  if(ratio<0.33){const t=ratio/0.33;r=Math.round(102+(255-102)*t);g=Math.round(187+(235-187)*t);b=Math.round(106*(1-t));}
+  else if(ratio<0.66){const t=(ratio-0.33)/0.33;r=255;g=Math.round(235+(152-235)*t);b=0;}
+  else{const t=(ratio-0.66)/0.34;r=255;g=Math.round(152*(1-t)+67*t);b=Math.round(54*t);}
+  return `rgb(${r},${g},${b})`;
+}
+
+function _renderBodyHeatmap(){
+  const all=window._statsAllSessions||[];
+  // Accumulate minutes per muscle label (proportional by series share per session)
+  const minutesMap={};
+  all.forEach(s=>{
+    const dur=s.duracion_min||0;
+    if(!dur)return;
+    const ejs=s.ejercicios||[];
+    const totalSeries=ejs.reduce((a,e)=>a+(e.series||1),0)||1;
+    ejs.forEach(e=>{
+      const lbl=_getMusculoLabel(e.nombre);
+      const mins=((e.series||1)/totalSeries)*dur;
+      minutesMap[lbl]=(minutesMap[lbl]||0)+mins;
+    });
+  });
+  // Aggregate to SVG region IDs
+  const regionMins={};
+  Object.entries(minutesMap).forEach(([lbl,mins])=>{
+    (BODY_REGION_MAP[lbl]||[]).forEach(id=>{regionMins[id]=(regionMins[id]||0)+mins;});
+  });
+  const maxMins=Math.max(1,...Object.values(regionMins));
+  // Apply colors to SVG elements
+  const allIds=new Set(Object.values(BODY_REGION_MAP).flat());
+  allIds.forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const c=_heatColor((regionMins[id]||0)/maxMins);
+    el.setAttribute('fill',c||'transparent');
+    // Update tooltip
+    const mins=Math.round(regionMins[id]||0);
+    const lbl=Object.entries(BODY_REGION_MAP).find(([,ids])=>ids.includes(id))?.[0]||id;
+    let title=el.querySelector('title');
+    if(!title){title=document.createElementNS('http://www.w3.org/2000/svg','title');el.appendChild(title);}
+    title.textContent=lbl+': '+mins+' min';
+  });
+}
 
 
 // ══════════════════════════════════════════════
