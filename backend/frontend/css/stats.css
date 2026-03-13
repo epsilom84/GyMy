@@ -1,0 +1,25 @@
+/* ── STATS SCREEN ── */
+.stats-selector{display:flex;gap:8px;margin-bottom:16px;}
+.stats-type-btn{flex:1;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;color:var(--text2);font-family:var(--font-b);font-size:13px;font-weight:600;cursor:pointer;transition:.2s;}
+.stats-type-btn.active{background:var(--purple);border-color:var(--purple);color:#fff;}
+
+/* ── EXERCISE SELECTOR ── */
+.ex-selector-list{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;}
+.ex-selector-item{padding:11px 14px;background:var(--bg3);border-radius:10px;cursor:pointer;border:1.5px solid transparent;transition:.2s;}
+.ex-selector-item:hover,.ex-selector-item.active{border-color:var(--accent);background:rgba(232,255,71,.05);}
+.ex-selector-item .ex-name{font-weight:600;font-size:14px;}
+.ex-selector-item .ex-stats{font-size:12px;color:var(--text2);margin-top:2px;}
+
+/* ── CHARTS ── */
+.chart-container{position:relative;height:230px;margin-bottom:10px;}
+
+/* ── STAT HIGHLIGHTS ── */
+.stat-highlight{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.stat-hl{background:var(--bg3);border-radius:12px;padding:14px;}
+.stat-hl-val{font-family:var(--font-d);font-size:32px;color:var(--accent);}
+.stat-hl-lbl{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
+
+/* ── GROUP/SUBGROUP CHIPS ── */
+.days-grid{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.day-chip{padding:7px 13px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer;color:var(--text2);transition:.2s;}
+.day-chip.active{background:var(--accent);color:#000;border-color:var(--accent);}

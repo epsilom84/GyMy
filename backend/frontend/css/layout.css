@@ -1,0 +1,52 @@
+/* ── APP SHELL ── */
+#app-screen{display:none;flex-direction:column;min-height:100vh;}
+.app-body{flex:1;padding:18px;max-width:720px;margin:0 auto;width:100%;padding-bottom:var(--body-pb,100px);}
+.offline-badge{display:none;align-items:center;gap:6px;border-radius:20px;padding:4px 12px;font-size:12px;margin-bottom:12px;}
+.offline-badge.offline{background:rgba(255,71,71,.12);border:1px solid rgba(255,71,71,.25);color:var(--accent2);}
+.offline-badge.online{background:rgba(71,255,178,.1);border:1px solid rgba(71,255,178,.25);color:var(--accent3);}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+.topbar-logo{font-family:var(--font-d);font-size:26px;color:var(--accent);letter-spacing:2px;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.icon-btn{width:36px;height:36px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:.2s;}
+.user-badge{display:flex;align-items:center;gap:8px;background:var(--bg3);padding:5px 12px 5px 5px;border-radius:20px;border:1px solid var(--border);cursor:pointer;}
+.avatar{width:28px;height:28px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;}
+.avatar.lg{width:64px;height:64px;font-size:24px;border-radius:18px;}
+
+/* ── TABBAR ── */
+.tabbar{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);display:flex;flex-direction:column;z-index:100;}
+.tabbar-btns{display:flex;width:100%;padding:6px 0 max(6px,env(safe-area-inset-bottom));}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border:none;background:transparent;color:var(--text2);font-family:var(--font-b);font-size:10px;font-weight:500;cursor:pointer;transition:.2s;}
+.tab-btn.active{color:var(--accent);}
+.tab-icon{width:44px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.tab-btn.active .tab-icon{background:rgba(232,255,71,.1);}
+
+/* ── FAB ── */
+.fab{position:fixed;right:18px;bottom:var(--fab-bottom,86px);width:52px;height:52px;background:var(--accent);border:none;border-radius:14px;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(232,255,71,.3);z-index:200;color:#000;}
+.fab:active{transform:scale(.92);box-shadow:0 2px 10px rgba(232,255,71,.2);}
+
+/* ── PAGES ── */
+.page{display:none;animation:fadeIn .22s ease;}
+.page.active{display:block;}
+.page.slide-right{animation:slideInRight .2s ease;}
+.page.slide-left{animation:slideInLeft .2s ease;}
+
+/* ── SIDE PANEL ── */
+.side-panel{position:fixed;top:0;right:-340px;width:310px;height:100vh;background:var(--bg2);border-left:1px solid var(--border);padding:22px 18px;z-index:400;transition:right .3s ease;overflow-y:auto;}
+.side-panel.open{right:0;}
+.panel-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:399;display:none;}
+.panel-backdrop.open{display:block;}
+.panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.panel-title{font-family:var(--font-d);font-size:26px;}
+.menu-item{display:flex;align-items:center;gap:11px;padding:12px;border-radius:11px;cursor:pointer;transition:.2s;margin-bottom:2px;font-size:14px;}
+.menu-item:hover{background:var(--bg3);}
+.menu-item.danger{color:var(--accent2);}
+.menu-icon{font-size:18px;width:22px;text-align:center;}
+.divider{height:1px;background:var(--border);margin:10px 0;}
+.stat-mini{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
+.stat-mini:last-child{border:none;}
+.stat-mini-label{font-size:13px;color:var(--text2);}
+.stat-mini-val{font-family:var(--font-d);font-size:22px;color:var(--accent);}
+
+@media(min-width:600px){.stats-grid{grid-template-columns:repeat(4,1fr);}}
