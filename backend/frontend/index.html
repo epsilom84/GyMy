@@ -907,6 +907,20 @@ input:focus,select:focus{border-color:var(--accent);}
   </div>
 </div>
 
+<!-- Buscador catálogo completo (desde modal combinar) -->
+<div class="modal-overlay center" id="modal-buscar-catalogo">
+  <div class="modal center-dialog" style="max-width:500px;width:95%;max-height:82vh;display:flex;flex-direction:column">
+    <div class="modal-header" style="flex-shrink:0">
+      <div class="modal-title">Buscar ejercicio</div>
+      <button class="close-btn" onclick="closeModal('modal-buscar-catalogo')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+    </div>
+    <div style="flex-shrink:0;padding:0 2px 10px">
+      <input class="ej-search" type="search" id="buscar-catalogo-q" placeholder="🔍 Nombre, músculo o grupo…" oninput="_renderBuscarCatalogo(this.value)" style="margin-bottom:0"/>
+    </div>
+    <div id="buscar-catalogo-grid" class="ej-grid" style="overflow-y:auto;flex:1;padding-right:2px"></div>
+  </div>
+</div>
+
 
 <!-- Workout FABs -->
 <div class="wk-fabs" id="wk-fabs">
@@ -1017,6 +1031,8 @@ function getRefreshToken(){return localStorage.getItem('gymy_refresh');}
 function setTokens(a,r){localStorage.setItem('gymy_access',a);if(r)localStorage.setItem('gymy_refresh',r);}
 function getUser(){const u=localStorage.getItem('gymy_user');return u?JSON.parse(u):null;}
 function isLoggedIn(){return!!getAccessToken();}
+// Clave localStorage prefijada por usuario — datos privados nunca se comparten entre cuentas
+function _uk(k){const u=getUser();return u?'gymy_'+u.id+'_'+k:'gymy_anon_'+k;}
 async function apiCall(m,ep,body=null,retry=false){
   const h={'Content-Type':'application/json'};const t=getAccessToken();if(t)h['Authorization']='Bearer '+t;
   const o={method:m,headers:h};if(body)o.body=JSON.stringify(body);
@@ -1041,7 +1057,7 @@ async function eliminarSesion(id){return apiCall('DELETE','/sesiones/'+id);}
 async function eliminarTodoHistorial(){
   const{data}=await apiCall('DELETE','/sesiones');
   if(data.ok){
-    localStorage.removeItem('gymy_historial_local');
+    localStorage.removeItem(_uk('historial_local'));
     statsCache=null;currentPage=1;
     loadDashboard();loadHistorial();
     showToast('Historial eliminado','info');
@@ -1068,19 +1084,35 @@ async function login(e,p){
   if(r.data.ok){setTokens(r.data.accessToken,r.data.refreshToken);localStorage.setItem('gymy_user',JSON.stringify(r.data.usuario));}
   return r;
 }
+function _clearUserCaches(){
+  // Cachés en memoria — se resetean para que el siguiente usuario no herede datos
+  _catalogoCache=null;_catalogoLoading=null;
+  _plantillasCache=null;_plantillasLoading=null;
+  statsCache=null;
+  if(typeof _coachStats!=='undefined')_coachStats=null;
+  if(typeof _ejGrupoLookup!=='undefined')_ejGrupoLookup=null;
+  // Claves localStorage privadas del usuario (prefijadas con userId)
+  const u=getUser();
+  if(u){
+    ['offline_queue','historial_local','profile_data','coach_plan','plantillas','workout_live','rest_secs'].forEach(k=>{
+      localStorage.removeItem('gymy_'+u.id+'_'+k);
+    });
+  }
+}
 function logout(){
   apiCall('POST','/auth/logout').catch(()=>{});
-  ['gymy_access','gymy_refresh','gymy_user','gymy_offline_queue'].forEach(k=>localStorage.removeItem(k));
+  _clearUserCaches();
+  ['gymy_access','gymy_refresh','gymy_user'].forEach(k=>localStorage.removeItem(k));
   window.location.href='/';
 }
-function guardarOffline(s){const q=JSON.parse(localStorage.getItem('gymy_offline_queue')||'[]');s._offline_id=Date.now();q.push(s);localStorage.setItem('gymy_offline_queue',JSON.stringify(q));}
+function guardarOffline(s){const q=JSON.parse(localStorage.getItem(_uk('offline_queue'))||'[]');s._offline_id=Date.now();q.push(s);localStorage.setItem(_uk('offline_queue'),JSON.stringify(q));}
 async function sincronizarOffline(){
-  const q=JSON.parse(localStorage.getItem('gymy_offline_queue')||'[]');if(!q.length)return{sincronizadas:0};
+  const q=JSON.parse(localStorage.getItem(_uk('offline_queue'))||'[]');if(!q.length)return{sincronizadas:0};
   const r=await apiCall('POST','/sesiones/sync',{sesiones:q});
-  if(r.data.ok){localStorage.removeItem('gymy_offline_queue');return{sincronizadas:q.length};}
+  if(r.data.ok){localStorage.removeItem(_uk('offline_queue'));return{sincronizadas:q.length};}
   return{sincronizadas:0};
 }
-function getPendientesOffline(){return JSON.parse(localStorage.getItem('gymy_offline_queue')||'[]');}
+function getPendientesOffline(){return JSON.parse(localStorage.getItem(_uk('offline_queue'))||'[]');}
 
 // ══════════════════════════════════════════════
 // INIT
@@ -1145,7 +1177,7 @@ function initApp(){
   loadCatalogo().then(()=>console.log('[Catálogo] Cargado:',Object.keys(_catalogoCache||{}).length,'grupos'));
   loadPlantillas().then(()=>console.log('[Plantillas] Cargadas:',(_plantillasCache||[]).length,'ejercicios'));
   // Cargar perfil físico para cálculo de kcal: localStorage inmediato + BD en background
-  const _pd=JSON.parse(localStorage.getItem('gymy_profile_data')||'{}');
+  const _pd=JSON.parse(localStorage.getItem(_uk('profile_data'))||'{}');
   window._wkUserPerfil={edad:parseInt(_pd.edad)||null,genero:_pd.genero||null,peso:parseFloat(_pd.peso)||null};
   apiCall('GET','/auth/me').then(r=>{if(r.data&&r.data.ok)window._wkUserPerfil=r.data.usuario;}).catch(()=>{});
   // Restore workout tab if active
@@ -1442,7 +1474,7 @@ async function coachPlan(forzar){
   // Mostrar plan cacheado si existe y es reciente
   if(!forzar){
     try{
-      const cached=JSON.parse(localStorage.getItem('gymy_coach_plan')||'null');
+      const cached=JSON.parse(localStorage.getItem(_uk('coach_plan'))||'null');
       if(cached&&cached.text&&(Date.now()-cached.ts)<COACH_PLAN_TTL){
         _coachPlanShow(body,cached.text,true);
         return;
@@ -1490,7 +1522,7 @@ INSTRUCCIONES:
   try{
     const{data}=await apiCall('POST','/ai/import',{prompt});
     if(!data.ok) throw new Error(data.error||'Error de IA');
-    try{localStorage.setItem('gymy_coach_plan',JSON.stringify({text:data.text,ts:Date.now()}));}catch(e){}
+    try{localStorage.setItem(_uk('coach_plan'),JSON.stringify({text:data.text,ts:Date.now()}));}catch(e){}
     _coachPlanShow(body,data.text,false);
   }catch(err){
     body.innerHTML='<div style="text-align:center;padding:20px 16px">'
@@ -2196,7 +2228,7 @@ async function renderPlantillasList(){
   // DB exercises (own only)
   const dbEjs=(_plantillasCache||[]).filter(p=>p.propia);
   // localStorage exercises (legacy)
-  const loc=JSON.parse(localStorage.getItem('gymy_plantillas')||'{}');
+  const loc=JSON.parse(localStorage.getItem(_uk('plantillas'))||'{}');
   const locEjs=Object.entries(loc).flatMap(([grupo,ejs])=>ejs.map(e=>({...e,grupo,db:false})));
   const all=[...dbEjs.map(p=>({n:p.nombre,grupo:p.grupo_muscular,em:ejEmoji(p.equipo),id:p.id,db:true})),...locEjs];
   if(!all.length){el.innerHTML='<p style="font-size:12px;color:var(--text2)">No hay plantillas personalizadas.</p>';return;}
@@ -2212,7 +2244,7 @@ async function renderPlantillasList(){
 
 function openAddPlantilla(){
   // Populate grupo select dynamically from loaded catalog
-  const grupos=[...new Set([...Object.keys(_catalogoCache||{}),...Object.keys(JSON.parse(localStorage.getItem('gymy_plantillas')||'{}')),'General'])].sort();
+  const grupos=[...new Set([...Object.keys(_catalogoCache||{}),...Object.keys(JSON.parse(localStorage.getItem(_uk('plantillas'))||'{}')),'General'])].sort();
   const sel=document.getElementById('new-ej-grupo');
   const BASE=['Pecho','Espalda','Piernas','Hombros','Brazos','Core','Cardio','General'];
   const all=[...new Set([...grupos,...BASE])].sort();
@@ -2242,9 +2274,9 @@ async function delPlantillaDB(id){
   renderPlantillasList();
 }
 function delPlantillaLocal(grupo,nombre){
-  const p=JSON.parse(localStorage.getItem('gymy_plantillas')||'{}');
+  const p=JSON.parse(localStorage.getItem(_uk('plantillas'))||'{}');
   if(p[grupo])p[grupo]=p[grupo].filter(e=>e.n!==nombre);
-  localStorage.setItem('gymy_plantillas',JSON.stringify(p));
+  localStorage.setItem(_uk('plantillas'),JSON.stringify(p));
   renderPlantillasList();
 }
 // Compat alias (kept for any remaining calls)
@@ -2384,7 +2416,7 @@ async function confirmarImportCatalogo(){
 function confirmEliminarPlantillas(){
   showConfirm('¿Eliminar todas las plantillas?','Se eliminarán todos los ejercicios personalizados. Los ejercicios base no se ven afectados.','Eliminar todo',async()=>{
     await apiCall('DELETE','/plantillas');
-    localStorage.removeItem('gymy_plantillas');
+    localStorage.removeItem(_uk('plantillas'));
     invalidatePlantillas();
     renderPlantillasList();
     showToast('Plantillas eliminadas','info');
@@ -2479,12 +2511,12 @@ function saveProfileData(){
     const el=document.getElementById('p-'+f);
     if(el)data[f]=el.value;
   });
-  localStorage.setItem('gymy_profile_data',JSON.stringify(data));
+  localStorage.setItem(_uk('profile_data'),JSON.stringify(data));
   // Actualizar perfil en memoria para cálculo inmediato de kcal
   window._wkUserPerfil=Object.assign(window._wkUserPerfil||{},data);
 }
 function loadProfileData(){
-  const data=JSON.parse(localStorage.getItem('gymy_profile_data')||'{}');
+  const data=JSON.parse(localStorage.getItem(_uk('profile_data'))||'{}');
   const fields=['edad','genero','altura','peso','actividad','objetivo'];
   fields.forEach(f=>{
     const el=document.getElementById('p-'+f);
@@ -2492,7 +2524,7 @@ function loadProfileData(){
   });
 }
 async function guardarPerfilFisicoEnBD(){
-  const pd=JSON.parse(localStorage.getItem('gymy_profile_data')||'{}');
+  const pd=JSON.parse(localStorage.getItem(_uk('profile_data'))||'{}');
   const genMap={'hombre':'M','mujer':'F','otro':'O'};
   const body={
     edad:parseInt(pd.edad)||null,
@@ -2608,7 +2640,7 @@ async function cargarHistorialLocal(){
       entries.sort((a,b)=>a.ts-b.ts).forEach(e=>h.push(e));
     });
     if(h.length>500)h.splice(0,h.length-500);
-    localStorage.setItem('gymy_historial_local',JSON.stringify(h));
+    localStorage.setItem(_uk('historial_local'),JSON.stringify(h));
     console.log('[GyMy] Historial local cargado:',h.length,'entradas');
   }catch(e){
     console.warn('[GyMy] No se pudo cargar historial local:',e.message);
@@ -2794,7 +2826,7 @@ function wkGetDB(){
     }
   });
   // localStorage (compat)
-  const loc=JSON.parse(localStorage.getItem('gymy_plantillas')||'{}');
+  const loc=JSON.parse(localStorage.getItem(_uk('plantillas'))||'{}');
   Object.keys(loc).forEach(k=>{
     if(!m[k])m[k]=[];
     loc[k].forEach(e=>{if(!m[k].some(ex=>ex.n===e.n))m[k].push(e);});
@@ -2812,7 +2844,7 @@ function wkGetPreloadMode(){return localStorage.getItem('gymy_preload')||'ultimo
 // Versión síncrona (solo localStorage) — usada para hints en el selector de ejercicios
 function wkGetPreload(nombre){
   const mode=wkGetPreloadMode();
-  const h=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]')
+  const h=JSON.parse(localStorage.getItem(_uk('historial_local'))||'[]')
     .filter(e=>e.nombre===nombre);
   if(!h.length)return null;
   function normalize(entry){
@@ -2875,14 +2907,14 @@ async function wkGetPreloadFromDB(nombre){
 }
 function wkSaveLocalHistorial(exs){
   // exs is wkExs array: [{n, sets:[{kg,reps,done},...]}]
-  const h=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]');
+  const h=JSON.parse(localStorage.getItem(_uk('historial_local'))||'[]');
   const ts=Date.now();
   exs.forEach(ex=>{
     const doneSets=ex.sets.filter(s=>s.done).map(s=>({kg:s.kg,reps:s.reps}));
     if(doneSets.length>0) h.push({nombre:ex.n,sets:doneSets,ts});
   });
   if(h.length>500)h.splice(0,h.length-500);
-  localStorage.setItem('gymy_historial_local',JSON.stringify(h));
+  localStorage.setItem(_uk('historial_local'),JSON.stringify(h));
 }
 
 // ── State ──
@@ -2890,17 +2922,17 @@ let wkExs=[],wkEid=0,wkSecs=0,wkRunning=false;
 let wkRestSecs=0,wkRestRunning=false,wkRestInterval=null;
 let _wkGaussCharts={};
 let wkCurTipo='',wkStarted=false,wkSecInterval=null,wkAutoSaveInterval=null;
-const WK_KEY='gymy_workout_live';
+function WK_KEY(){return _uk('workout_live');}
 
 function wkSaveState(){
   if(!wkStarted)return;
-  localStorage.setItem(WK_KEY,JSON.stringify({exs:wkExs,eid:wkEid,secs:wkSecs,tipo:wkCurTipo,ts:Date.now()}));
+  localStorage.setItem(WK_KEY(),JSON.stringify({exs:wkExs,eid:wkEid,secs:wkSecs,tipo:wkCurTipo,ts:Date.now()}));
 }
 function wkLoadState(){
-  try{const r=localStorage.getItem(WK_KEY);return r?JSON.parse(r):null;}catch(e){return null;}
+  try{const r=localStorage.getItem(WK_KEY());return r?JSON.parse(r):null;}catch(e){return null;}
 }
 function wkClearState(){
-  localStorage.removeItem(WK_KEY);
+  localStorage.removeItem(WK_KEY());
   localStorage.removeItem('gymy_workout_active');
 }
 function wkIsActive(){return localStorage.getItem('gymy_workout_active')==='1';}
@@ -3089,7 +3121,7 @@ async function wkRenderTipoGrid(){
     return;
   }
   // Ordenar por frecuencia de uso en historial local
-  const hist=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]');
+  const hist=JSON.parse(localStorage.getItem(_uk('historial_local'))||'[]');
   const nameToGrupo={};
   grupos.forEach(g=>db[g].forEach(e=>{nameToGrupo[e.n]=g;}));
   const freq={};
@@ -3153,7 +3185,7 @@ function _wkEjCard(e,showGroup){
     +'</div>';
 }
 function wkRenderEjList(list,showGroup){
-  const hist=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]');
+  const hist=JSON.parse(localStorage.getItem(_uk('historial_local'))||'[]');
   const freq={};
   hist.forEach(e=>{freq[e.nombre]=(freq[e.nombre]||0)+1;});
   const sorted=[...list].sort((a,b)=>(freq[b.n]||0)-(freq[a.n]||0));
@@ -3252,7 +3284,7 @@ function _gaussErf(x){
 function _gaussCDF(x,mu,sg){return sg===0?(x>=mu?1:0):0.5*(1+_gaussErf((x-mu)/(sg*Math.SQRT2)));}
 function _gaussPDF(x,mu,sg){return sg===0?0:Math.exp(-0.5*((x-mu)/sg)**2)/(sg*Math.sqrt(2*Math.PI));}
 function _wkHistVols(nombre){
-  return JSON.parse(localStorage.getItem('gymy_historial_local')||'[]')
+  return JSON.parse(localStorage.getItem(_uk('historial_local'))||'[]')
     .filter(h=>h.nombre===nombre)
     .map(h=>(h.sets||[]).reduce((a,s)=>a+(s.kg||0)*(s.reps||0),0))
     .filter(v=>v>0);
@@ -3309,7 +3341,7 @@ function wkRender(){
   wkSaveState();
 }
 function wkCardHTML(ex){
-  const hist=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]').filter(h=>h.nombre===ex.n);
+  const hist=JSON.parse(localStorage.getItem(_uk('historial_local'))||'[]').filter(h=>h.nombre===ex.n);
   const prKg=hist.length?Math.max(...hist.map(h=>h.sets?Math.max(...h.sets.map(s=>s.kg)):h.kg||0)):0;
   const doneSets=ex.sets.filter(s=>s.done);
   const vol=doneSets.reduce((a,s)=>a+s.kg*s.reps,0);
@@ -3405,11 +3437,11 @@ function wkToggleDone(exId,si){
   ex.sets[si].done=!ex.sets[si].done;
   if(ex.sets[si].done){
     ex.sets[si].pre=false;
-    const restDef=parseInt(localStorage.getItem('gymy_rest_secs')||'90');
+    const restDef=parseInt(localStorage.getItem(_uk('rest_secs'))||'90');
     ex.sets[si].kcal=calcKcalSerie(ex.sets[si].kg,ex.sets[si].reps,ex.m,restDef);
     haptic(18);
     wkStartRestTimer();
-    const hist=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]').filter(h=>h.nombre===ex.n);
+    const hist=JSON.parse(localStorage.getItem(_uk('historial_local'))||'[]').filter(h=>h.nombre===ex.n);
     const prKg=hist.length?Math.max(...hist.map(h=>h.kg)):0;
     const isPR=prKg>0&&ex.sets[si].kg>prKg;
     if(isPR){haptic([30,20,30]);showToast('🏆 Nuevo PR en '+ex.n+'!','success');}
@@ -3461,7 +3493,7 @@ function _rtUpdateRing(secs,total){
   prog.style.strokeDashoffset=RT_CIRCUMFERENCE-offset;
 }
 function wkStartRestTimer(){
-  const def=parseInt(localStorage.getItem('gymy_rest_secs')||'90');
+  const def=parseInt(localStorage.getItem(_uk('rest_secs'))||'90');
   wkRestSecs=def;wkRestRunning=true;
   document.getElementById('rest-timer').classList.add('active');
   _rtUpdateRing(def,def);
