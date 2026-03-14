@@ -8,9 +8,12 @@ function setStatsType(type){
   currentStatsType=type;
   document.getElementById('stype-ej').classList.toggle('active',type==='ejercicio');
   document.getElementById('stype-dias').classList.toggle('active',type==='dias');
+  document.getElementById('stype-mus')?.classList.toggle('active',type==='musculos');
   document.getElementById('stats-ejercicio-view').style.display=type==='ejercicio'?'block':'none';
   document.getElementById('stats-dias-view').style.display=type==='dias'?'block':'none';
+  document.getElementById('stats-musculos-view') && (document.getElementById('stats-musculos-view').style.display=type==='musculos'?'block':'none');
   if(type==='dias')loadStatssDias();
+  if(type==='musculos')loadStatsMusculos();
 }
 
 async function initStatsView(){
@@ -37,6 +40,7 @@ async function loadStatsEjercicios(){
   window._statsEjMap=ejMap;
   window._statsAllSessions=all;
   renderStatsGrupoChips();
+  renderStatsEjList(Object.values(ejMap));
 }
 
 // ── Stats ejercicio modal ──
@@ -258,4 +262,129 @@ function _renderDiasChart(){
 function setDiasMetric(m){
   window._diasMetric=m;
   _renderDiasChart();
+}
+
+function renderStatsEjList(list){
+  // No-op: lista ahora se muestra en modal
+}
+function filterStatsEjercicios(){
+  // No-op: búsqueda ahora en modal
+}
+
+// ── POR MÚSCULO ───────────────────────────────────
+let chartMusDonut=null;
+
+function _getMusculoLabel(nombreEj){
+  if(_catalogoCache){
+    const n=nombreEj.toLowerCase();
+    for(const[grupo,ejs]of Object.entries(_catalogoCache)){
+      const found=ejs.find(e=>(e.n||'').toLowerCase()===n);
+      if(found)return found.sg||grupo;
+    }
+  }
+  return 'Otros';
+}
+
+async function loadStatsMusculos(){
+  if(!window._statsAllSessions){
+    const{data}=await getSesiones({limit:500});
+    if(!data.ok)return;
+    window._statsAllSessions=data.sesiones||[];
+  }
+  await loadCatalogo();
+  _renderBodyHeatmap();
+  _renderMusculosCharts();
+}
+
+function _renderMusculosCharts(){
+  const all=window._statsAllSessions||[];
+  const seriesCount={};
+  all.forEach(s=>{
+    (s.ejercicios||[]).forEach(e=>{
+      const lbl=_getMusculoLabel(e.nombre);
+      seriesCount[lbl]=(seriesCount[lbl]||0)+(e.series||1);
+    });
+  });
+  const entries=Object.entries(seriesCount).sort((a,b)=>b[1]-a[1]);
+  const labels=entries.map(([k])=>k);
+  const counts=entries.map(([,v])=>v);
+  const totalSeries=counts.reduce((a,b)=>a+b,0);
+  const PALETTE=['#ef5350','#42a5f5','#66bb6a','#ab47bc','#ffa726','#26c6da','#ec407a','#8d6e63','#78909c','#d4e157','#ff7043','#29b6f6'];
+  const colors=labels.map((_,i)=>PALETTE[i%PALETTE.length]);
+  const isDark=!document.body.classList.contains('theme-light')&&!document.body.classList.contains('theme-material-light');
+  const tooltipBg=isDark?'rgba(18,18,28,.95)':'rgba(255,255,255,.98)';
+  const tooltipBorder=isDark?'rgba(255,255,255,.08)':'rgba(0,0,0,.08)';
+  const legendC=isDark?'#ccc':'#444';
+  const tooltipTitle=isDark?'#fff':'#111';
+  const tooltipBody=isDark?'#aaa':'#555';
+
+  if(chartMusDonut)chartMusDonut.destroy();
+  chartMusDonut=new Chart(document.getElementById('chart-mus-donut').getContext('2d'),{
+    type:'doughnut',
+    data:{labels,datasets:[{data:counts,backgroundColor:colors,borderWidth:2,borderColor:isDark?'#1a1a2e':'#fff',hoverOffset:8}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'62%',
+      animation:{duration:600,easing:'easeInOutQuart'},
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:tooltipBg,borderColor:tooltipBorder,borderWidth:1,titleColor:tooltipTitle,bodyColor:tooltipBody,padding:10,cornerRadius:10,
+          callbacks:{label:ctx=>{const pct=totalSeries>0?Math.round(ctx.parsed/totalSeries*100):0;return ' '+ctx.parsed+' series ('+pct+'%)';}}}
+      }
+    }
+  });
+}
+
+const BODY_REGION_MAP={
+  'Pecho':['hm-pecho-l','hm-pecho-r'],
+  'Hombros':['hm-hombro-fl','hm-hombro-fr','hm-hombro-bl','hm-hombro-br'],
+  'Brazos Bíceps':['hm-bicep-l','hm-bicep-r'],
+  'Brazos Tríceps':['hm-tricep-l','hm-tricep-r'],
+  'Core':['hm-core'],
+  'Dorsal':['hm-dorsal-l','hm-dorsal-r'],
+  'Trapecio':['hm-trapecio'],
+  'Lumbar':['hm-lumbar'],
+  'Cuádriceps':['hm-quad-l','hm-quad-r'],
+  'Femoral':['hm-femoral-l','hm-femoral-r'],
+  'Glúteo':['hm-gluteo-l','hm-gluteo-r'],
+  'Gemelos':['hm-gemelo-l','hm-gemelo-r'],
+  'Espalda':['hm-dorsal-l','hm-dorsal-r','hm-trapecio','hm-lumbar'],
+  'Piernas':['hm-quad-l','hm-quad-r','hm-femoral-l','hm-femoral-r','hm-gluteo-l','hm-gluteo-r'],
+  'Brazos':['hm-bicep-l','hm-bicep-r','hm-tricep-l','hm-tricep-r'],
+};
+const HM_ID_LABELS={
+  'hm-hombro-fl':'Hombros','hm-hombro-fr':'Hombros',
+  'hm-hombro-bl':'Hombros (espalda)','hm-hombro-br':'Hombros (espalda)',
+  'hm-pecho-l':'Pecho','hm-pecho-r':'Pecho',
+  'hm-bicep-l':'Bíceps','hm-bicep-r':'Bíceps',
+  'hm-core':'Core',
+  'hm-quad-l':'Cuádriceps','hm-quad-r':'Cuádriceps',
+  'hm-trapecio':'Trapecio',
+  'hm-tricep-l':'Tríceps','hm-tricep-r':'Tríceps',
+  'hm-dorsal-l':'Dorsal','hm-dorsal-r':'Dorsal',
+  'hm-lumbar':'Lumbar',
+  'hm-gluteo-l':'Glúteo','hm-gluteo-r':'Glúteo',
+  'hm-femoral-l':'Femoral','hm-femoral-r':'Femoral',
+  'hm-gemelo-l':'Gemelos','hm-gemelo-r':'Gemelos',
+};
+
+function _heatColor(ratio){
+  if(ratio<=0)return null;
+  let r,g,b;
+  if(ratio<0.33){const t=ratio/0.33;r=Math.round(102+(255-102)*t);g=Math.round(187+(235-187)*t);b=Math.round(106*(1-t));}
+  else if(ratio<0.66){const t=(ratio-0.33)/0.33;r=255;g=Math.round(235+(152-235)*t);b=0;}
+  else{const t=(ratio-0.66)/0.34;r=255;g=Math.round(152*(1-t)+67*t);b=Math.round(54*t);}
+  return `rgb(${r},${g},${b})`;
+}
+
+function _renderBodyHeatmap(){
+  const all=window._statsAllSessions||[];
+  const seriesMap={};
+  all.forEach(s=>{
+    (s.ejercicios||[]).forEach(e=>{
+      const lbl=_getMusculoLabel(e.nombre);
+      seriesMap[lbl]=(seriesMap[lbl]||0)+(e.series||1);
+    });
+  });
+  const el=document.getElementById('body-heatmap-container');
+  if(el)el.innerHTML=bodyHeatmapSVGHtml(seriesMap);
 }
