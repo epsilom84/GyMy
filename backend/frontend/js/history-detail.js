@@ -78,8 +78,8 @@ function borrarSesionConfirm(id){
 }
 
 async function repetirWorkout(id){
-  const{data}=await getSesion(id);
   closeModal('modal-detalle');
+  const{data}=await getSesion(id);
   if(!data.ok){showToast('Error al cargar sesión','error');return;}
   const s=data.sesion;
   const catFlat={};
