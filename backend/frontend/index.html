@@ -1163,16 +1163,23 @@ async function coachAnalisis(forzar){
 
   body.innerHTML=
     '<div style="padding:32px 20px 28px">'
-    +'<div style="text-align:center;margin-bottom:20px">'
-    +'<div style="font-size:36px;margin-bottom:10px">🔬</div>'
+    +'<div style="text-align:center;margin-bottom:22px">'
+    +'<div style="font-size:36px;margin-bottom:12px">🔬</div>'
     +'<div id="_ap_label" style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">Preparando análisis...</div>'
-    +'<div id="_ap_sub" style="font-size:11px;color:var(--text2);opacity:.7">Paso 1 de 3</div>'
+    +'<div id="_ap_sub" style="font-size:11px;color:var(--text2)">Paso 1 de 3</div>'
     +'</div>'
-    +'<div style="background:var(--bg3);border-radius:99px;height:6px;overflow:hidden">'
-    +'<div id="_ap_bar" style="height:100%;border-radius:99px;background:var(--accent);width:0%;transition:width .4s ease"></div>'
+    +'<div style="background:var(--bg3);border-radius:99px;height:8px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.15)">'
+    +'<div id="_ap_bar" style="height:100%;border-radius:99px;background:var(--accent);width:4%;transition:width .5s cubic-bezier(.4,0,.2,1)"></div>'
     +'</div>'
-    +'<div id="_ap_pct" style="text-align:right;font-size:10px;color:var(--text2);margin-top:4px;opacity:.6">0%</div>'
+    +'<div style="display:flex;justify-content:space-between;margin-top:6px">'
+    +'<div style="font-size:10px;color:var(--text2);opacity:.5">0%</div>'
+    +'<div id="_ap_pct" style="font-size:10px;color:var(--accent);font-weight:700">4%</div>'
+    +'</div>'
     +'</div>';
+
+  // Yield to browser so it can paint the initial bar before any update
+  await new Promise(r=>requestAnimationFrame(r));
+  await new Promise(r=>requestAnimationFrame(r));
 
   function _apSet(pct,label,sub){
     const bar=document.getElementById('_ap_bar');
@@ -1180,23 +1187,23 @@ async function coachAnalisis(forzar){
     const slbl=document.getElementById('_ap_sub');
     const pctEl=document.getElementById('_ap_pct');
     if(bar)bar.style.width=pct+'%';
-    if(lbl)lbl.textContent=label;
-    if(slbl)slbl.textContent=sub;
+    if(lbl&&label)lbl.textContent=label;
+    if(slbl&&sub!==undefined)slbl.textContent=sub;
     if(pctEl)pctEl.textContent=pct+'%';
   }
 
   let _apTimer=null;
   function _apAnimate(from,to,ms){
     if(_apTimer)clearInterval(_apTimer);
-    const steps=20,inc=(to-from)/steps,interval=ms/steps;
+    const steps=30,inc=(to-from)/steps,interval=ms/steps;
     let cur=from;
     _apTimer=setInterval(()=>{
-      cur+=inc;
-      if(cur>=to){cur=to;clearInterval(_apTimer);}
+      cur=Math.min(cur+inc,to);
       const bar=document.getElementById('_ap_bar');
       const pctEl=document.getElementById('_ap_pct');
       if(bar)bar.style.width=Math.round(cur)+'%';
       if(pctEl)pctEl.textContent=Math.round(cur)+'%';
+      if(cur>=to)clearInterval(_apTimer);
     },interval);
   }
 
