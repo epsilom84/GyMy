@@ -190,7 +190,6 @@
           <div class="card stats-mus-donut-card">
             <div style="font-size:10px;color:var(--text2);margin-bottom:6px">Distribución (series)</div>
             <div class="stats-mus-donut-wrap"><canvas id="chart-mus-donut"></canvas></div>
-            <div id="chart-mus-legend" class="stats-mus-legend"></div>
           </div>
         </div>
       </div>
@@ -1799,16 +1798,6 @@ function _renderMusculosCharts(){
       }
     }
   });
-  // Leyenda de colores
-  const leg=document.getElementById('chart-mus-legend');
-  if(leg){
-    leg.innerHTML=labels.slice(0,8).map((lbl,i)=>{
-      const pct=totalSeries>0?Math.round(counts[i]/totalSeries*100):0;
-      return'<div class="stats-mus-leg-item"><span class="stats-mus-leg-dot" style="background:'+colors[i]+'"></span>'
-        +'<span class="stats-mus-leg-lbl">'+lbl+'</span>'
-        +'<span class="stats-mus-leg-pct">'+pct+'%</span></div>';
-    }).join('');
-  }
 }
 
 const BODY_REGION_MAP={
