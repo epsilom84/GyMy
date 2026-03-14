@@ -1249,7 +1249,7 @@ function setTipoFilter(tipo,el){
 }
 async function populateGrupoFilters(){
   await loadCatalogo();
-  const cache=window._catalogoCache||{};
+  const cache=_catalogoCache||{};
   const grupos=Object.keys(cache).sort();
   const gEl=document.getElementById('grupo-filters');
   if(!gEl||!grupos.length)return;
@@ -1262,7 +1262,7 @@ async function populateGrupoFilters(){
 function _renderSubgrupoFilters(){
   const sEl=document.getElementById('subgrupo-filters');if(!sEl)return;
   if(!currentGrupoFilter){sEl.style.display='none';sEl.innerHTML='';return;}
-  const cache=window._catalogoCache||{};
+  const cache=_catalogoCache||{};
   const ejs=cache[currentGrupoFilter]||[];
   const subgrupos=[...new Set(ejs.map(e=>e.sg).filter(Boolean))].sort();
   if(!subgrupos.length){sEl.style.display='none';return;}
@@ -1675,9 +1675,9 @@ function _setupChartLongPress(canvasId,entries){
       const entry=entries[pts[0].index];
       if(!entry)return;
       if(confirm('Ver sesión del '+formatFecha(entry.fecha)+'?')){
-        const qEl=document.getElementById('hist-search');
+        const qEl=document.getElementById('search-q');
         if(qEl){qEl.value=formatFecha(entry.fecha);}
-        showScreen('historial');
+        goTab('historial',document.getElementById('tab-historial'));
         loadHistorial();
       }
     },600);
