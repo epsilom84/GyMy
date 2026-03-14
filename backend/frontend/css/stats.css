@@ -13,6 +13,25 @@
 /* ── CHARTS ── */
 .chart-container{position:relative;height:230px;margin-bottom:10px;}
 
+/* ── MÚSCULO VIEW ── */
+.stats-mus-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0;align-items:start;}
+.stats-mus-heatmap-card{margin-bottom:0;padding:10px;text-align:center;}
+.stats-mus-donut-card{margin-bottom:0;padding:10px;}
+.stats-mus-donut-wrap{position:relative;height:160px;}
+/* Leyenda colores */
+.stats-mus-legend{margin-top:8px;display:flex;flex-direction:column;gap:4px;}
+.stats-mus-leg-item{display:flex;align-items:center;gap:5px;font-size:11px;}
+.stats-mus-leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.stats-mus-leg-lbl{flex:1;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.stats-mus-leg-pct{color:var(--text);font-weight:600;font-size:11px;}
+/* En móvil (<420px) apila vertical para que las tarjetas respiren */
+@media(max-width:420px){
+  .stats-mus-grid{grid-template-columns:1fr;}
+  .stats-mus-donut-wrap{height:200px;}
+  .stats-mus-legend{flex-direction:row;flex-wrap:wrap;gap:6px 12px;}
+  .stats-mus-leg-item{width:calc(50% - 6px);}
+}
+
 /* ── STAT HIGHLIGHTS ── */
 .stat-highlight{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
 .stat-hl{background:var(--bg3);border-radius:12px;padding:14px;}
