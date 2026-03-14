@@ -367,6 +367,63 @@ const HM_ID_LABELS={
   'hm-gemelo-l':'Gemelos','hm-gemelo-r':'Gemelos',
 };
 
+function bodyHeatmapSVGHtml(seriesMap){
+  const RM={
+    'Pecho':['fp'],'Core':['fc'],
+    'Hombros':['fdl','fdr','bdl','bdr'],
+    'Brazos Bíceps':['fbl','fbr','ffl','ffr'],
+    'Brazos Tríceps':['btl','btr','bfl','bfr'],
+    'Brazos':['fbl','fbr','ffl','ffr','btl','btr','bfl','bfr'],
+    'Espalda':['be'],'Piernas':['fql','fqr','fcl','fcr','bg','bhl','bhr','bcl','bcr'],
+    'Pectoral':['fp'],
+    'Deltoides':['fdl','fdr','bdl','bdr'],
+    'Bíceps':['fbl','fbr','ffl','ffr'],
+    'Tríceps':['btl','btr','bfl','bfr'],
+    'Recto abdominal':['fc'],
+    'Dorsal':['be'],'Trapecio':['be'],'Lumbar':['be'],
+    'Cuádriceps':['fql','fqr'],'Femoral':['bhl','bhr'],
+    'Glúteo':['bg'],'Gemelos':['fcl','fcr','bcl','bcr'],
+  };
+  const IL={fp:'Pecho',fc:'Core',fdl:'Hombros',fdr:'Hombros',bdl:'Hombros',bdr:'Hombros',fbl:'Bíceps',fbr:'Bíceps',ffl:'Antebrazos',ffr:'Antebrazos',btl:'Tríceps',btr:'Tríceps',bfl:'Antebrazos',bfr:'Antebrazos',fql:'Cuádriceps',fqr:'Cuádriceps',fcl:'Gemelos',fcr:'Gemelos',be:'Espalda',bg:'Glúteo',bhl:'Femoral',bhr:'Femoral',bcl:'Gemelos',bcr:'Gemelos'};
+  const rs={};
+  Object.entries(seriesMap).forEach(([lbl,cnt])=>{(RM[lbl]||[]).forEach(id=>{rs[id]=(rs[id]||0)+cnt;});});
+  const maxS=Math.max(1,...Object.values(rs));
+  const d='rgba(128,128,128,.16)',n='rgba(128,128,128,.10)';
+  const c=id=>rs[id]?(_heatColor(rs[id]/maxS)||d):d;
+  const t=id=>`<title>${IL[id]||id}${rs[id]?': '+rs[id]+' series':''}</title>`;
+  return`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 180" style="width:auto;height:100%;display:block;margin:0 auto">
+  <circle cx="30" cy="14" r="10" fill="${n}" stroke="rgba(128,128,128,.25)" stroke-width=".5"/>
+  <rect x="26.5" y="23" width="7" height="6" fill="${n}" rx="2"/>
+  <ellipse cx="15" cy="38" rx="10" ry="7" fill="${c('fdl')}">${t('fdl')}</ellipse>
+  <ellipse cx="45" cy="38" rx="10" ry="7" fill="${c('fdr')}">${t('fdr')}</ellipse>
+  <path d="M20,30 Q30,26 40,30 L41,55 Q30,58 19,55 Z" fill="${c('fp')}">${t('fp')}</path>
+  <path d="M19,56 Q30,59 41,56 L40,82 Q30,85 20,82 Z" fill="${c('fc')}">${t('fc')}</path>
+  <rect x="5" y="36" width="10" height="27" fill="${c('fbl')}" rx="4">${t('fbl')}</rect>
+  <rect x="45" y="36" width="10" height="27" fill="${c('fbr')}" rx="4">${t('fbr')}</rect>
+  <rect x="5" y="65" width="8" height="20" fill="${c('ffl')}" rx="3.5">${t('ffl')}</rect>
+  <rect x="47" y="65" width="8" height="20" fill="${c('ffr')}" rx="3.5">${t('ffr')}</rect>
+  <path d="M20,83 Q30,86 40,83 L41,96 Q30,99 19,96 Z" fill="${n}"/>
+  <rect x="19" y="96" width="10" height="36" fill="${c('fql')}" rx="4.5">${t('fql')}</rect>
+  <rect x="31" y="96" width="10" height="36" fill="${c('fqr')}" rx="4.5">${t('fqr')}</rect>
+  <rect x="20" y="134" width="8.5" height="26" fill="${c('fcl')}" rx="4">${t('fcl')}</rect>
+  <rect x="31" y="134" width="8.5" height="26" fill="${c('fcr')}" rx="4">${t('fcr')}</rect>
+  <line x1="60" y1="4" x2="60" y2="166" stroke="rgba(128,128,128,.18)" stroke-width=".5" stroke-dasharray="3,2"/>
+  <circle cx="90" cy="14" r="10" fill="${n}" stroke="rgba(128,128,128,.25)" stroke-width=".5"/>
+  <rect x="86.5" y="23" width="7" height="6" fill="${n}" rx="2"/>
+  <ellipse cx="75" cy="38" rx="10" ry="7" fill="${c('bdl')}">${t('bdl')}</ellipse>
+  <ellipse cx="105" cy="38" rx="10" ry="7" fill="${c('bdr')}">${t('bdr')}</ellipse>
+  <path d="M80,30 Q90,26 100,30 L101,82 Q90,85 79,82 Z" fill="${c('be')}">${t('be')}</path>
+  <rect x="65" y="36" width="10" height="27" fill="${c('btl')}" rx="4">${t('btl')}</rect>
+  <rect x="105" y="36" width="10" height="27" fill="${c('btr')}" rx="4">${t('btr')}</rect>
+  <rect x="65" y="65" width="8" height="20" fill="${c('bfl')}" rx="3.5">${t('bfl')}</rect>
+  <rect x="107" y="65" width="8" height="20" fill="${c('bfr')}" rx="3.5">${t('bfr')}</rect>
+  <path d="M80,83 Q90,86 100,83 L101,96 Q90,99 79,96 Z" fill="${c('bg')}">${t('bg')}</path>
+  <rect x="79" y="96" width="10" height="36" fill="${c('bhl')}" rx="4.5">${t('bhl')}</rect>
+  <rect x="91" y="96" width="10" height="36" fill="${c('bhr')}" rx="4.5">${t('bhr')}</rect>
+  <rect x="80" y="134" width="8.5" height="26" fill="${c('bcl')}" rx="4">${t('bcl')}</rect>
+  <rect x="91" y="134" width="8.5" height="26" fill="${c('bcr')}" rx="4">${t('bcr')}</rect>
+</svg>`;}
+
 function _heatColor(ratio){
   if(ratio<=0)return null;
   let r,g,b;

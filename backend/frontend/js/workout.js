@@ -192,26 +192,3 @@ function wkStartWorkout(){
 function wkCancelStart(){
   wkHide('wk-ov-start');
 }
-
-// ── Repetir workout desde historial ──
-function repetirWorkout(sesionId){
-  closeModal('modal-detalle');
-  getSesion(sesionId).then(({data})=>{
-    if(!data.ok)return;
-    const s=data.sesion;
-    const ejercicios=(s.ejercicios||[]).map(e=>{
-      let sets=null;
-      if(e.sets_data){
-        try{const sd=typeof e.sets_data==='string'?JSON.parse(e.sets_data):e.sets_data;
-          sets=sd.map(s=>({kg:Number(s.kg??s.peso_kg??0),reps:Number(s.reps??0)}));}catch(x){}
-      }
-      if(!sets){const n=Number(e.series)||1;sets=Array.from({length:n},()=>({kg:Number(e.peso_kg)||0,reps:Number(e.reps)||0}));}
-      return{n:e.nombre,m:(e.grupo_muscular||e.nombre).toUpperCase(),em:'💪',equipo:null,sets};
-    });
-    sessionStorage.setItem('gymy_preload_workout',JSON.stringify({tipo:s.tipo,ejercicios}));
-    const btn=document.getElementById('tab-workout');
-    if(btn){btn.style.display='flex';goTab('workout',btn);}
-    showToast('Cargando workout...','info');
-    setTimeout(()=>wkInit(),200);
-  });
-}
