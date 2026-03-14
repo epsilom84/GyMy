@@ -16,7 +16,7 @@ Guía técnica completa para Claude Code. Léela entera antes de modificar cualq
 
 ## Estructura del proyecto
 
-### Estado actual (en migración)
+### Estado actual
 
 ```
 gymy/
@@ -86,16 +86,16 @@ gymy/
             └── descarga.jpeg             ← Icono personalizado: Sentadilla Barra
 ```
 
-### Objetivo de arquitectura escalable
+### Arquitectura modular (migración completada)
 
-El frontend ha migrado de un `index.html` monolítico a una estructura modular con ~23 archivos JS y 9 CSS. **Cada nueva funcionalidad se crea en el archivo correspondiente**, nunca añadiéndola directamente a `index.html`.
+El frontend está totalmente modularizado: `index.html` contiene **solo HTML + `<link>` CSS + `<script src>`**, sin ninguna línea de JS inline (~3200 líneas eliminadas del monolito). Hay 23 archivos JS y 9 CSS cargados en orden explícito.
 
 **Principios:**
 - Un archivo por responsabilidad — una pantalla o dominio por módulo JS
 - El CSS se separa del JS y del HTML
 - `index.html` solo contiene la estructura HTML y las etiquetas `<link>`/`<script>`
 - Los módulos se cargan en orden explícito al final del `<body>` (sin bundler, sin imports ES modules obligatorios)
-- Las funciones que usen módulos del mismo fichero no necesitan `export`; las compartidas entre módulos se exponen en `window` o en un objeto global `App`
+- Las funciones compartidas entre módulos son globales (`window`); las privadas llevan prefijo `_`
 
 ---
 
@@ -250,27 +250,27 @@ El frontend es una SPA sin framework, organizada en módulos JS y CSS independie
 
 | Archivo | Responsabilidad |
 |---|---|
-| `index.html` | Solo HTML estructural + `<link>` CSS + `<script>` en orden al final del `<body>` |
-| `js/api.js` | Cliente HTTP (`apiCall`) y gestión de tokens |
+| `index.html` | Solo HTML estructural + `<link>` CSS + `<script src>` en orden al final del `<body>` |
+| `js/api.js` | `apiCall`, tokens JWT, `_uk()`, `_clearUserCaches()`, `getSesiones()`, cola offline |
 | `js/config.js` | Constantes globales: `GRUPO_COLORS`, `TIPOS`, `EJ_ICONOS`, SVGs de equipo |
 | `js/utils.js` | Helpers puros: `formatFecha`, `tipoIcon`, `ejIconHtml`, `equipoSVGHtml`, `normTipo` |
 | `js/modals.js` | `openModal`, `closeModal`, `showConfirm` |
 | `js/nav.js` | `goTab()`, `_TAB_ORDER`, transiciones slide entre pantallas |
-| `js/app.js` | Init, `showToast`, `haptic`, `autoThemeByHour`, registro SW |
-| `js/auth.js` | Login, register, logout, `_clearUserCaches()` |
-| `js/settings.js` | Estado global compartido: cachés, `_uk()`, `invalidatePlantillas()` |
+| `js/app.js` | `initApp`, `showToast`, `haptic`, `autoThemeByHour`, registro SW |
+| `js/auth.js` | UI de login/register/forgot, `handleLogin`, `handleRegister`, `showAuth` |
+| `js/settings.js` | Temas: `applyTheme`, `setTheme`, `toggleTheme`, `applySettingsUI`, `wkGetPreloadMode` |
+| `js/catalog.js` | `loadCatalogo`, `loadPlantillas`, `invalidatePlantillas`, `wkGetDB`, `wkGetDBAsync` |
+| `js/profile.js` | `saveProfileData`, `loadProfileData`, perfil físico, catálogo en perfil |
 | `js/dashboard.js` | Pantalla dashboard, stats resumen, `renderRecientes()` |
-| `js/workout-state.js` | Estado del workout activo: `wkState`, `wkGetDB`, `wkGetDBAsync` |
+| `js/workout-state.js` | Estado del workout activo, `cargarHistorialLocal`, `wkGetPreload` |
 | `js/workout-selector.js` | Selector de ejercicios del catálogo durante el workout |
-| `js/workout-card.js` | `wkCardHTML`, `wkToggleDone`, `wkAddSet`, dots y steppers |
+| `js/workout-card.js` | `wkCardHTML`, `wkToggleDone`, `wkAddSet`, dots, steppers, gráfica gaussiana |
 | `js/workout.js` | Orquestación: timer con ring SVG, PR detector, guardar sesión |
 | `js/history-card.js` | Lookup ejercicio→grupo, `sessionCard` HTML, `_initSwipeDelete` |
 | `js/history-detail.js` | `openDetalle`, `borrarSesionConfirm`, `repetirWorkout` |
 | `js/history.js` | `loadHistorial`, filtros tipo/grupo/subgrupo, paginación, exportar CSV |
 | `js/stats.js` | Progresión por ejercicio, gráficas Chart.js |
-| `js/catalog.js` | Catálogo BD en perfil, plantillas personales |
-| `js/profile.js` | Datos personales, temas visuales, configuración |
-| `js/coach.js` | Coach Sasha: caché del plan, llamada a IA |
+| `js/coach.js` | Coach Sasha: frases dinámicas, plan semanal IA, análisis científico, caché |
 | `js/import-parse.js` | `GRUPOS_KEYWORDS`, `detectarGrupo`, `parsearCSV`, `_agruparSeries` |
 | `js/import-match.js` | Similitud bigramas Jaccard, `_resolverCombinaciones` (modal) |
 | `js/import.js` | Entry point importación: leer archivo, preview, `runImport` |
@@ -337,6 +337,8 @@ Para añadir un icono:
 
 ### Caché del catálogo y plantillas
 
+Todas las variables de caché viven en `catalog.js`:
+
 ```js
 _catalogoCache     // null | {grupo: [{em, n, m, sg, id, equipo}]}  — de /api/catalogo
                    //   n = nombre, m = subgrupo uppercase, sg = subgrupo original (para filtros BD)
@@ -346,6 +348,7 @@ _plantillasLoading // Promise en vuelo o null
 ```
 
 `wkGetDB()` fusiona: catálogo base → plantillas BD → localStorage (compat).
+`_clearUserCaches()` (api.js) resetea `_catalogoCache`, `_plantillasCache` y `_coachStats` al hacer logout.
 
 ### Pantallas (gestionadas con `.page` / `.page.active`)
 
@@ -398,10 +401,14 @@ Los steppers (kg/reps) usan `Bebas Neue` 22px para máxima legibilidad en el gim
 ```
 manifest.json   — name, short_name, start_url, display:standalone, theme_color, icons
 sw.js           — install: precachea SHELL; activate: limpia cachés antiguas; fetch: cache-first assets, network-first HTML, bypass /api/
-index.html      — <link rel="manifest">, meta tags iOS/Android, registro SW al final del <script>
+index.html      — <link rel="manifest">, meta tags iOS/Android
+app.js          — registra el SW al final del archivo
 ```
 
-Registro del service worker (al final del bloque `<script>` principal):
+Versión de caché actual: **`gymy-v3`** (en `sw.js` línea 1).
+⚠️ **Cada vez que se modifiquen archivos JS/CSS**, hay que subir el número de versión (`gymy-v3` → `gymy-v4`, etc.) para que el SW invalide la caché antigua. Sin esto los usuarios seguirán recibiendo los archivos viejos.
+
+Registro del service worker (al final de `app.js`):
 ```js
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js').catch(()=>{});
@@ -609,12 +616,16 @@ URL activa en ~60 segundos: https://gymy-production.up.railway.app/
 - ❌ No llamar `wkGetDB()` antes de que las cachés estén listas — usar `wkGetDBAsync()`
 - ❌ No borrar `pool` del export de `init.js` — `gym.routes.js` lo usa para DELETE masivos
 - ❌ No enviar `subgrupo: e.grupo_muscular` en `_autoCrearEjercicios` — enviar `subgrupo: null`
+- ❌ No usar claves hardcoded en `localStorage` para datos privados del usuario — siempre `_uk('clave')` (definida en `api.js`). Claves no sensibles compartibles: `gymy_theme`, `gymy_preload`, `gymy_access`, `gymy_refresh`, `gymy_user`
+- ❌ No olvidar bumpar `CACHE` en `sw.js` al desplegar cambios a archivos JS/CSS — si no, los usuarios reciben los archivos viejos aunque el servidor tenga los nuevos
+- ❌ No llamar `showScreen()` — la función de navegación es `goTab(name, btnElement)`
 - ✅ El server escucha en `0.0.0.0` (necesario para Railway)
 - ✅ SSL condicional: interno Railway = false, externo = `{ rejectUnauthorized: false }`
 - ✅ Usar `formatFecha()` para mostrar fechas de la BD al usuario
 - ✅ Llamar `invalidatePlantillas()` después de cualquier POST/DELETE a `/api/plantillas`
 - ✅ Llamar `_initSwipeDelete()` después de renderizar tarjetas de sesión en el historial
 - ✅ Usar upsert (`ON CONFLICT DO UPDATE`) en el seed del catálogo — nunca `DELETE` + `INSERT`
+- ✅ Los datos de perfil del usuario (peso, edad, género) se guardan en `_uk('profile_data')` desde `profile.js`; el campo de peso es `pd.peso` (no `pd.peso_corporal` que es el campo de la BD)
 
 # currentDate
 Today's date is 2026-03-12.

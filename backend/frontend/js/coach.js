@@ -276,7 +276,7 @@ async function coachPlan(forzar){
   // Mostrar plan cacheado si existe y es reciente
   if(!forzar){
     try{
-      const cached=JSON.parse(localStorage.getItem('gymy_coach_plan')||'null');
+      const cached=JSON.parse(localStorage.getItem(_uk('coach_plan'))||'null');
       if(cached&&cached.text&&(Date.now()-cached.ts)<COACH_PLAN_TTL){
         _coachPlanShow(body,cached.text,true);
         return;
@@ -311,7 +311,7 @@ INSTRUCCIONES:
   try{
     const{data}=await apiCall('POST','/ai/import',{prompt});
     if(!data.ok) throw new Error(data.error||'Error de IA');
-    try{localStorage.setItem('gymy_coach_plan',JSON.stringify({text:data.text,ts:Date.now()}));}catch(e){}
+    try{localStorage.setItem(_uk('coach_plan'),JSON.stringify({text:data.text,ts:Date.now()}));}catch(e){}
     _coachPlanShow(body,data.text,false);
   }catch(err){
     body.innerHTML='<div style="text-align:center;padding:20px 16px">'

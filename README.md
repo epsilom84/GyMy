@@ -97,7 +97,7 @@ node server.js
 GyMy es instalable como app nativa en iOS y Android:
 
 - **`manifest.json`**: nombre, colores, icono, modo standalone
-- **`sw.js`**: service worker con cache-first para assets, network-first para HTML, bypass en `/api/`
+- **`sw.js`**: service worker (caché `gymy-v3`) con cache-first para assets, network-first para HTML, bypass en `/api/`. ⚠️ Bumpar versión al desplegar cambios JS/CSS
 - Meta tags para iOS (`apple-mobile-web-app-capable`) y Android (`theme-color`)
 - Icono SVG (`/assets/icon.svg`) — mancuerna sobre fondo oscuro
 
@@ -114,7 +114,7 @@ En Chrome/Safari: *Añadir a pantalla de inicio* o instalar desde el navegador.
 ### 🏠 Dashboard
 - Estadísticas: sesiones totales, racha, horas, sesiones esta semana
 - Gráfica de progreso últimas 8 semanas + lista de sesiones recientes
-- **Coach Sasha**: frases motivacionales basadas en estadísticas reales; pulsación larga genera plan de entrenamiento personalizado vía API de Claude; el plan se **cachea 12h** en `localStorage`
+- **Coach Sasha**: frases motivacionales basadas en estadísticas reales; botones **✨ Plan semanal** (genera plan personalizado vía IA, caché 12h) y **📊 Analizar** (análisis científico completo con puntuación, desequilibrios, plan 4 semanas y KPIs, exportable a Word)
 - Skeleton loaders mientras se cargan los datos; empty state ilustrado si no hay sesiones
 
 ### 🏋️ Workout activo
@@ -192,10 +192,10 @@ Similitud calculada por **bigramas Jaccard** sobre texto normalizado.
 
 ## 🤖 Coach Sasha (IA)
 
-- **Frases dinámicas**: basadas en estadísticas reales del usuario
-- **Plan personalizado**: pulsación larga → plan semanal con API de Claude (Haiku)
-- **Caché 12h** en `localStorage` — botón "Regenerar" para forzar nuevo plan
-- **Estimaciones automáticas**: si el usuario no registró duración o calorías en alguna sesión, Sasha usa valores de referencia científicos por tipo de entrenamiento (ej: Fuerza 60 min/6 kcal·min⁻¹, HIIT 35 min/11 kcal·min⁻¹) para dar análisis siempre completos. Los valores estimados se identifican con `(est)` en el contexto enviado a la IA.
+- **Frases dinámicas**: basadas en estadísticas reales (racha, sesiones, valoración, PR, tendencia)
+- **✨ Plan semanal**: genera un plan de 3-5 días adaptado al historial real del usuario vía API de Claude (Haiku). Caché 12h en `localStorage` — botón "Regenerar" para forzar nuevo plan
+- **📊 Análisis científico**: análisis profundo con puntuación /100, fortalezas, desequilibrios musculares, sobrecarga progresiva, periodización, eficiencia calórica y plan de optimización 4 semanas. Exportable a Word (.doc)
+- **Estimaciones automáticas**: cuando el usuario no registró duración o calorías, Sasha usa valores de referencia científicos por tipo (Fuerza 60 min/6 kcal·min⁻¹, HIIT 35 min/11 kcal·min⁻¹…). Los valores estimados se marcan `(est)` en el contexto enviado a la IA
 - Requiere `ANTHROPIC_API_KEY` en Railway
 
 ---
