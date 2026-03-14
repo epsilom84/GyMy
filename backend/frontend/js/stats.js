@@ -200,7 +200,7 @@ function _setupChartLongPress(canvasId,entries){
       if(confirm('Ver sesión del '+formatFecha(entry.fecha)+'?')){
         const qEl=document.getElementById('hist-search');
         if(qEl){qEl.value=formatFecha(entry.fecha);}
-        showScreen('historial');
+        goTab('historial',document.getElementById('tab-historial'));
         loadHistorial();
       }
     },600);

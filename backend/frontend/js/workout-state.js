@@ -61,7 +61,7 @@ async function cargarHistorialLocal(){
       entries.sort((a,b)=>a.ts-b.ts).forEach(e=>h.push(e));
     });
     if(h.length>500)h.splice(0,h.length-500);
-    localStorage.setItem('gymy_historial_local',JSON.stringify(h));
+    localStorage.setItem(_uk('historial_local'),JSON.stringify(h));
     console.log('[GyMy] Historial local cargado:',h.length,'entradas');
   }catch(e){
     console.warn('[GyMy] No se pudo cargar historial local:',e.message);
@@ -71,7 +71,7 @@ async function cargarHistorialLocal(){
 // ── Preload helpers ──
 function wkGetPreload(nombre){
   const mode=wkGetPreloadMode();
-  const h=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]')
+  const h=JSON.parse(localStorage.getItem(_uk('historial_local'))||'[]')
     .filter(e=>e.nombre===nombre);
   if(!h.length)return null;
   function normalize(entry){
@@ -124,12 +124,12 @@ async function wkGetPreloadFromDB(nombre){
 }
 
 function wkSaveLocalHistorial(exs){
-  const h=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]');
+  const h=JSON.parse(localStorage.getItem(_uk('historial_local'))||'[]');
   const ts=Date.now();
   exs.forEach(ex=>{
     const doneSets=ex.sets.filter(s=>s.done).map(s=>({kg:s.kg,reps:s.reps}));
     if(doneSets.length>0) h.push({nombre:ex.n,sets:doneSets,ts});
   });
   if(h.length>500)h.splice(0,h.length-500);
-  localStorage.setItem('gymy_historial_local',JSON.stringify(h));
+  localStorage.setItem(_uk('historial_local'),JSON.stringify(h));
 }

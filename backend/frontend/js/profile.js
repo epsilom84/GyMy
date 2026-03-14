@@ -10,12 +10,12 @@ function saveProfileData(){
     const el=document.getElementById('p-'+f);
     if(el)data[f]=el.value;
   });
-  localStorage.setItem('gymy_profile_data',JSON.stringify(data));
+  localStorage.setItem(_uk('profile_data'),JSON.stringify(data));
   window._wkUserPerfil=Object.assign(window._wkUserPerfil||{},data);
 }
 
 function loadProfileData(){
-  const data=JSON.parse(localStorage.getItem('gymy_profile_data')||'{}');
+  const data=JSON.parse(localStorage.getItem(_uk('profile_data'))||'{}');
   const fields=['edad','genero','altura','peso','actividad','objetivo'];
   fields.forEach(f=>{
     const el=document.getElementById('p-'+f);
@@ -24,7 +24,7 @@ function loadProfileData(){
 }
 
 async function guardarPerfilFisicoEnBD(){
-  const pd=JSON.parse(localStorage.getItem('gymy_profile_data')||'{}');
+  const pd=JSON.parse(localStorage.getItem(_uk('profile_data'))||'{}');
   const genMap={'hombre':'M','mujer':'F','otro':'O'};
   const body={
     edad:parseInt(pd.edad)||null,
