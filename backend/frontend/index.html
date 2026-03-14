@@ -1955,7 +1955,7 @@ function _renderMusculosCharts(){
       responsive:true,maintainAspectRatio:false,cutout:'60%',
       animation:{duration:600,easing:'easeInOutQuart'},
       plugins:{
-        legend:{display:true,position:'bottom',labels:{color:legendC,font:{size:10},boxWidth:10,padding:6}},
+        legend:{display:false},
         tooltip:{backgroundColor:tooltipBg,borderColor:tooltipBorder,borderWidth:1,titleColor:tooltipTitle,bodyColor:tooltipBody,padding:10,cornerRadius:10,
           callbacks:{label:ctx=>{const pct=totalSeries>0?Math.round(ctx.parsed/totalSeries*100):0;return ' '+ctx.parsed+' series ('+pct+'%)';}}}
       }
@@ -3023,8 +3023,6 @@ function bodyHeatmapSVGHtml(seriesMap){
   <rect x="91" y="96" width="10" height="36" fill="${c('bhr')}" rx="4.5">${t('bhr')}</rect>
   <rect x="80" y="134" width="8.5" height="26" fill="${c('bcl')}" rx="4">${t('bcl')}</rect>
   <rect x="91" y="134" width="8.5" height="26" fill="${c('bcr')}" rx="4">${t('bcr')}</rect>
-  <text x="30" y="175" text-anchor="middle" fill="rgba(128,128,128,.38)" font-size="5.5" font-family="sans-serif">FRENTE</text>
-  <text x="90" y="175" text-anchor="middle" fill="rgba(128,128,128,.38)" font-size="5.5" font-family="sans-serif">ESPALDA</text>
 </svg>`;
 }
 
