@@ -1641,63 +1641,6 @@ async function openDetalle(id){
   openModal('modal-detalle');
 }
 
-function repetirWorkout(id){
-  closeModal('modal-detalle');
-  showConfirm(
-    '¿Repetir este workout?',
-    'Se abrirá el workout precargado con los ejercicios y pesos de esta sesión.',
-    '🏋️ Cargar workout',
-    async () => {
-      const {data} = await getSesion(id);
-      if(!data.ok){ showToast('Error al cargar sesión','error'); return; }
-      const s = data.sesion;
-      // Construir lookup nombre→{em,equipo,m} desde catálogo
-      const catFlat={};
-      if(_catalogoCache){
-        for(const [grupo,ejs] of Object.entries(_catalogoCache)){
-          for(const ej of ejs){
-            if(ej.n) catFlat[ej.n.toLowerCase().trim()]={em:ej.em,equipo:ej.equipo||null,m:grupo};
-          }
-        }
-      }
-      // Agrupar ejercicios por nombre preservando sets exactos
-      const ejMap={}, ejOrder=[];
-      (s.ejercicios||[]).forEach(e=>{
-        const key=e.nombre.toLowerCase().trim();
-        if(!ejMap[key]){
-          const cat=catFlat[key]||{};
-          ejMap[key]={em:cat.em||'💪',equipo:cat.equipo||null,n:e.nombre,m:cat.m||e.nombre.toUpperCase(),sets:[]};
-          ejOrder.push(key);
-        }
-        // Preferir sets_data (datos por serie exactos)
-        let sets=null;
-        if(e.sets_data){try{sets=JSON.parse(e.sets_data);}catch(x){}}
-        if(sets?.length){
-          // Compatibilidad: nativo guarda {kg,reps}, CSV antiguo guardaba {peso_kg,reps}
-          sets.forEach(s=>ejMap[key].sets.push({kg:s.kg!=null?s.kg:(s.peso_kg!=null?s.peso_kg:0),reps:s.reps||0}));
-        }else{
-          // Fallback: N series iguales (formato antiguo / CSV import)
-          const n=e.series||1;
-          for(let i=0;i<n;i++) ejMap[key].sets.push({kg:e.peso_kg||60,reps:e.reps||10});
-        }
-      });
-      const preload={tipo:s.tipo,fromHistory:true,ejercicios:ejOrder.map(k=>ejMap[k])};
-      sessionStorage.setItem('gymy_preload_workout',JSON.stringify(preload));
-      const wtab=document.getElementById('tab-workout');
-      if(wtab)wtab.style.display='flex';
-      goTab('workout',wtab);
-    },
-    'primary'
-  );
-}
-function borrarSesionConfirm(id){
-  closeModal('modal-detalle');
-  showConfirm('¿Eliminar sesión?','Esta acción no se puede deshacer.','Eliminar',async()=>{
-    const{data}=await eliminarSesion(id);
-    if(data.ok){showToast('Sesión eliminada','info');loadDashboard();loadHistorial();}
-    else showToast(data.error,'error');
-  });
-}
 
 // ══════════════════════════════════════════════
 // STATS
