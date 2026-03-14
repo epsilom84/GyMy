@@ -38,24 +38,38 @@ async function openDetalle(id){
       else{ejIdx[k]._rows.push(e);ejIdx[k].series=(ejIdx[k].series||0)+(e.series||1);ejIdx[k].reps=Math.max(ejIdx[k].reps||0,e.reps||0);ejIdx[k].peso_kg=Math.max(ejIdx[k].peso_kg||0,e.peso_kg||0);}
     });
     const ejList=ejOrd.map(k=>ejIdx[k]);
+    // Pre-calcular totales de la sesión para distribuir duración y calorías por ejercicio
+    const _totalSeriesSesion=ejList.reduce((a,e)=>a+(e.series||1),0);
     html+='<div class="card-title" style="margin-bottom:8px">Ejercicios ('+ejList.length+')</div>';
     html+=ejList.map(e=>{
+      // Series: 1) sets_data JSON (workout nativo), 2) filas legacy (una por serie), 3) agregados BD (importados)
       let sets=null;
       const firstWithData=e._rows.find(r=>r.sets_data);
       if(firstWithData?.sets_data){try{sets=JSON.parse(firstWithData.sets_data);}catch(x){}}
       if(!sets&&e._rows.length>1){sets=e._rows.map(r=>({reps:r.reps??0,kg:r.peso_kg??0}));}
+      // Importados: series/reps/peso_kg guardados como agregado → expandir N filas iguales
       if(!sets&&(e.series>0||e.reps>0||e.peso_kg>0)){const n=e.series||1;sets=Array.from({length:n},()=>({reps:e.reps??0,kg:e.peso_kg??0}));}
       const hasSets=sets?.length>0;
 
+      // Calcular resumen desde sets_data cuando está disponible (más preciso que el MAX del DB)
       const nSeries=hasSets?sets.length:(e.series||0);
       const maxKg=hasSets?Math.max(...sets.map(s=>s.kg??s.peso_kg??0)):(e.peso_kg??0);
       const maxReps=hasSets?Math.max(...sets.map(s=>s.reps??0)):(e.reps??0);
 
+      // Formato resumen: "4 × 10 reps × 80kg" (gym notation)
       const partes=[];
       if(nSeries>0)partes.push(nSeries+(nSeries===1?' serie':' series'));
       if(maxReps>0)partes.push(maxReps+' reps');
       if(maxKg>0)partes.push(maxKg+'kg');
       const resumen=partes.length?partes.join(' · '):'Sin datos';
+
+      // Duración y calorías estimadas para este ejercicio
+      // Duración: 3 min/serie (ejecución + descanso) + 1 min transición — misma fórmula que el importador
+      const _ejDurMin=Math.max(1,Math.round(nSeries*3+1));
+      // Calorías: proporcional a las series de este ejercicio respecto al total de la sesión
+      const _ejCal=(_totalSeriesSesion>0&&s.calorias)
+        ?Math.round((nSeries/_totalSeriesSesion)*s.calorias):0;
+      const _ejMetaExtra=[_ejDurMin?'⏱ ~'+_ejDurMin+' min':null,_ejCal?'🔥 ~'+_ejCal+' kcal':null].filter(Boolean).join(' · ');
 
       const setsHtml=hasSets?sets.map((st,i)=>{
         const kg=st.kg??st.peso_kg??0;
@@ -72,7 +86,9 @@ async function openDetalle(id){
         +'<div class="session-icon" style="background:var(--bg2);width:38px;height:38px;flex-shrink:0;">'+ejIconHtml(e.nombre,e.equipo,26)+'</div>'
         +'<div class="session-info"><div class="session-tipo">'+e.nombre+'</div>'
         +(e.subgrupo?'<div style="font-size:11px;color:var(--text2);line-height:1.3;margin-bottom:1px">'+e.subgrupo+'</div>':'')
-        +'<div class="session-meta">'+resumen+'</div></div>'
+        +'<div class="session-meta">'+resumen+'</div>'
+        +(_ejMetaExtra?'<div style="font-size:11px;color:var(--text2);margin-top:1px">'+_ejMetaExtra+'</div>':'')
+        +'</div>'
         +(hasSets?'<svg class="ej-expand-arrow" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>':'')
         +'</div>'
         +(hasSets?'<div class="ej-sets-collapse">'+setsHtml+'</div>':'')
@@ -121,7 +137,7 @@ async function repetirWorkout(id){
       sets.forEach(st=>ejMap[key].sets.push({kg:st.kg!=null?st.kg:(st.peso_kg!=null?st.peso_kg:0),reps:st.reps||0}));
     }else{
       const n=e.series||1;
-      for(let i=0;i<n;i++)ejMap[key].sets.push({kg:e.peso_kg||60,reps:e.reps||10});
+      for(let i=0;i<n;i++)ejMap[key].sets.push({kg:e.peso_kg||0,reps:e.reps||0});
     }
   });
   const preload={tipo:s.tipo,fromHistory:true,ejercicios:ejOrder.map(k=>ejMap[k])};
