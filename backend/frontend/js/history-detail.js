@@ -77,45 +77,37 @@ function borrarSesionConfirm(id){
   });
 }
 
-function repetirWorkout(id){
+async function repetirWorkout(id){
   closeModal('modal-detalle');
-  showConfirm(
-    '¿Repetir este workout?',
-    'Se abrirá el workout precargado con los ejercicios y pesos de esta sesión.',
-    '🏋️ Cargar workout',
-    async()=>{
-      const{data}=await getSesion(id);
-      if(!data.ok){showToast('Error al cargar sesión','error');return;}
-      const s=data.sesion;
-      const catFlat={};
-      if(_catalogoCache){
-        for(const[grupo,ejs]of Object.entries(_catalogoCache)){
-          for(const ej of ejs){if(ej.n)catFlat[ej.n.toLowerCase().trim()]={em:ej.em,equipo:ej.equipo||null,m:grupo};}
-        }
-      }
-      const ejMap={},ejOrder=[];
-      (s.ejercicios||[]).forEach(e=>{
-        const key=e.nombre.toLowerCase().trim();
-        if(!ejMap[key]){
-          const cat=catFlat[key]||{};
-          ejMap[key]={em:cat.em||'💪',equipo:cat.equipo||null,n:e.nombre,m:cat.m||e.nombre.toUpperCase(),sets:[]};
-          ejOrder.push(key);
-        }
-        let sets=null;
-        if(e.sets_data){try{sets=JSON.parse(e.sets_data);}catch(x){}}
-        if(sets?.length){
-          sets.forEach(s=>ejMap[key].sets.push({kg:s.kg!=null?s.kg:(s.peso_kg!=null?s.peso_kg:0),reps:s.reps||0}));
-        }else{
-          const n=e.series||1;
-          for(let i=0;i<n;i++)ejMap[key].sets.push({kg:e.peso_kg||60,reps:e.reps||10});
-        }
-      });
-      const preload={tipo:s.tipo,fromHistory:true,ejercicios:ejOrder.map(k=>ejMap[k])};
-      sessionStorage.setItem('gymy_preload_workout',JSON.stringify(preload));
-      const wtab=document.getElementById('tab-workout');
-      if(wtab)wtab.style.display='flex';
-      goTab('workout',wtab);
-    },
-    'primary'
-  );
+  const{data}=await getSesion(id);
+  if(!data.ok){showToast('Error al cargar sesión','error');return;}
+  const s=data.sesion;
+  const catFlat={};
+  if(_catalogoCache){
+    for(const[grupo,ejs]of Object.entries(_catalogoCache)){
+      for(const ej of ejs){if(ej.n)catFlat[ej.n.toLowerCase().trim()]={em:ej.em,equipo:ej.equipo||null,m:grupo};}
+    }
+  }
+  const ejMap={},ejOrder=[];
+  (s.ejercicios||[]).forEach(e=>{
+    const key=e.nombre.toLowerCase().trim();
+    if(!ejMap[key]){
+      const cat=catFlat[key]||{};
+      ejMap[key]={em:cat.em||'💪',equipo:cat.equipo||null,n:e.nombre,m:cat.m||e.nombre.toUpperCase(),sets:[]};
+      ejOrder.push(key);
+    }
+    let sets=null;
+    if(e.sets_data){try{sets=JSON.parse(e.sets_data);}catch(x){}}
+    if(sets?.length){
+      sets.forEach(st=>ejMap[key].sets.push({kg:st.kg!=null?st.kg:(st.peso_kg!=null?st.peso_kg:0),reps:st.reps||0}));
+    }else{
+      const n=e.series||1;
+      for(let i=0;i<n;i++)ejMap[key].sets.push({kg:e.peso_kg||60,reps:e.reps||10});
+    }
+  });
+  const preload={tipo:s.tipo,fromHistory:true,ejercicios:ejOrder.map(k=>ejMap[k])};
+  sessionStorage.setItem('gymy_preload_workout',JSON.stringify(preload));
+  const wtab=document.getElementById('tab-workout');
+  if(wtab)wtab.style.display='flex';
+  goTab('workout',wtab);
 }
