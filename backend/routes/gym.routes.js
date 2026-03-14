@@ -316,6 +316,67 @@ router.get('/sesiones', [
   } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
+// ── GET /api/sesiones/fullstats — datos completos para análisis IA ──
+router.get('/sesiones/fullstats', async (req, res) => {
+  try {
+    const uid = req.user.id;
+    const [mensual, porTipo, porDia, topEjercicios, porGrupo, primeraFecha] = await Promise.all([
+      // Evolución mensual completa (últimos 24 meses)
+      queryAll(`
+        SELECT TO_CHAR(fecha,'YYYY-MM') as mes,
+               COUNT(*) as sesiones,
+               COALESCE(SUM(duracion_min),0) as minutos,
+               COALESCE(SUM(calorias),0) as calorias,
+               ROUND(COALESCE(AVG(valoracion) FILTER (WHERE valoracion > 0), 0)::numeric, 1) as val_media
+        FROM sesiones WHERE user_id=$1
+        GROUP BY mes ORDER BY mes DESC LIMIT 24`, [uid]),
+      // Distribución por tipo de entrenamiento con duración y calorías
+      queryAll(`
+        SELECT tipo,
+               COUNT(*) as n,
+               ROUND(COUNT(*)*100.0/SUM(COUNT(*)) OVER(),1) as pct,
+               ROUND(AVG(duracion_min) FILTER (WHERE duracion_min > 0)::numeric,0) as avg_min,
+               ROUND(AVG(calorias) FILTER (WHERE calorias > 0)::numeric,0) as avg_kcal,
+               COALESCE(SUM(calorias),0) as total_kcal,
+               COALESCE(SUM(duracion_min),0) as total_min
+        FROM sesiones WHERE user_id=$1 AND tipo IS NOT NULL
+        GROUP BY tipo ORDER BY n DESC`, [uid]),
+      // Distribución por día de la semana
+      queryAll(`
+        SELECT TO_CHAR(fecha,'ID') as dow,
+               TO_CHAR(fecha,'Day') as nombre_dia,
+               COUNT(*) as n
+        FROM sesiones WHERE user_id=$1
+        GROUP BY dow, nombre_dia ORDER BY dow`, [uid]),
+      // Top 15 ejercicios por frecuencia con estadísticas de carga
+      queryAll(`
+        SELECT e.nombre,
+               COUNT(*) as veces,
+               MAX(e.peso_kg) as max_peso,
+               ROUND(AVG(e.peso_kg)::numeric,1) as avg_peso,
+               SUM(COALESCE(e.series,1)) as total_series
+        FROM ejercicios e
+        JOIN sesiones s ON s.id=e.sesion_id
+        WHERE s.user_id=$1 AND e.nombre IS NOT NULL
+        GROUP BY e.nombre ORDER BY veces DESC LIMIT 15`, [uid]),
+      // Distribución por grupo muscular (vía catálogo)
+      queryAll(`
+        SELECT ec.grupo_muscular,
+               COUNT(*) as total_series,
+               COUNT(DISTINCT s.id) as sesiones_presentes
+        FROM ejercicios e
+        JOIN sesiones s ON s.id=e.sesion_id
+        JOIN ejercicios_catalogo ec ON LOWER(ec.nombre)=LOWER(e.nombre)
+        WHERE s.user_id=$1
+        GROUP BY ec.grupo_muscular ORDER BY total_series DESC`, [uid]),
+      // Fecha primera sesión
+      queryOne(`SELECT MIN(fecha)::text as primera FROM sesiones WHERE user_id=$1`, [uid]),
+    ]);
+    res.json({ ok: true, mensual, porTipo, porDia, topEjercicios, porGrupo,
+      primeraFecha: primeraFecha?.primera || null });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
 // ── GET /api/sesiones/stats ────────────────────────────────
 router.get('/sesiones/stats', async (req, res) => {
   try {
