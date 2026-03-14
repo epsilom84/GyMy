@@ -15,13 +15,12 @@
 
 /* ── MÚSCULO VIEW ── */
 .stats-mus-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0;align-items:start;}
-.stats-mus-heatmap-card{margin-bottom:0;padding:10px;text-align:center;}
-.stats-mus-donut-card{margin-bottom:0;padding:10px;}
-.stats-mus-donut-wrap{position:relative;height:160px;}
-/* En móvil (<420px) apila vertical para que las tarjetas respiren */
-@media(max-width:420px){
+.stats-mus-heatmap-card{margin-bottom:0;padding:10px;text-align:center;min-width:0;overflow:hidden;}
+.stats-mus-donut-card{margin-bottom:0;padding:10px;min-width:0;overflow:hidden;}
+.stats-mus-donut-wrap{position:relative;width:100%;height:160px;}
+@media(max-width:480px){
   .stats-mus-grid{grid-template-columns:1fr;}
-  .stats-mus-donut-wrap{height:200px;}
+  .stats-mus-donut-wrap{height:220px;}
 }
 
 /* ── STAT HIGHLIGHTS ── */
