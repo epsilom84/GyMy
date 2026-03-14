@@ -10,6 +10,10 @@ function getRefreshToken(){return localStorage.getItem('gymy_refresh');}
 function setTokens(a,r){localStorage.setItem('gymy_access',a);if(r)localStorage.setItem('gymy_refresh',r);}
 function isLoggedIn(){return!!getAccessToken();}
 
+// ── USER / PRIVATE KEY ──
+function getUser(){const u=localStorage.getItem('gymy_user');return u?JSON.parse(u):null;}
+function _uk(k){const u=getUser();return u?'gymy_'+u.id+'_'+k:'gymy_anon_'+k;}
+
 // ── FETCH CON AUTO-REFRESH ──
 async function apiCall(m,ep,body=null,retry=false){
   const h={'Content-Type':'application/json'};const t=getAccessToken();if(t)h['Authorization']='Bearer '+t;
@@ -34,6 +38,18 @@ async function getSesion(id){return apiCall('GET','/sesiones/'+id);}
 async function crearSesion(d){return apiCall('POST','/sesiones',d);}
 async function actualizarSesion(id,d){return apiCall('PUT','/sesiones/'+id,d);}
 async function eliminarSesion(id){return apiCall('DELETE','/sesiones/'+id);}
+async function eliminarTodoHistorial(){
+  const{data}=await apiCall('DELETE','/sesiones');
+  if(data.ok){
+    localStorage.removeItem(_uk('historial_local'));
+    statsCache=null;currentPage=1;
+    loadDashboard();loadHistorial();
+    showToast('Historial eliminado','info');
+  } else showToast(data.error||'Error al eliminar','error');
+}
+function confirmarEliminarHistorial(){
+  showConfirm('¿Eliminar todo el historial?','Se borrarán todas tus sesiones y ejercicios. Esta acción no se puede deshacer.','Eliminar todo',eliminarTodoHistorial);
+}
 async function forgotPassword(e){return apiCall('POST','/auth/forgot-password',{email:e});}
 async function resetPassword(t,p){return apiCall('POST','/auth/reset-password',{token:t,password:p});}
 async function register(u,e,p){
@@ -46,9 +62,25 @@ async function login(e,p){
   if(r.data.ok){setTokens(r.data.accessToken,r.data.refreshToken);localStorage.setItem('gymy_user',JSON.stringify(r.data.usuario));}
   return r;
 }
+function _clearUserCaches(){
+  // Cachés en memoria — se resetean para que el siguiente usuario no herede datos
+  _catalogoCache=null;_catalogoLoading=null;
+  _plantillasCache=null;_plantillasLoading=null;
+  statsCache=null;
+  if(typeof _coachStats!=='undefined')_coachStats=null;
+  if(typeof _ejGrupoLookup!=='undefined')_ejGrupoLookup=null;
+  // Claves localStorage privadas del usuario (prefijadas con userId)
+  const u=getUser();
+  if(u){
+    ['offline_queue','historial_local','profile_data','coach_plan','coach_analisis','plantillas','workout_live','rest_secs'].forEach(k=>{
+      localStorage.removeItem('gymy_'+u.id+'_'+k);
+    });
+  }
+}
 function logout(){
   apiCall('POST','/auth/logout').catch(()=>{});
-  ['gymy_access','gymy_refresh','gymy_user','gymy_offline_queue'].forEach(k=>localStorage.removeItem(k));
+  _clearUserCaches();
+  ['gymy_access','gymy_refresh','gymy_user'].forEach(k=>localStorage.removeItem(k));
   window.location.href='/';
 }
 
@@ -61,12 +93,12 @@ async function exportarCSV(){
 }
 
 // ── OFFLINE QUEUE ──
-function guardarOffline(s){const q=JSON.parse(localStorage.getItem('gymy_offline_queue')||'[]');s._offline_id=Date.now();q.push(s);localStorage.setItem('gymy_offline_queue',JSON.stringify(q));}
+function guardarOffline(s){const q=JSON.parse(localStorage.getItem(_uk('offline_queue'))||'[]');s._offline_id=Date.now();q.push(s);localStorage.setItem(_uk('offline_queue'),JSON.stringify(q));}
 async function sincronizarOffline(){
-  const q=JSON.parse(localStorage.getItem('gymy_offline_queue')||'[]');if(!q.length)return{sincronizadas:0};
+  const q=JSON.parse(localStorage.getItem(_uk('offline_queue'))||'[]');if(!q.length)return{sincronizadas:0};
   const r=await apiCall('POST','/sesiones/sync',{sesiones:q});
-  if(r.data.ok){localStorage.removeItem('gymy_offline_queue');return{sincronizadas:q.length};}
+  if(r.data.ok){localStorage.removeItem(_uk('offline_queue'));return{sincronizadas:q.length};}
   return{sincronizadas:0};
 }
-function getPendientesOffline(){return JSON.parse(localStorage.getItem('gymy_offline_queue')||'[]');}
+function getPendientesOffline(){return JSON.parse(localStorage.getItem(_uk('offline_queue'))||'[]');}
 
