@@ -330,10 +330,15 @@ router.get('/sesiones/fullstats', async (req, res) => {
                ROUND(COALESCE(AVG(valoracion) FILTER (WHERE valoracion > 0), 0)::numeric, 1) as val_media
         FROM sesiones WHERE user_id=$1
         GROUP BY mes ORDER BY mes DESC LIMIT 24`, [uid]),
-      // Distribución por tipo de entrenamiento (histórico completo)
+      // Distribución por tipo de entrenamiento con duración y calorías
       queryAll(`
-        SELECT tipo, COUNT(*) as n,
-               ROUND(COUNT(*)*100.0/SUM(COUNT(*)) OVER(),1) as pct
+        SELECT tipo,
+               COUNT(*) as n,
+               ROUND(COUNT(*)*100.0/SUM(COUNT(*)) OVER(),1) as pct,
+               ROUND(AVG(duracion_min) FILTER (WHERE duracion_min > 0)::numeric,0) as avg_min,
+               ROUND(AVG(calorias) FILTER (WHERE calorias > 0)::numeric,0) as avg_kcal,
+               COALESCE(SUM(calorias),0) as total_kcal,
+               COALESCE(SUM(duracion_min),0) as total_min
         FROM sesiones WHERE user_id=$1 AND tipo IS NOT NULL
         GROUP BY tipo ORDER BY n DESC`, [uid]),
       // Distribución por día de la semana

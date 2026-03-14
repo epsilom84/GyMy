@@ -1222,8 +1222,27 @@ async function coachAnalisis(forzar){
   // Distribución grupos musculares
   const grupoResumen=fs.porGrupo.slice(0,8).map(g=>`${g.grupo_muscular}(${g.total_series}s,${g.sesiones_presentes}ses)`).join(' · ')||'sin datos';
 
-  // Tipos de entrenamiento completo
-  const tiposCompleto=fs.porTipo.map(t=>`${t.tipo}×${t.n}(${t.pct}%)`).join(' · ')||'—';
+  // Tipos de entrenamiento con duración y calorías
+  const tiposCompleto=fs.porTipo.map(t=>{
+    const dur=t.avg_min>0?` ${t.avg_min}min/ses`:'';
+    const kcal=t.avg_kcal>0?` ${t.avg_kcal}kcal/ses`:'';
+    return `${t.tipo}: ${t.n}ses(${t.pct}%)${dur}${kcal}`;
+  }).join('\n')||'—';
+
+  // Calorías y tiempo por tipo: eficiencia calórica
+  const eficienciaKcal=fs.porTipo.filter(t=>t.avg_min>0&&t.avg_kcal>0)
+    .map(t=>`${t.tipo}: ${(t.avg_kcal/t.avg_min).toFixed(1)} kcal/min`).join(' · ')||'—';
+
+  // Calorías globales y tiempo: totales por mes con tendencia
+  const mesesConCal=meses.filter(m=>parseInt(m.calorias)>0);
+  const avgKcalMes=mesesConCal.length
+    ?Math.round(mesesConCal.reduce((a,m)=>a+parseInt(m.calorias),0)/mesesConCal.length):0;
+  const mesesConMin=meses.filter(m=>parseInt(m.minutos)>0);
+  const avgMinMes=mesesConMin.length
+    ?Math.round(mesesConMin.reduce((a,m)=>a+parseInt(m.minutos),0)/mesesConMin.length):0;
+
+  // Ratio tiempo/sesión global
+  const avgMinSesion=s.total>0?Math.round((s.totalMinutos||0)/s.total):0;
 
   // Top ejercicios frecuencia
   const topFreq=fs.topEjercicios.slice(0,12).map(e=>{
@@ -1250,13 +1269,23 @@ HISTORIAL COMPLETO: desde ${fs.primeraFecha||'desconocido'} hasta hoy (${mesesTo
 · Racha actual: ${s.racha} días consecutivos
 · Consistencia mensual histórica: ${consistencia}% (${mesesActivos.length}/${mesesTotalesHistorial} meses activos)
 · Media sesiones/mes: ${avgMensual}
-· Duración media sesión estimada: ${Math.round(avgDurMes)||'—'} min
 · Tendencia actual: ${tendencia}
 · Mejor mes: ${mejorMes.mes||'—'} (${mejorMes.sesiones||0} sesiones)
 · Peor mes: ${peorMes.mes||'—'} (${peorMes.sesiones||0} sesiones)
 · Día favorito de entrenamiento: ${diaTop?`${DIAS_ES[parseInt(diaTop.dow)%7]}(${diaTop.n}x)`:'—'}
 
-── TIPOS DE ENTRENAMIENTO (histórico completo) ──
+── TIEMPO DE ENTRENAMIENTO ──
+· Horas totales: ${horas}h ${mins}min
+· Duración media por sesión: ${avgMinSesion||'—'} min/sesión
+· Minutos medios por mes (con datos): ${avgMinMes||'—'} min/mes
+· Horas medias mensuales: ${avgMinMes?Math.round(avgMinMes/60*10)/10:'—'} h/mes
+
+── CALORÍAS ──
+· Calorías totales quemadas: ${s.totalCalorias||0} kcal
+· Calorías medias por mes (con datos): ${avgKcalMes||'—'} kcal/mes
+· Eficiencia calórica por tipo: ${eficienciaKcal}
+
+── TIPOS DE ENTRENAMIENTO con duración y calorías (histórico) ──
 ${tiposCompleto}
 
 ── DISTRIBUCIÓN MUSCULAR HISTÓRICA (series totales registradas) ──
@@ -1297,8 +1326,12 @@ Una frase diagnóstico de Sasha sobre el nivel global basada en el historial com
 [/SOBRECARGA_PROGRESIVA]
 
 [RECUPERACION]
-Analiza la periodización real vista en los datos mensuales: ¿hay deloads naturales? ¿sobreentrenamiento crónico? ¿subentreno? ¿cómo correlacionan las valoraciones con la frecuencia?
+Analiza la periodización real en los datos mensuales: ¿hay deloads naturales? ¿sobreentrenamiento crónico? ¿subentreno? Correlaciona valoraciones con frecuencia. Analiza también el tiempo de sesión: ¿es adecuado para los objetivos? ¿tendencia a sesiones más largas o más cortas?
 [/RECUPERACION]
+
+[CALORIAS_TIEMPO]
+Analiza la eficiencia calórica y el tiempo de entrenamiento: ¿son las calorías quemadas coherentes con el tipo y duración de las sesiones? ¿la eficiencia kcal/min es buena para el tipo de entreno? ¿hay margen para optimizar el gasto calórico? Incluye comparativa entre tipos de entrenamiento si hay datos.
+[/CALORIAS_TIEMPO]
 
 [PLAN_4_SEMANAS]
 Plan de optimización basado en los déficits históricos reales:
@@ -1334,6 +1367,7 @@ function _coachAnalisisShow(body,text,fromCache){
   const deseq=getSec('DESEQUILIBRIOS');
   const sobrecarga=getSec('SOBRECARGA_PROGRESIVA');
   const recuperacion=getSec('RECUPERACION');
+  const calTiempo=getSec('CALORIAS_TIEMPO');
   const plan=getSec('PLAN_4_SEMANAS');
   const metricas=getSec('METRICAS_CLAVE');
 
@@ -1372,6 +1406,7 @@ function _coachAnalisisShow(body,text,fromCache){
   html+=sec('⚠️','Desequilibrios detectados',deseq,'#ef5350');
   html+=sec('📈','Sobrecarga progresiva',sobrecarga,'#42a5f5');
   html+=sec('🔄','Recuperación y periodización',recuperacion,'#ab47bc');
+  html+=sec('🔥','Calorías y tiempo de entrenamiento',calTiempo,'#ff7043');
   html+=sec('📋','Plan de optimización 4 semanas',plan,'#ffa726');
   html+=sec('🎯','Métricas clave a trackear',metricas,'#26c6da');
 
@@ -1445,6 +1480,7 @@ ${secHtml('💪','Fortalezas','FORTALEZAS','#2E7D32')}
 ${secHtml('⚠️','Desequilibrios Detectados','DESEQUILIBRIOS','#C62828')}
 ${secHtml('📈','Sobrecarga Progresiva','SOBRECARGA_PROGRESIVA','#1565C0')}
 ${secHtml('🔄','Recuperación y Periodización','RECUPERACION','#6A1B9A')}
+${secHtml('🔥','Calorías y Tiempo de Entrenamiento','CALORIAS_TIEMPO','#BF360C')}
 ${secHtml('📋','Plan de Optimización — 4 Semanas','PLAN_4_SEMANAS','#E65100')}
 ${secHtml('🎯','Métricas Clave a Trackear','METRICAS_CLAVE','#00695C')}
 
