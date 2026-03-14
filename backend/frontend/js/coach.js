@@ -137,6 +137,7 @@ function _coachLpCancel(){
 
 const COACH_PLAN_TTL=12*60*60*1000; // 12h
 async function coachPlan(forzar){
+  document.getElementById('coach-plan-title').textContent='🏋️‍♀️ Plan de Sasha';
   openModal('modal-coach-plan');
   const body=document.getElementById('coach-plan-body');
 
@@ -203,7 +204,77 @@ INSTRUCCIONES:
   }
 }
 
-function _coachPlanShow(body,text,fromCache){
+async function coachAnalisis(forzar){
+  document.getElementById('coach-plan-title').textContent='📊 Análisis de Sasha';
+  openModal('modal-coach-plan');
+  const body=document.getElementById('coach-plan-body');
+
+  if(!forzar){
+    try{
+      const cached=JSON.parse(localStorage.getItem(_uk('coach_analisis'))||'null');
+      if(cached&&cached.text&&(Date.now()-cached.ts)<COACH_PLAN_TTL){
+        _coachPlanShow(body,cached.text,true,'coachAnalisis');
+        return;
+      }
+    }catch(e){}
+  }
+
+  body.innerHTML='<div style="text-align:center;padding:36px 16px;color:var(--text2)">'
+    +'<div style="font-size:36px;margin-bottom:12px">🔍</div>'
+    +'<div style="font-size:13px">Sasha está analizando tu historial...</div></div>';
+
+  const s=_coachStats;
+  const u=JSON.parse(localStorage.getItem('gymy_user')||'{}');
+  const nombre=u.username||'el usuario';
+  const top=(s?.mejorEjercicio||[]).slice(0,8);
+  const horas=Math.floor((s?.totalMinutos||0)/60);
+  const prog=s?.progreso||[];
+  const ultTipos=(s?.recientes||[]).slice(0,8).map(r=>r.tipo).filter(Boolean);
+
+  const ctx=s
+    ?`- Nombre: ${nombre}
+- Sesiones totales: ${s.total}
+- Horas de entreno acumuladas: ${horas}h
+- Racha actual: ${s.racha} días
+- Sesiones esta semana: ${s.ultimasSemana}
+- Calorías quemadas en total: ${s.totalCalorias||0} kcal
+- Valoración media: ${s.mediaValoracion||'—'}/5
+- Ejercicios más frecuentes con marca de peso: ${top.length?top.map(e=>`${e.nombre} (${e.max_peso}kg, ${e.veces} veces)`).join(' | '):'sin datos'}
+- Tipos de sesión recientes: ${ultTipos.length?[...new Set(ultTipos)].join(', '):'sin datos'}
+- Progresión semanal (últimas semanas): ${prog.slice(-6).map(p=>`${p.semana}: ${p.sesiones} sesiones`).join(', ')||'sin datos'}`
+    :'Sin historial disponible aún.';
+
+  const prompt=`Eres Coach Sasha, entrenadora personal con tono directo, irónico y genuinamente motivador.
+Analiza el historial completo del usuario y ofrece un análisis honesto y útil de su rendimiento.
+
+DATOS DEL USUARIO:
+${ctx}
+
+INSTRUCCIONES:
+- Analiza patrones: frecuencia, consistencia, progresión de cargas
+- Identifica grupos musculares o tipos de entreno más trabajados y los más descuidados
+- Señala puntos fuertes reales basados en los datos
+- Identifica debilidades o desequilibrios concretos
+- Da 3 recomendaciones específicas y accionables para mejorar el programa
+- Usa el tono de Sasha: directo, irónico pero constructivo, nada genérico
+- Usa texto plano con saltos de línea y emojis, sin markdown pesado (sin **, sin #)
+- Sé concisa pero completa: análisis útil que quepa en una pantalla de móvil`;
+
+  try{
+    const{data}=await apiCall('POST','/ai/import',{prompt});
+    if(!data.ok) throw new Error(data.error||'Error de IA');
+    try{localStorage.setItem(_uk('coach_analisis'),JSON.stringify({text:data.text,ts:Date.now()}));}catch(e){}
+    _coachPlanShow(body,data.text,false,'coachAnalisis');
+  }catch(err){
+    body.innerHTML='<div style="text-align:center;padding:20px 16px">'
+      +'<div style="font-size:32px;margin-bottom:10px">⚠️</div>'
+      +'<div style="color:var(--danger);font-size:13px;font-weight:600;margin-bottom:8px">Error al generar el análisis</div>'
+      +'<div style="color:var(--text2);font-size:12px;background:var(--bg2);border-radius:8px;padding:10px 12px;text-align:left;word-break:break-word">'+err.message+'</div>'
+      +'</div>';
+  }
+}
+
+function _coachPlanShow(body,text,fromCache,regenFn='coachPlan'){
   const div=document.createElement('div');
   div.className='coach-plan-text';
   div.textContent=text;
@@ -211,7 +282,7 @@ function _coachPlanShow(body,text,fromCache){
   if(fromCache){
     const info=document.createElement('div');
     info.style.cssText='font-size:11px;color:var(--text2);text-align:right;margin-bottom:6px;opacity:.7';
-    info.innerHTML='Plan guardado · <span style="color:var(--accent);cursor:pointer" onclick="coachPlan(true)">Regenerar</span>';
+    info.innerHTML='Guardado · <span style="color:var(--accent);cursor:pointer" onclick="'+regenFn+'(true)">Regenerar</span>';
     body.appendChild(info);
   }
   body.appendChild(div);
