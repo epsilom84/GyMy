@@ -350,20 +350,32 @@ async function coachAnalisis(forzar){
   const ctx=_coachCtxStr(s,nombre,hist);
 
   const prompt=`Eres Coach Sasha, entrenadora personal con tono directo, irónico y genuinamente motivador.
-Analiza el historial completo del usuario y ofrece un análisis honesto y útil de su rendimiento.
+Analiza el historial completo del usuario y genera un informe estructurado.
 
 DATOS DEL USUARIO:
 ${ctx}
 
-INSTRUCCIONES:
-- Analiza patrones: frecuencia, consistencia, progresión de cargas
-- Identifica grupos musculares o tipos de entreno más trabajados y los más descuidados
-- Señala puntos fuertes reales basados en los datos
-- Identifica debilidades o desequilibrios concretos
-- Da 3 recomendaciones específicas y accionables para mejorar el programa
-- Usa el tono de Sasha: directo, irónico pero constructivo, nada genérico
-- Usa texto plano con saltos de línea y emojis, sin markdown pesado (sin **, sin #)
-- Sé concisa pero completa: análisis útil que quepa en una pantalla de móvil`;
+INSTRUCCIONES DE FORMATO — usa EXACTAMENTE estas secciones con los separadores === ===:
+
+=== 📊 RESUMEN GENERAL ===
+2-3 frases con visión global: volumen, constancia, tendencia.
+
+=== 💪 PUNTOS FUERTES ===
+Lista con • de 3-4 puntos fuertes reales basados en los datos.
+
+=== ⚠️ ÁREAS A MEJORAR ===
+Lista con • de 2-3 debilidades o desequilibrios concretos detectados.
+
+=== 📅 PATRONES DETECTADOS ===
+Análisis de frecuencia semanal, grupos musculares más/menos trabajados, tendencia de cargas.
+
+=== 🎯 RECOMENDACIONES ===
+3 recomendaciones numeradas, específicas y accionables para las próximas semanas.
+
+REGLAS:
+- Usa el tono de Sasha: directo, irónico pero constructivo, sin frases vacías
+- Sin markdown (sin **, sin #), solo texto plano con emojis
+- Basa todo en los datos reales, nunca inventes cifras`;
 
   try{
     const{data}=await apiCall('POST','/ai/import',{prompt});
@@ -379,16 +391,88 @@ INSTRUCCIONES:
   }
 }
 
+function _parseAnalisisText(text){
+  const parts=text.split(/===([^=\n]+)===/);
+  if(parts.length<=1)return'<div class="coach-plan-text">'+text.replace(/</g,'&lt;')+'</div>';
+  let html='';
+  if(parts[0].trim())html+='<p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:10px">'+parts[0].trim().replace(/</g,'&lt;')+'</p>';
+  for(let i=1;i<parts.length;i+=2){
+    const title=(parts[i]||'').trim();
+    const content=(parts[i+1]||'').trim();
+    if(!title)continue;
+    html+='<div class="coach-section-card">'
+      +'<div class="coach-section-title">'+title.replace(/</g,'&lt;')+'</div>'
+      +'<div class="coach-section-body">'+content.replace(/</g,'&lt;')+'</div>'
+      +'</div>';
+  }
+  return html;
+}
+
 function _coachPlanShow(body,text,fromCache,regenFn='coachPlan'){
-  const div=document.createElement('div');
-  div.className='coach-plan-text';
-  div.textContent=text;
   body.innerHTML='';
   if(fromCache){
     const info=document.createElement('div');
-    info.style.cssText='font-size:11px;color:var(--text2);text-align:right;margin-bottom:6px;opacity:.7';
+    info.style.cssText='font-size:11px;color:var(--text2);text-align:right;margin-bottom:8px;opacity:.7';
     info.innerHTML='Guardado · <span style="color:var(--accent);cursor:pointer" onclick="'+regenFn+'(true)">Regenerar</span>';
     body.appendChild(info);
   }
-  body.appendChild(div);
+  if(regenFn==='coachAnalisis'){
+    const report=document.createElement('div');
+    report.id='coach-analisis-report';
+    report.innerHTML=_parseAnalisisText(text);
+    body.appendChild(report);
+    const btns=document.createElement('div');
+    btns.style.cssText='display:flex;gap:8px;margin-top:14px;padding-bottom:4px';
+    btns.innerHTML='<button class="btn btn-secondary" style="flex:1;font-size:12px" onclick="_downloadCoachImage()">📷 Imagen</button>'
+      +'<button class="btn btn-secondary" style="flex:1;font-size:12px" onclick="_downloadCoachPDF()">📄 PDF</button>';
+    body.appendChild(btns);
+  }else{
+    const div=document.createElement('div');
+    div.className='coach-plan-text';
+    div.textContent=text;
+    body.appendChild(div);
+  }
+}
+
+async function _downloadCoachImage(){
+  const el=document.getElementById('coach-analisis-report');
+  if(!el){showToast('Sin informe generado','error');return;}
+  if(typeof html2canvas==='undefined'){showToast('Librería no cargada','error');return;}
+  showToast('Generando imagen...','info');
+  try{
+    const canvas=await html2canvas(el,{scale:2,useCORS:true,logging:false,backgroundColor:null});
+    const a=document.createElement('a');
+    a.download='analisis-sasha-'+new Date().toISOString().slice(0,10)+'.png';
+    a.href=canvas.toDataURL('image/png');
+    a.click();
+    showToast('Imagen descargada ✓','ok');
+  }catch(e){showToast('Error al capturar imagen','error');}
+}
+
+function _downloadCoachPDF(){
+  const el=document.getElementById('coach-analisis-report');
+  if(!el){showToast('Sin informe generado','error');return;}
+  const fecha=new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
+  const sections=el.querySelectorAll('.coach-section-card');
+  let cards='';
+  sections.forEach(c=>{
+    const t=c.querySelector('.coach-section-title')?.textContent||'';
+    const b=c.querySelector('.coach-section-body')?.textContent||'';
+    cards+='<div class="card"><div class="card-title">'+t+'</div><div class="card-body">'+b+'</div></div>';
+  });
+  const intro=el.querySelector('p')?.textContent||'';
+  const html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Análisis Coach Sasha</title>'
+    +'<style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;max-width:620px;margin:36px auto;padding:20px;color:#111}'
+    +'h1{font-size:22px;color:#6c47ff;margin-bottom:2px}.sub{font-size:12px;color:#888;margin-bottom:20px}'
+    +'.card{background:#f4f4f8;border-radius:10px;padding:13px 15px;margin-bottom:11px}'
+    +'.card-title{font-size:11px;font-weight:700;letter-spacing:.7px;color:#6c47ff;text-transform:uppercase;margin-bottom:7px}'
+    +'.card-body{font-size:13px;line-height:1.7;white-space:pre-wrap}.intro{font-size:13px;color:#555;margin-bottom:16px;line-height:1.6}'
+    +'.footer{margin-top:28px;font-size:11px;color:#bbb;text-align:center;border-top:1px solid #eee;padding-top:12px}'
+    +'@media print{body{margin:10px}}</style></head><body>'
+    +'<h1>🏋️‍♀️ Análisis Coach Sasha</h1><div class="sub">'+fecha+'</div>'
+    +(intro?'<div class="intro">'+intro+'</div>':'')+cards
+    +'<div class="footer">Generado por Coach Sasha · GyMy App</div>'
+    +'</body></html>';
+  const w=window.open('','_blank','width=720,height=900');
+  if(w){w.document.write(html);w.document.close();w.focus();setTimeout(()=>w.print(),600);}
 }
