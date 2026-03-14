@@ -13,6 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <link rel="stylesheet" href="/css/base.css"/>
 <link rel="stylesheet" href="/css/layout.css"/>
 <link rel="stylesheet" href="/css/auth.css"/>
@@ -77,17 +78,14 @@
     <div class="page active" id="page-dashboard">
       <div class="section-title">Dashboard</div>
       <div class="section-sub" id="dash-greeting">Tu progreso</div>
-      <div class="coach-card" id="coach-card"
-        oncontextmenu="return false"
-        ontouchstart="_coachLpStart(event)" ontouchend="_coachLpEnd(event)" ontouchmove="_coachLpMove(event)"
-        onmousedown="_coachLpStart(event)" onmouseup="_coachLpCancel()" onmouseleave="_coachLpCancel()">
+      <div class="coach-card" id="coach-card">
         <div class="coach-avatar-wrap">🏋️‍♀️</div>
         <div class="coach-body">
           <div class="coach-name">COACH SASHA</div>
           <div class="coach-bubble" id="coach-phrase"> </div>
-          <div class="coach-hint" style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap">
-            <button onclick="event.stopPropagation();coachAnalisis()" style="background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font-b)">🔍 Analizar</button>
-            <button onclick="event.stopPropagation();coachPlan()" style="background:var(--accent);color:#000;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font-b)">✨ Crear plan</button>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn btn-primary" style="flex:1;font-size:12px;padding:8px 0" onclick="coachPlan()">✨ Plan semanal</button>
+            <button class="btn btn-secondary" style="flex:1;font-size:12px;padding:8px 0" onclick="coachAnalisis()">📊 Analizar</button>
           </div>
         </div>
         <button class="coach-refresh" onclick="refreshCoach();event.stopPropagation();" title="Nueva frase">↻</button>
@@ -383,7 +381,7 @@
   <div class="modal bottom-sheet">
     <div class="modal-drag-handle"></div>
     <div class="modal-header">
-      <div class="modal-title">🏋️‍♀️ Plan de Sasha</div>
+      <div class="modal-title" id="coach-plan-title">🏋️‍♀️ Plan de Sasha</div>
       <button class="close-btn" onclick="closeModal('modal-coach-plan')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
     </div>
     <div id="coach-plan-body"></div>

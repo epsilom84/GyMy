@@ -136,7 +136,140 @@ function _coachLpCancel(){
 }
 
 const COACH_PLAN_TTL=12*60*60*1000; // 12h
+
+async function _fetchAllHistory(){
+  try{
+    const{data}=await getSesiones({limit:1000});
+    if(!data.ok)return null;
+    const sesiones=data.sesiones||[];
+    // Estimar duración y calorías para sesiones sin datos guardados
+    let _pw=70;try{const _pd=JSON.parse(localStorage.getItem(_uk('profile_data'))||'{}');_pw=parseFloat(_pd.peso_corporal)||70;}catch(e){}
+    sesiones.forEach(s=>{
+      if(!s.duracion_min&&(s.ejercicios||[]).length>0)
+        s._durEst=Math.min(180,Math.max(15,5+(s.ejercicios||[]).reduce((a,e)=>a+(e.series||1)*3+1,0)));
+      if(!s.calorias&&(s.duracion_min||s._durEst))
+        s._calEst=Math.round(5*_pw*((s.duracion_min||s._durEst)/60));
+    });
+    // Por tipo
+    const byTipo={};
+    sesiones.forEach(s=>{
+      const t=s.tipo||'Sin tipo';
+      if(!byTipo[t])byTipo[t]={count:0,minutos:0,calorias:0};
+      byTipo[t].count++;
+      byTipo[t].minutos+=s.duracion_min||s._durEst||0;
+      byTipo[t].calorias+=s.calorias||s._calEst||0;
+    });
+    // Por mes (últimos 12)
+    const byMonth={};
+    sesiones.forEach(s=>{
+      const m=(s.fecha||'').slice(0,7);
+      if(!m)return;
+      if(!byMonth[m])byMonth[m]={count:0,minutos:0,calorias:0};
+      byMonth[m].count++;
+      byMonth[m].minutos+=s.duracion_min||s._durEst||0;
+      byMonth[m].calorias+=s.calorias||s._calEst||0;
+    });
+    // Frecuencia de ejercicios en todo el historial
+    const ejFreq={};
+    sesiones.forEach(s=>{
+      (s.ejercicios||[]).forEach(e=>{
+        const n=(e.nombre||'').toLowerCase().trim();
+        if(!n)return;
+        if(!ejFreq[n])ejFreq[n]={nombre:e.nombre,count:0,maxKg:0};
+        ejFreq[n].count++;
+        if((e.peso_kg||0)>ejFreq[n].maxKg)ejFreq[n].maxKg=e.peso_kg||0;
+      });
+    });
+    const topEj=Object.values(ejFreq).sort((a,b)=>b.count-a.count).slice(0,15);
+    const monthsSorted=Object.entries(byMonth).sort(([a],[b])=>a.localeCompare(b)).slice(-12);
+    return{
+      byTipo,monthsSorted,topEj,
+      primera:sesiones[sesiones.length-1]?.fecha?.slice(0,10),
+      ultima:sesiones[0]?.fecha?.slice(0,10),
+    };
+  }catch(e){return null;}
+}
+
+function _coachCtxStr(s,nombre,hist){
+  if(!s)return'Sin historial disponible aún.';
+  const horas=Math.floor((s.totalMinutos||0)/60);
+  const top=(s.mejorEjercicio||[]).slice(0,8);
+  const prog=s.progreso||[];
+
+  // Perfil físico
+  let perfil='';
+  try{
+    const pd=JSON.parse(localStorage.getItem(_uk('profile_data'))||'{}');
+    const parts=[];
+    if(pd.peso_corporal)parts.push(`peso: ${pd.peso_corporal}kg`);
+    if(pd.edad)parts.push(`edad: ${pd.edad} años`);
+    if(pd.genero)parts.push(`género: ${pd.genero}`);
+    if(parts.length)perfil='\n- Perfil físico: '+parts.join(', ');
+  }catch(e){}
+
+  // Últimas 5 sesiones (con estimación si falta duracion_min o calorias)
+  let _pw2=70;try{const _pd=JSON.parse(localStorage.getItem(_uk('profile_data'))||'{}');_pw2=parseFloat(_pd.peso_corporal)||70;}catch(e){}
+  const recDetail=(s.recientes||[]).slice(0,5).map(r=>{
+    const ejs=r.ejercicios||[];
+    const durReal=r.duracion_min;
+    const durEst=!durReal&&ejs.length>0?Math.min(180,Math.max(15,5+ejs.reduce((a,e)=>a+(e.series||1)*3+1,0))):0;
+    const durMin=durReal||durEst;
+    const calReal=r.calorias;
+    const calEst=!calReal&&durMin?Math.round(5*_pw2*(durMin/60)):0;
+    const dur=durReal?durReal+' min':durEst?'~'+durEst+' min':'—';
+    const cal=calReal?calReal+' kcal':calEst?'~'+calEst+' kcal':'—';
+    const ejs=(r.ejercicios||[]).slice(0,5).map(e=>e.nombre).join(', ')||'—';
+    return`  ${(r.fecha||'').slice(0,10)} | ${r.tipo||'?'} | ${dur} | ${cal} | val:${r.valoracion||'—'} | ${ejs}`;
+  }).join('\n')||'  sin datos';
+
+  // Progresión semanal
+  const progDetail=prog.slice(-8).map(p=>
+    `  ${p.semana}: ${p.sesiones} sesiones, ${p.minutos||0} min, ${p.calorias||0} kcal`
+  ).join('\n')||'  sin datos';
+
+  let extra='';
+  if(hist){
+    // Desglose por tipo (todo el historial)
+    const tipoLines=Object.entries(hist.byTipo)
+      .sort(([,a],[,b])=>b.count-a.count)
+      .map(([t,v])=>`  ${t}: ${v.count} sesiones, ${v.minutos} min, ${v.calorias} kcal`)
+      .join('\n');
+    // Desglose mensual
+    const mesLines=hist.monthsSorted.map(([m,v])=>
+      `  ${m}: ${v.count} sesiones, ${v.minutos} min, ${v.calorias} kcal`
+    ).join('\n')||'  sin datos';
+    // Ejercicios más frecuentes de todo el historial
+    const ejLines=hist.topEj.map(e=>
+      `  ${e.nombre}: ${e.count}x${e.maxKg>0?', máx '+e.maxKg+'kg':''}`
+    ).join('\n')||'  sin datos';
+
+    extra=`
+- Historial completo desde: ${hist.primera||'?'} hasta: ${hist.ultima||'?'}
+- Desglose por tipo de sesión (total historial):
+${tipoLines}
+- Evolución mensual (últimos 12 meses):
+${mesLines}
+- Ejercicios más frecuentes en todo el historial:
+${ejLines}`;
+  }
+
+  return`- Nombre: ${nombre}
+- Sesiones totales: ${s.total}
+- Tiempo total acumulado: ${horas}h (${s.totalMinutos||0} min)
+- Racha actual: ${s.racha} días
+- Sesiones esta semana: ${s.ultimasSemana}
+- Calorías totales registradas: ${s.totalCalorias||0} kcal
+- Valoración media: ${s.mediaValoracion||'—'}/5${perfil}
+- Ejercicios con mayor marca de peso: ${top.length?top.map(e=>`${e.nombre} (${e.max_peso}kg, ${e.veces}x)`).join(' | '):'sin datos'}
+- Últimas 5 sesiones (fecha|tipo|duración|calorías|valoración|ejercicios):
+${recDetail}
+- Progresión últimas 8 semanas (semana|sesiones|minutos|calorías):
+${progDetail}${extra}`;
+}
+
 async function coachPlan(forzar){
+  const _titleEl=document.getElementById('coach-plan-title');
+  if(_titleEl)_titleEl.textContent='🏋️‍♀️ Plan de Sasha';
   openModal('modal-coach-plan');
   const body=document.getElementById('coach-plan-body');
 
@@ -158,21 +291,8 @@ async function coachPlan(forzar){
   const s=_coachStats;
   const u=JSON.parse(localStorage.getItem('gymy_user')||'{}');
   const nombre=u.username||'el usuario';
-  const top=(s?.mejorEjercicio||[]).slice(0,5);
-  const ultTipos=(s?.recientes||[]).slice(0,5).map(r=>r.tipo).filter(Boolean);
-  const horas=Math.floor((s?.totalMinutos||0)/60);
-
-  const ctx=s
-    ?`- Nombre: ${nombre}
-- Sesiones totales: ${s.total}
-- Horas de entreno acumuladas: ${horas}h
-- Racha actual: ${s.racha} días
-- Sesiones esta semana: ${s.ultimasSemana}
-- Calorías quemadas en total: ${s.totalCalorias||0} kcal
-- Valoración media de sesiones: ${s.mediaValoracion||'—'}/5
-- Ejercicios con mayor marca de peso: ${top.length?top.map(e=>`${e.nombre} (${e.max_peso}kg, ${e.veces} veces)`).join(' | '):'sin datos'}
-- Tipos de entrenamientos recientes: ${ultTipos.length?[...new Set(ultTipos)].join(', '):'sin datos'}`
-    :'Sin historial disponible aún.';
+  const hist=await _fetchAllHistory();
+  const ctx=_coachCtxStr(s,nombre,hist);
 
   const prompt=`Eres Coach Sasha, entrenadora personal con tono directo, irónico y genuinamente motivador.
 Analiza los datos del usuario y crea un plan de entrenamiento personalizado para la próxima semana.
@@ -203,16 +323,156 @@ INSTRUCCIONES:
   }
 }
 
-function _coachPlanShow(body,text,fromCache){
-  const div=document.createElement('div');
-  div.className='coach-plan-text';
-  div.textContent=text;
+async function coachAnalisis(forzar){
+  const _titleEl=document.getElementById('coach-plan-title');
+  if(_titleEl)_titleEl.textContent='📊 Análisis de Sasha';
+  openModal('modal-coach-plan');
+  const body=document.getElementById('coach-plan-body');
+
+  if(!forzar){
+    try{
+      const cached=JSON.parse(localStorage.getItem(_uk('coach_analisis'))||'null');
+      if(cached&&cached.text&&(Date.now()-cached.ts)<COACH_PLAN_TTL){
+        _coachPlanShow(body,cached.text,true,'coachAnalisis');
+        return;
+      }
+    }catch(e){}
+  }
+
+  body.innerHTML='<div style="text-align:center;padding:36px 16px;color:var(--text2)">'
+    +'<div style="font-size:36px;margin-bottom:12px">🔍</div>'
+    +'<div style="font-size:13px">Sasha está analizando tu historial...</div></div>';
+
+  const s=_coachStats;
+  const u=JSON.parse(localStorage.getItem('gymy_user')||'{}');
+  const nombre=u.username||'el usuario';
+  const hist=await _fetchAllHistory();
+  const ctx=_coachCtxStr(s,nombre,hist);
+
+  const prompt=`Eres Coach Sasha, entrenadora personal con tono directo, irónico y genuinamente motivador.
+Analiza el historial completo del usuario y genera un informe estructurado.
+
+DATOS DEL USUARIO:
+${ctx}
+
+INSTRUCCIONES DE FORMATO — usa EXACTAMENTE estas secciones con los separadores === ===:
+
+=== 📊 RESUMEN GENERAL ===
+2-3 frases con visión global: volumen, constancia, tendencia.
+
+=== 💪 PUNTOS FUERTES ===
+Lista con • de 3-4 puntos fuertes reales basados en los datos.
+
+=== ⚠️ ÁREAS A MEJORAR ===
+Lista con • de 2-3 debilidades o desequilibrios concretos detectados.
+
+=== 📅 PATRONES DETECTADOS ===
+Análisis de frecuencia semanal, grupos musculares más/menos trabajados, tendencia de cargas.
+
+=== 🎯 RECOMENDACIONES ===
+3 recomendaciones numeradas, específicas y accionables para las próximas semanas.
+
+REGLAS:
+- Usa el tono de Sasha: directo, irónico pero constructivo, sin frases vacías
+- Sin markdown (sin **, sin #), solo texto plano con emojis
+- Basa todo en los datos reales, nunca inventes cifras`;
+
+  try{
+    const{data}=await apiCall('POST','/ai/import',{prompt});
+    if(!data.ok) throw new Error(data.error||'Error de IA');
+    try{localStorage.setItem(_uk('coach_analisis'),JSON.stringify({text:data.text,ts:Date.now()}));}catch(e){}
+    _coachPlanShow(body,data.text,false,'coachAnalisis');
+  }catch(err){
+    body.innerHTML='<div style="text-align:center;padding:20px 16px">'
+      +'<div style="font-size:32px;margin-bottom:10px">⚠️</div>'
+      +'<div style="color:var(--danger);font-size:13px;font-weight:600;margin-bottom:8px">Error al generar el análisis</div>'
+      +'<div style="color:var(--text2);font-size:12px;background:var(--bg2);border-radius:8px;padding:10px 12px;text-align:left;word-break:break-word">'+err.message+'</div>'
+      +'</div>';
+  }
+}
+
+function _parseAnalisisText(text){
+  const parts=text.split(/===([^=\n]+)===/);
+  if(parts.length<=1)return'<div class="coach-plan-text">'+text.replace(/</g,'&lt;')+'</div>';
+  let html='';
+  if(parts[0].trim())html+='<p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:10px">'+parts[0].trim().replace(/</g,'&lt;')+'</p>';
+  for(let i=1;i<parts.length;i+=2){
+    const title=(parts[i]||'').trim();
+    const content=(parts[i+1]||'').trim();
+    if(!title)continue;
+    html+='<div class="coach-section-card">'
+      +'<div class="coach-section-title">'+title.replace(/</g,'&lt;')+'</div>'
+      +'<div class="coach-section-body">'+content.replace(/</g,'&lt;')+'</div>'
+      +'</div>';
+  }
+  return html;
+}
+
+function _coachPlanShow(body,text,fromCache,regenFn='coachPlan'){
   body.innerHTML='';
   if(fromCache){
     const info=document.createElement('div');
-    info.style.cssText='font-size:11px;color:var(--text2);text-align:right;margin-bottom:6px;opacity:.7';
-    info.innerHTML='Plan guardado · <span style="color:var(--accent);cursor:pointer" onclick="coachPlan(true)">Regenerar</span>';
+    info.style.cssText='font-size:11px;color:var(--text2);text-align:right;margin-bottom:8px;opacity:.7';
+    info.innerHTML='Guardado · <span style="color:var(--accent);cursor:pointer" onclick="'+regenFn+'(true)">Regenerar</span>';
     body.appendChild(info);
   }
-  body.appendChild(div);
+  if(regenFn==='coachAnalisis'){
+    const report=document.createElement('div');
+    report.id='coach-analisis-report';
+    report.innerHTML=_parseAnalisisText(text);
+    body.appendChild(report);
+    const btns=document.createElement('div');
+    btns.style.cssText='display:flex;gap:8px;margin-top:14px;padding-bottom:4px';
+    btns.innerHTML='<button class="btn btn-secondary" style="flex:1;font-size:12px" onclick="_downloadCoachImage()">📷 Imagen</button>'
+      +'<button class="btn btn-secondary" style="flex:1;font-size:12px" onclick="_downloadCoachPDF()">📄 PDF</button>';
+    body.appendChild(btns);
+  }else{
+    const div=document.createElement('div');
+    div.className='coach-plan-text';
+    div.textContent=text;
+    body.appendChild(div);
+  }
+}
+
+async function _downloadCoachImage(){
+  const el=document.getElementById('coach-analisis-report');
+  if(!el){showToast('Sin informe generado','error');return;}
+  if(typeof html2canvas==='undefined'){showToast('Librería no cargada','error');return;}
+  showToast('Generando imagen...','info');
+  try{
+    const canvas=await html2canvas(el,{scale:2,useCORS:true,logging:false,backgroundColor:null});
+    const a=document.createElement('a');
+    a.download='analisis-sasha-'+new Date().toISOString().slice(0,10)+'.png';
+    a.href=canvas.toDataURL('image/png');
+    a.click();
+    showToast('Imagen descargada ✓','ok');
+  }catch(e){showToast('Error al capturar imagen','error');}
+}
+
+function _downloadCoachPDF(){
+  const el=document.getElementById('coach-analisis-report');
+  if(!el){showToast('Sin informe generado','error');return;}
+  const fecha=new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
+  const sections=el.querySelectorAll('.coach-section-card');
+  let cards='';
+  sections.forEach(c=>{
+    const t=c.querySelector('.coach-section-title')?.textContent||'';
+    const b=c.querySelector('.coach-section-body')?.textContent||'';
+    cards+='<div class="card"><div class="card-title">'+t+'</div><div class="card-body">'+b+'</div></div>';
+  });
+  const intro=el.querySelector('p')?.textContent||'';
+  const html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Análisis Coach Sasha</title>'
+    +'<style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;max-width:620px;margin:36px auto;padding:20px;color:#111}'
+    +'h1{font-size:22px;color:#6c47ff;margin-bottom:2px}.sub{font-size:12px;color:#888;margin-bottom:20px}'
+    +'.card{background:#f4f4f8;border-radius:10px;padding:13px 15px;margin-bottom:11px}'
+    +'.card-title{font-size:11px;font-weight:700;letter-spacing:.7px;color:#6c47ff;text-transform:uppercase;margin-bottom:7px}'
+    +'.card-body{font-size:13px;line-height:1.7;white-space:pre-wrap}.intro{font-size:13px;color:#555;margin-bottom:16px;line-height:1.6}'
+    +'.footer{margin-top:28px;font-size:11px;color:#bbb;text-align:center;border-top:1px solid #eee;padding-top:12px}'
+    +'@media print{body{margin:10px}}</style></head><body>'
+    +'<h1>🏋️‍♀️ Análisis Coach Sasha</h1><div class="sub">'+fecha+'</div>'
+    +(intro?'<div class="intro">'+intro+'</div>':'')+cards
+    +'<div class="footer">Generado por Coach Sasha · GyMy App</div>'
+    +'</body></html>';
+  const w=window.open('','_blank','width=720,height=900');
+  if(w){w.document.write(html);w.document.close();w.focus();setTimeout(()=>w.print(),600);}
 }
