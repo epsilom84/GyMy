@@ -195,6 +195,7 @@ Similitud calculada por **bigramas Jaccard** sobre texto normalizado.
 - **Frases dinámicas**: basadas en estadísticas reales del usuario
 - **Plan personalizado**: pulsación larga → plan semanal con API de Claude (Haiku)
 - **Caché 12h** en `localStorage` — botón "Regenerar" para forzar nuevo plan
+- **Estimaciones automáticas**: si el usuario no registró duración o calorías en alguna sesión, Sasha usa valores de referencia científicos por tipo de entrenamiento (ej: Fuerza 60 min/6 kcal·min⁻¹, HIIT 35 min/11 kcal·min⁻¹) para dar análisis siempre completos. Los valores estimados se identifican con `(est)` en el contexto enviado a la IA.
 - Requiere `ANTHROPIC_API_KEY` en Railway
 
 ---

@@ -494,6 +494,22 @@ const COACH_PLAN_TTL = 12 * 60 * 60 * 1000; // 12h en ms
 Al abrir el modal del plan: si hay caché válida se muestra directamente con botón "Regenerar".
 "Regenerar" llama a `coachPlan(true)` que fuerza nueva llamada a la API.
 
+### Coach Sasha — estimaciones de tiempo y calorías
+
+Cuando el usuario no ha registrado duración o calorías en un tipo de sesión (`avg_min = 0` o `avg_kcal = 0`), el contexto enviado a la IA complementa con valores de referencia:
+
+```js
+const _DUR_EST  = { Fuerza:60, Cardio:45, HIIT:35, Yoga:50, Pilates:50,
+                    Pecho:55, Espalda:55, Piernas:65, Hombros:50, Brazos:45, Core:40, Otro:55 };
+const _KCAL_MIN = { Fuerza:6,  Cardio:9,  HIIT:11,  Yoga:4,  Pilates:5,
+                    Pecho:6,   Espalda:6,  Piernas:7, Hombros:6, Brazos:5, Core:6,  Otro:6.5 };
+```
+
+Para cada tipo sin dato real se acumula `sesiones × referencia` en `_minEst` / `_kcalEst`.
+Los totales combinados (`totalMinReal + _minEst`, `totalKcalReal + _kcalEst`) se usan en el prompt.
+Las líneas con dato estimado llevan el sufijo `(est)` para que la IA sepa distinguirlos.
+El prompt incluye una nota explicando que los `(est)` son estimaciones científicas de referencia.
+
 ---
 
 ## Actualizar catálogo de ejercicios desde Excel

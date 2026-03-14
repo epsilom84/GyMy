@@ -33,7 +33,7 @@ self.addEventListener('fetch', e => {
   if (e.request.destination === 'document' || url.pathname === '/') {
     e.respondWith(
       fetch(e.request)
-        .then(res => { caches.open(CACHE).then(c => c.put(e.request, res.clone())); return res; })
+        .then(res => { const clone=res.clone(); caches.open(CACHE).then(c => c.put(e.request, clone)); return res; })
         .catch(() => caches.match('/'))
     );
   } else {

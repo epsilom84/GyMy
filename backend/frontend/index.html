@@ -182,15 +182,15 @@
       </div>
       <!-- Músculo view -->
       <div id="stats-musculos-view" style="display:none">
-        <div class="stats-mus-grid">
-          <div class="card stats-mus-heatmap-card">
-            <div style="font-size:10px;color:var(--text2);margin-bottom:6px">Calor muscular</div>
-            <div id="body-heatmap-container"></div>
-          </div>
-          <div class="card stats-mus-donut-card">
-            <div style="font-size:10px;color:var(--text2);margin-bottom:6px">Distribución (series)</div>
-            <div class="stats-mus-donut-wrap"><canvas id="chart-mus-donut"></canvas></div>
-          </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:0;align-items:stretch">
+        <div class="card" style="margin-bottom:0;padding:8px;text-align:center">
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">Calor muscular</div>
+          <div id="body-heatmap-container" style="height:clamp(140px,42vw,220px)"></div>
+        </div>
+        <div class="card" style="margin-bottom:0;padding:8px">
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">Distribución (series)</div>
+          <div style="position:relative;height:clamp(140px,42vw,220px);width:100%"><canvas id="chart-mus-donut"></canvas></div>
+        </div>
         </div>
       </div>
     </div>
@@ -396,7 +396,7 @@
       <div class="modal-title" id="md-tipo">Sesión</div>
       <button class="close-btn" onclick="closeModal('modal-detalle')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
     </div>
-    <div id="md-content"></div>
+    <div id="md-content" style="padding-bottom:max(16px,env(safe-area-inset-bottom))"></div>
   </div>
 </div>
 
@@ -689,7 +689,7 @@ function _clearUserCaches(){
   // Claves localStorage privadas del usuario (prefijadas con userId)
   const u=getUser();
   if(u){
-    ['offline_queue','historial_local','profile_data','coach_plan','plantillas','workout_live','rest_secs'].forEach(k=>{
+    ['offline_queue','historial_local','profile_data','coach_plan','coach_analisis','plantillas','workout_live','rest_secs'].forEach(k=>{
       localStorage.removeItem('gymy_'+u.id+'_'+k);
     });
   }
@@ -1067,6 +1067,7 @@ function _coachLpCancel(){
 const COACH_PLAN_TTL=12*60*60*1000; // 12h
 async function coachPlan(forzar){
   openModal('modal-coach-plan');
+  document.querySelector('#modal-coach-plan .modal-title').textContent='Plan de entrenamiento';
   const body=document.getElementById('coach-plan-body');
 
   // Mostrar plan cacheado si existe y es reciente
@@ -1143,6 +1144,438 @@ function _coachPlanShow(body,text,fromCache){
     body.appendChild(info);
   }
   body.appendChild(div);
+}
+
+const COACH_ANALISIS_TTL=6*60*60*1000;
+async function coachAnalisis(forzar){
+  openModal('modal-coach-plan');
+  document.getElementById('coach-plan-title').textContent='🔬 Análisis Científico';
+  const body=document.getElementById('coach-plan-body');
+
+  if(!forzar){
+    try{
+      const cached=JSON.parse(localStorage.getItem(_uk('coach_analisis'))||'null');
+      if(cached&&cached.text&&(Date.now()-cached.ts)<COACH_ANALISIS_TTL){
+        _coachAnalisisShow(body,cached.text,true);return;
+      }
+    }catch(e){}
+  }
+
+  body.innerHTML=
+    '<div style="padding:32px 20px 28px">'
+    +'<div style="text-align:center;margin-bottom:22px">'
+    +'<div style="font-size:36px;margin-bottom:12px">🔬</div>'
+    +'<div id="_ap_label" style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">Preparando análisis...</div>'
+    +'<div id="_ap_sub" style="font-size:11px;color:var(--text2)">Paso 1 de 3</div>'
+    +'</div>'
+    +'<div style="background:var(--bg3);border-radius:99px;height:8px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.15)">'
+    +'<div id="_ap_bar" style="height:100%;border-radius:99px;background:var(--accent);width:4%;transition:width .5s cubic-bezier(.4,0,.2,1)"></div>'
+    +'</div>'
+    +'<div style="display:flex;justify-content:space-between;margin-top:6px">'
+    +'<div style="font-size:10px;color:var(--text2);opacity:.5">0%</div>'
+    +'<div id="_ap_pct" style="font-size:10px;color:var(--accent);font-weight:700">4%</div>'
+    +'</div>'
+    +'</div>';
+
+  // Yield to browser so it can paint the initial bar before any update
+  await new Promise(r=>requestAnimationFrame(r));
+  await new Promise(r=>requestAnimationFrame(r));
+
+  function _apSet(pct,label,sub){
+    const bar=document.getElementById('_ap_bar');
+    const lbl=document.getElementById('_ap_label');
+    const slbl=document.getElementById('_ap_sub');
+    const pctEl=document.getElementById('_ap_pct');
+    if(bar)bar.style.width=pct+'%';
+    if(lbl&&label)lbl.textContent=label;
+    if(slbl&&sub!==undefined)slbl.textContent=sub;
+    if(pctEl)pctEl.textContent=pct+'%';
+  }
+
+  let _apTimer=null;
+  function _apAnimate(from,to,ms){
+    if(_apTimer)clearInterval(_apTimer);
+    const steps=30,inc=(to-from)/steps,interval=ms/steps;
+    let cur=from;
+    _apTimer=setInterval(()=>{
+      cur=Math.min(cur+inc,to);
+      const bar=document.getElementById('_ap_bar');
+      const pctEl=document.getElementById('_ap_pct');
+      if(bar)bar.style.width=Math.round(cur)+'%';
+      if(pctEl)pctEl.textContent=Math.round(cur)+'%';
+      if(cur>=to)clearInterval(_apTimer);
+    },interval);
+  }
+
+  const s=_coachStats;
+  if(!s||!s.total){
+    body.innerHTML='<div style="text-align:center;padding:24px 16px;color:var(--text2)"><div style="font-size:32px;margin-bottom:10px">📭</div><div style="font-size:13px">Necesitas registrar sesiones para el análisis</div></div>';
+    return;
+  }
+
+  const u=JSON.parse(localStorage.getItem('gymy_user')||'{}');
+  const nombre=u.username||'atleta';
+  const horas=Math.floor((s.totalMinutos||0)/60);
+  const mins=(s.totalMinutos||0)%60;
+  const mejorEj=s.mejorEjercicio||[];
+
+  _apSet(10,'Conectando con la base de datos...','Paso 1 de 3');
+
+  // Fetch historial completo en paralelo
+  let fs={mensual:[],porTipo:[],porDia:[],topEjercicios:[],porGrupo:[],primeraFecha:null};
+  try{
+    _apAnimate(10,45,800);
+    const{data}=await apiCall('GET','/sesiones/fullstats');
+    if(data.ok)fs=data;
+  }catch(e){}
+  _apSet(45,'Calculando métricas del historial...','Paso 2 de 3');
+
+  // ── Métricas derivadas ──
+  const meses=fs.mensual.slice().reverse(); // cronológico
+  const mesesActivos=meses.filter(m=>parseInt(m.sesiones)>0);
+  const totalMesesConDatos=mesesActivos.length||1;
+  const avgMensual=(mesesActivos.reduce((a,m)=>a+parseInt(m.sesiones),0)/totalMesesConDatos).toFixed(1);
+  const avgDurMes=meses.filter(m=>parseInt(m.minutos)>0).reduce((a,m,_,arr)=>a+parseInt(m.minutos)/Math.max(parseInt(m.sesiones),1)/arr.length,0);
+
+  // Tendencia: últimos 3 meses vs 3 anteriores
+  const ult3=fs.mensual.slice(0,3).reduce((a,m)=>a+parseInt(m.sesiones),0);
+  const prev3=fs.mensual.slice(3,6).reduce((a,m)=>a+parseInt(m.sesiones),0);
+  const tendencia=prev3===0?'período inicial'
+    :ult3>prev3+1?'CRECIENTE (+'+Math.round((ult3-prev3)/Math.max(prev3,1)*100)+'% vs trimestre anterior)'
+    :ult3<prev3-1?'DECRECIENTE (-'+Math.round((prev3-ult3)/Math.max(prev3,1)*100)+'% vs trimestre anterior)'
+    :'ESTABLE';
+
+  // Consistencia: % de meses activos sobre vida del historial
+  const primerMes=fs.primeraFecha?fs.primeraFecha.slice(0,7):null;
+  const hoy=new Date().toISOString().slice(0,7);
+  let mesesTotalesHistorial=1;
+  if(primerMes){
+    const [ay,am]=primerMes.split('-').map(Number);
+    const [by,bm]=hoy.split('-').map(Number);
+    mesesTotalesHistorial=Math.max(1,(by-ay)*12+(bm-am)+1);
+  }
+  const consistencia=Math.round(mesesActivos.length/mesesTotalesHistorial*100);
+
+  // Mejor y peor mes
+  const mejorMes=mesesActivos.reduce((a,m)=>parseInt(m.sesiones)>parseInt(a.sesiones)?m:a,mesesActivos[0]||{});
+  const peorMes=mesesActivos.reduce((a,m)=>parseInt(m.sesiones)<parseInt(a.sesiones)?m:a,mesesActivos[0]||{});
+
+  // Día favorito
+  const DIAS_ES=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const diaTop=fs.porDia.length?fs.porDia.reduce((a,d)=>parseInt(d.n)>parseInt(a.n)?d:a,fs.porDia[0]):null;
+
+  // Distribución grupos musculares
+  const grupoResumen=fs.porGrupo.slice(0,8).map(g=>`${g.grupo_muscular}(${g.total_series}s,${g.sesiones_presentes}ses)`).join(' · ')||'sin datos';
+
+  // ── Estimaciones de referencia por tipo ──
+  const _DUR_EST={Fuerza:60,Cardio:45,HIIT:35,Yoga:50,Pilates:50,
+    Pecho:55,Espalda:55,Piernas:65,Hombros:50,Brazos:45,Core:40,Otro:55};
+  const _KCAL_MIN={Fuerza:6,Cardio:9,HIIT:11,Yoga:4,Pilates:5,
+    Pecho:6,Espalda:6,Piernas:7,Hombros:6,Brazos:5,Core:6,Otro:6.5};
+
+  // Calcular minutos/kcal reales + estimados para sesiones sin registro
+  let _minEst=0,_kcalEst=0;
+  fs.porTipo.forEach(t=>{
+    const n=parseInt(t.n),durR=parseFloat(t.avg_min)||0,kcalR=parseFloat(t.avg_kcal)||0;
+    const durE=_DUR_EST[t.tipo]||55,kcalE=(_KCAL_MIN[t.tipo]||6.5);
+    if(!durR)_minEst+=n*durE;
+    if(!kcalR)_kcalEst+=n*(durR||durE)*kcalE;
+  });
+  const totalMinReal=s.totalMinutos||0;
+  const totalKcalReal=s.totalCalorias||0;
+  const totalMinComb=totalMinReal+_minEst;
+  const totalKcalComb=totalKcalReal+Math.round(_kcalEst);
+  const hayEstDur=_minEst>0,hayEstKcal=_kcalEst>0;
+  const horasT=Math.floor(totalMinComb/60),minsT=Math.round(totalMinComb%60);
+  const avgMinSesion=s.total>0?Math.round(totalMinComb/s.total):0;
+  const avgKcalSesion=s.total>0?Math.round(totalKcalComb/s.total):0;
+
+  // Tipos con dur/kcal reales o estimados
+  const tiposCompleto=fs.porTipo.map(t=>{
+    const durR=parseFloat(t.avg_min)||0,kcalR=parseFloat(t.avg_kcal)||0;
+    const durE=_DUR_EST[t.tipo]||55,kcalE=(_KCAL_MIN[t.tipo]||6.5)*(durR||durE);
+    const durStr=durR>0?`${t.avg_min}min`:`~${durE}min`;
+    const kcalStr=kcalR>0?`${t.avg_kcal}kcal`:`~${Math.round(kcalE)}kcal`;
+    const nota=(!durR||!kcalR)?'(est)':'';
+    return `${t.tipo}: ${t.n}ses(${t.pct}%) ${durStr}/ses ${kcalStr}/ses${nota}`;
+  }).join('\n')||'—';
+
+  // Eficiencia calórica por tipo (real o estimada)
+  const eficienciaKcal=fs.porTipo.map(t=>{
+    const durR=parseFloat(t.avg_min)||0,kcalR=parseFloat(t.avg_kcal)||0;
+    const dur=durR||((_DUR_EST[t.tipo])||55);
+    const kcal=kcalR||Math.round((_KCAL_MIN[t.tipo]||6.5)*dur);
+    return `${t.tipo}: ${(kcal/dur).toFixed(1)}kcal/min${(!durR||!kcalR)?'(est)':''}`;
+  }).join(' · ')||'—';
+
+  // Promedios mensuales (combinando reales y estimados)
+  const avgKcalMes=mesesActivos.length
+    ?Math.round(totalKcalComb/mesesActivos.length):0;
+  const avgMinMes=mesesActivos.length
+    ?Math.round(totalMinComb/mesesActivos.length):0;
+
+  // Top ejercicios frecuencia
+  const topFreq=fs.topEjercicios.slice(0,12).map(e=>{
+    const carga=e.max_peso>0?` ${e.avg_peso}kg avg/${e.max_peso}kg max`:'';
+    return `${e.nombre}: ${e.veces}x${carga}`;
+  }).join('\n')||'—';
+
+  // Top por carga (de stats)
+  const topCarga=mejorEj.slice(0,8).map(e=>`${e.nombre}: ${e.max_peso}kg max, ${e.veces}x`).join('\n')||'—';
+
+  // Evolución mensual resumida (últimos 12 meses)
+  const evolucionMensual=meses.slice(-12).map(m=>
+    `${m.mes}: ${m.sesiones}ses ${m.minutos}min ${m.val_media>0?'★'+m.val_media:''}`
+  ).join(' | ')||'—';
+
+  const ctx=`ATLETA: ${nombre}
+HISTORIAL COMPLETO: desde ${fs.primeraFecha||'desconocido'} hasta hoy (${mesesTotalesHistorial} meses)
+
+── MÉTRICAS GLOBALES (historial completo) ──
+· Sesiones totales: ${s.total}
+· Horas totales entrenadas: ${horasT}h ${minsT}min${hayEstDur?' (est. parcial)':''}
+· Calorías totales quemadas: ${totalKcalComb} kcal${hayEstKcal?' (est. parcial)':''}
+· Valoración media global: ${s.mediaValoracion||0}/5
+· Racha actual: ${s.racha} días consecutivos
+· Consistencia mensual histórica: ${consistencia}% (${mesesActivos.length}/${mesesTotalesHistorial} meses activos)
+· Media sesiones/mes: ${avgMensual}
+· Tendencia actual: ${tendencia}
+· Mejor mes: ${mejorMes.mes||'—'} (${mejorMes.sesiones||0} sesiones)
+· Peor mes: ${peorMes.mes||'—'} (${peorMes.sesiones||0} sesiones)
+· Día favorito de entrenamiento: ${diaTop?`${DIAS_ES[parseInt(diaTop.dow)%7]}(${diaTop.n}x)`:'—'}
+
+── TIEMPO DE ENTRENAMIENTO${hayEstDur?' (reales + estimados)':''} ──
+· Horas totales: ${horasT}h ${minsT}min${hayEstDur?' ('+Math.floor(_minEst/60)+'h estimadas para ses. sin registro)':''}
+· Duración media por sesión: ${avgMinSesion} min/sesión${hayEstDur?' (est)':''}
+· Minutos medios por mes: ${avgMinMes} min/mes
+· Horas medias mensuales: ${Math.round(avgMinMes/60*10)/10} h/mes
+
+── CALORÍAS${hayEstKcal?' (reales + estimados)':''} ──
+· Calorías totales: ${totalKcalComb} kcal${hayEstKcal?' ('+Math.round(_kcalEst)+' estimadas para ses. sin registro)':''}
+· Calorías medias por sesión: ${avgKcalSesion} kcal/sesión${hayEstKcal?' (est)':''}
+· Calorías medias por mes: ${avgKcalMes} kcal/mes
+· Eficiencia calórica por tipo: ${eficienciaKcal}
+
+── TIPOS DE ENTRENAMIENTO con duración y calorías (histórico) ──
+${tiposCompleto}
+
+── DISTRIBUCIÓN MUSCULAR HISTÓRICA (series totales registradas) ──
+${grupoResumen}
+
+── TOP 12 EJERCICIOS POR FRECUENCIA ──
+${topFreq}
+
+── TOP 8 EJERCICIOS POR CARGA MÁXIMA ──
+${topCarga}
+
+── EVOLUCIÓN MENSUAL (últimos 12 meses) ──
+${evolucionMensual}`;
+
+  _apSet(60,'Sasha leyendo tu historial completo...','Paso 3 de 3 — puede tardar unos segundos');
+  _apAnimate(60,92,8000);
+
+  const prompt=`Eres Coach Sasha, doctora en ciencias del deporte y entrenadora de élite. Tono: científico, directo y con la ironía española que te caracteriza. Usa terminología real: RPE, RM, DOMS, mesociclo, deload, hipertrofia, etc.
+
+Analiza el HISTORIAL COMPLETO de entrenamiento de este atleta. Tienes datos de TODOS sus entrenos desde el inicio. Aprovéchalo para identificar tendencias a largo plazo, no solo lo reciente.
+NOTA: los valores marcados con "(est)" son estimaciones basadas en promedios científicos por tipo de sesión cuando el usuario no registró el dato real. Úsalos con normalidad en el análisis, mencionando brevemente que son estimaciones donde corresponda.
+
+${ctx}
+
+RESPONDE EXACTAMENTE con este formato (sin texto fuera de las etiquetas):
+
+[PUNTUACION]
+XX/100
+Una frase diagnóstico de Sasha sobre el nivel global basada en el historial completo.
+[/PUNTUACION]
+
+[FORTALEZAS]
+3-4 fortalezas concretas con datos numéricos del historial real. Menciona cifras específicas.
+[/FORTALEZAS]
+
+[DESEQUILIBRIOS]
+2-3 desequilibrios o riesgos detectados en el largo plazo: grupos musculares descuidados históricamente, patrones de sobreuso, rachas de abandono, monotonía de estímulo.
+[/DESEQUILIBRIOS]
+
+[SOBRECARGA_PROGRESIVA]
+¿Se observa progresión real de cargas a lo largo del tiempo? ¿El volumen y frecuencia son óptimos para el nivel del atleta? ¿Hay estancamiento? Usa los datos de ejercicios frecuentes.
+[/SOBRECARGA_PROGRESIVA]
+
+[RECUPERACION]
+Analiza la periodización real en los datos mensuales: ¿hay deloads naturales? ¿sobreentrenamiento crónico? ¿subentreno? Correlaciona valoraciones con frecuencia. Analiza también el tiempo de sesión: ¿es adecuado para los objetivos? ¿tendencia a sesiones más largas o más cortas?
+[/RECUPERACION]
+
+[CALORIAS_TIEMPO]
+Analiza la eficiencia calórica y el tiempo de entrenamiento: ¿son las calorías quemadas coherentes con el tipo y duración de las sesiones? ¿la eficiencia kcal/min es buena para el tipo de entreno? ¿hay margen para optimizar el gasto calórico? Incluye comparativa entre tipos de entrenamiento si hay datos.
+[/CALORIAS_TIEMPO]
+
+[PLAN_4_SEMANAS]
+Plan de optimización basado en los déficits históricos reales:
+FASE 1 (sem 1-2): correcciones prioritarias con ejercicios y volúmenes concretos.
+FASE 2 (sem 3-4): progresión con nuevos estímulos.
+[/PLAN_4_SEMANAS]
+
+[METRICAS_CLAVE]
+3 KPIs concretos con valores objetivo realistas para ESTE atleta basados en su historial.
+[/METRICAS_CLAVE]`;
+
+  try{
+    const{data}=await apiCall('POST','/ai/import',{prompt});
+    if(!data.ok)throw new Error(data.error||'Error de IA');
+    if(_apTimer)clearInterval(_apTimer);
+    _apSet(100,'¡Análisis completado!','');
+    await new Promise(r=>setTimeout(r,300));
+    try{localStorage.setItem(_uk('coach_analisis'),JSON.stringify({text:data.text,ts:Date.now(),stats:ctx}));}catch(e){}
+    _coachAnalisisShow(body,data.text,false);
+  }catch(err){
+    if(_apTimer)clearInterval(_apTimer);
+    body.innerHTML='<div style="text-align:center;padding:20px 16px">'
+      +'<div style="font-size:32px;margin-bottom:10px">⚠️</div>'
+      +'<div style="color:var(--danger);font-size:13px;font-weight:600;margin-bottom:8px">Error al analizar</div>'
+      +'<div style="color:var(--text2);font-size:12px;background:var(--bg2);border-radius:8px;padding:10px 12px;text-align:left;word-break:break-word">'+err.message+'</div>'
+      +'</div>';
+  }
+}
+
+function _coachAnalisisShow(body,text,fromCache){
+  function getSec(tag){
+    const m=text.match(new RegExp('\\['+tag+'\\]([\\s\\S]*?)\\[/'+tag+'\\]'));
+    return m?m[1].trim():null;
+  }
+  const puntuacion=getSec('PUNTUACION');
+  const fortalezas=getSec('FORTALEZAS');
+  const deseq=getSec('DESEQUILIBRIOS');
+  const sobrecarga=getSec('SOBRECARGA_PROGRESIVA');
+  const recuperacion=getSec('RECUPERACION');
+  const calTiempo=getSec('CALORIAS_TIEMPO');
+  const plan=getSec('PLAN_4_SEMANAS');
+  const metricas=getSec('METRICAS_CLAVE');
+
+  const sm=puntuacion?puntuacion.match(/(\d+)\/100/):null;
+  const score=sm?parseInt(sm[1]):null;
+  const scoreDiag=puntuacion?(puntuacion.replace(/\d+\/100\s*/,'').trim()):'';
+  const scoreColor=score===null?'#888':score>=80?'#66bb6a':score>=60?'#ffa726':'#ef5350';
+
+  let html='';
+  if(fromCache){
+    html+='<div style="font-size:11px;color:var(--text2);text-align:right;padding:8px 16px 0;opacity:.7">'
+      +'Análisis guardado · <span style="color:var(--accent);cursor:pointer" onclick="coachAnalisis(true)">Regenerar</span></div>';
+  }
+
+  // Score card
+  if(score!==null){
+    html+='<div style="text-align:center;padding:18px 16px 10px">'
+      +'<div style="display:inline-flex;align-items:center;justify-content:center;width:88px;height:88px;border-radius:50%;border:4px solid '+scoreColor+';background:var(--bg2);margin-bottom:10px">'
+      +'<div><div style="font-size:28px;font-weight:900;color:'+scoreColor+';font-family:var(--font-b);line-height:1">'+score+'</div>'
+      +'<div style="font-size:10px;color:var(--text2);margin-top:-1px">/100</div></div></div>'
+      +(scoreDiag?'<div style="font-size:12px;color:var(--text2);max-width:280px;margin:0 auto;line-height:1.4;font-style:italic">"'+scoreDiag+'"</div>':'')
+      +'</div>';
+  }
+
+  // Section renderer
+  function sec(icon,title,content,accent){
+    if(!content)return'';
+    return'<div style="margin:0 12px 10px;background:var(--bg2);border-radius:12px;overflow:hidden;border:1px solid var(--border)">'
+      +'<div style="display:flex;align-items:center;gap:8px;padding:9px 14px 7px;border-bottom:1px solid var(--border)">'
+      +'<span style="font-size:15px">'+icon+'</span>'
+      +'<span style="font-size:11px;font-weight:700;color:'+(accent||'var(--accent)')+';text-transform:uppercase;letter-spacing:.6px">'+title+'</span></div>'
+      +'<div style="padding:10px 14px 12px;font-size:12px;color:var(--text);line-height:1.65;white-space:pre-wrap">'+content+'</div></div>';
+  }
+
+  html+=sec('💪','Fortalezas',fortalezas,'#66bb6a');
+  html+=sec('⚠️','Desequilibrios detectados',deseq,'#ef5350');
+  html+=sec('📈','Sobrecarga progresiva',sobrecarga,'#42a5f5');
+  html+=sec('🔄','Recuperación y periodización',recuperacion,'#ab47bc');
+  html+=sec('🔥','Calorías y tiempo de entrenamiento',calTiempo,'#ff7043');
+  html+=sec('📋','Plan de optimización 4 semanas',plan,'#ffa726');
+  html+=sec('🎯','Métricas clave a trackear',metricas,'#26c6da');
+
+  // Fallback: texto libre si la IA no respetó el formato
+  if(!fortalezas&&!plan){
+    html+='<div style="padding:12px 16px;font-size:12px;color:var(--text);line-height:1.65;white-space:pre-wrap">'+text+'</div>';
+  }
+
+  // Botones
+  html+='<div style="padding:10px 12px 16px;display:flex;gap:8px">'
+    +'<button onclick="coachAnalisis(true)" style="flex:1;padding:10px 4px;background:var(--bg3);color:var(--text2);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer">🔄 Regenerar</button>'
+    +'<button onclick="_descargarAnalisisWord()" style="flex:1.6;padding:10px 4px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">📄 Descargar Word</button>'
+    +'</div>';
+
+  body.innerHTML=html;
+}
+
+function _descargarAnalisisWord(){
+  const cached=JSON.parse(localStorage.getItem(_uk('coach_analisis'))||'null');
+  if(!cached||!cached.text){showToast('No hay análisis guardado','error');return;}
+  const text=cached.text;
+  const u=JSON.parse(localStorage.getItem('gymy_user')||'{}');
+  const fecha=new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
+  const s=_coachStats;
+
+  function getSec(tag){
+    const m=text.match(new RegExp('\\['+tag+'\\]([\\s\\S]*?)\\[/'+tag+'\\]'));
+    return m?m[1].trim().replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'):'—';
+  }
+  const sm=text.match(/(\d+)\/100/);
+  const score=sm?sm[1]:'—';
+  const scoreColor=sm?(parseInt(sm[1])>=80?'#388E3C':parseInt(sm[1])>=60?'#F57C00':'#C62828'):'#555';
+  const horas=Math.floor((s?.totalMinutos||0)/60);
+
+  const statsTable=s?`<table style="width:100%;border-collapse:collapse;margin:10pt 0 16pt;font-size:10pt">
+    <tr style="background:#E3F2FD"><th colspan="4" style="padding:6pt 8pt;text-align:left;color:#0D47A1;font-size:11pt">📊 Estadísticas del atleta</th></tr>
+    <tr><td style="padding:5pt 8pt;border:1px solid #ccc;width:25%"><b>Sesiones totales</b></td><td style="padding:5pt 8pt;border:1px solid #ccc">${s.total}</td>
+        <td style="padding:5pt 8pt;border:1px solid #ccc;width:25%"><b>Horas entrenadas</b></td><td style="padding:5pt 8pt;border:1px solid #ccc">${horas}h</td></tr>
+    <tr style="background:#f9f9f9"><td style="padding:5pt 8pt;border:1px solid #ccc"><b>Calorías totales</b></td><td style="padding:5pt 8pt;border:1px solid #ccc">${s.totalCalorias||0} kcal</td>
+        <td style="padding:5pt 8pt;border:1px solid #ccc"><b>Valoración media</b></td><td style="padding:5pt 8pt;border:1px solid #ccc">${s.mediaValoracion||'—'}/5</td></tr>
+    <tr><td style="padding:5pt 8pt;border:1px solid #ccc"><b>Racha actual</b></td><td style="padding:5pt 8pt;border:1px solid #ccc">${s.racha} días</td>
+        <td style="padding:5pt 8pt;border:1px solid #ccc"><b>Esta semana</b></td><td style="padding:5pt 8pt;border:1px solid #ccc">${s.ultimasSemana} sesiones</td></tr>
+  </table>`:'';
+
+  const secHtml=(icon,title,tag,color)=>`<h2 style="font-size:13pt;color:${color};margin-top:20pt;margin-bottom:4pt;border-left:4px solid ${color};padding-left:8pt">${icon} ${title}</h2><p style="margin:4pt 0 10pt;font-size:10.5pt;line-height:1.6">${getSec(tag)}</p>`;
+
+  const wordHtml=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>Análisis Científico Sasha</title>
+<style>
+  body{font-family:Calibri,Arial,sans-serif;max-width:720px;margin:0 auto;color:#222;font-size:11pt;line-height:1.5}
+  h1{font-size:18pt;color:#1565C0;border-bottom:3px solid #1565C0;padding-bottom:6pt;margin-bottom:2pt}
+  .meta{color:#666;font-size:9.5pt;margin-bottom:16pt}
+  .score-box{text-align:center;margin:14pt 0;padding:16pt;background:#F5F5F5;border:2px solid ${scoreColor};border-radius:6pt}
+  .score-num{font-size:44pt;font-weight:bold;color:${scoreColor};line-height:1}
+  .score-label{font-size:10pt;color:#555}
+  .diag{font-style:italic;color:#333;font-size:11pt;margin-top:6pt}
+  .footer{margin-top:28pt;font-size:9pt;color:#888;border-top:1px solid #ccc;padding-top:8pt;text-align:center}
+</style></head>
+<body>
+<h1>🔬 Análisis Científico de Entrenamiento</h1>
+<div class="meta">Atleta: <strong>${u.username||'Usuario'}</strong> &nbsp;·&nbsp; Fecha de análisis: ${fecha} &nbsp;·&nbsp; Generado por Coach Sasha · GyMy</div>
+
+${statsTable}
+
+<div class="score-box">
+  <div class="score-num">${score}<span style="font-size:22pt;color:#888">/100</span></div>
+  <div class="diag">"${getSec('PUNTUACION').replace(/\d+\/100<br>/,'')}"</div>
+</div>
+
+${secHtml('💪','Fortalezas','FORTALEZAS','#2E7D32')}
+${secHtml('⚠️','Desequilibrios Detectados','DESEQUILIBRIOS','#C62828')}
+${secHtml('📈','Sobrecarga Progresiva','SOBRECARGA_PROGRESIVA','#1565C0')}
+${secHtml('🔄','Recuperación y Periodización','RECUPERACION','#6A1B9A')}
+${secHtml('🔥','Calorías y Tiempo de Entrenamiento','CALORIAS_TIEMPO','#BF360C')}
+${secHtml('📋','Plan de Optimización — 4 Semanas','PLAN_4_SEMANAS','#E65100')}
+${secHtml('🎯','Métricas Clave a Trackear','METRICAS_CLAVE','#00695C')}
+
+<div class="footer">GyMy · Coach Sasha · https://gymy-production.up.railway.app · ${fecha}</div>
+</body></html>`;
+
+  const blob=new Blob(['\ufeff'+wordHtml],{type:'application/msword'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='analisis-sasha-'+(u.username||'atleta')+'-'+new Date().toISOString().split('T')[0]+'.doc';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),5000);
+  showToast('📄 Descargando análisis...','ok');
 }
 
 function renderProgreso(semanas){
@@ -1247,7 +1680,7 @@ function setTipoFilter(tipo,el){
 }
 async function populateGrupoFilters(){
   await loadCatalogo();
-  const cache=window._catalogoCache||{};
+  const cache=_catalogoCache||{};
   const grupos=Object.keys(cache).sort();
   const gEl=document.getElementById('grupo-filters');
   if(!gEl||!grupos.length)return;
@@ -1260,7 +1693,7 @@ async function populateGrupoFilters(){
 function _renderSubgrupoFilters(){
   const sEl=document.getElementById('subgrupo-filters');if(!sEl)return;
   if(!currentGrupoFilter){sEl.style.display='none';sEl.innerHTML='';return;}
-  const cache=window._catalogoCache||{};
+  const cache=_catalogoCache||{};
   const ejs=cache[currentGrupoFilter]||[];
   const subgrupos=[...new Set(ejs.map(e=>e.sg).filter(Boolean))].sort();
   if(!subgrupos.length){sEl.style.display='none';return;}
@@ -1473,6 +1906,49 @@ async function openDetalle(id){
   openModal('modal-detalle');
 }
 
+function borrarSesionConfirm(id){
+  closeModal('modal-detalle');
+  showConfirm('¿Eliminar sesión?','Esta acción no se puede deshacer.','Eliminar',async()=>{
+    const{data}=await eliminarSesion(id);
+    if(data.ok){showToast('Sesión eliminada','info');loadDashboard();loadHistorial();}
+    else showToast(data.error,'error');
+  });
+}
+
+async function repetirWorkout(id){
+  closeModal('modal-detalle');
+  const{data}=await getSesion(id);
+  if(!data.ok){showToast('Error al cargar sesión','error');return;}
+  const s=data.sesion;
+  const catFlat={};
+  if(_catalogoCache){
+    for(const[grupo,ejs]of Object.entries(_catalogoCache)){
+      for(const ej of ejs){if(ej.n)catFlat[ej.n.toLowerCase().trim()]={em:ej.em,equipo:ej.equipo||null,m:grupo};}
+    }
+  }
+  const ejMap={},ejOrder=[];
+  (s.ejercicios||[]).forEach(e=>{
+    const key=e.nombre.toLowerCase().trim();
+    if(!ejMap[key]){
+      const cat=catFlat[key]||{};
+      ejMap[key]={em:cat.em||'💪',equipo:cat.equipo||null,n:e.nombre,m:cat.m||e.nombre.toUpperCase(),sets:[]};
+      ejOrder.push(key);
+    }
+    let sets=null;
+    if(e.sets_data){try{sets=JSON.parse(e.sets_data);}catch(x){}}
+    if(sets?.length){
+      sets.forEach(st=>ejMap[key].sets.push({kg:st.kg!=null?st.kg:(st.peso_kg!=null?st.peso_kg:0),reps:st.reps||0}));
+    }else{
+      const n=e.series||1;
+      for(let i=0;i<n;i++)ejMap[key].sets.push({kg:e.peso_kg||0,reps:e.reps||0});
+    }
+  });
+  sessionStorage.setItem('gymy_preload_workout',JSON.stringify({tipo:s.tipo,fromHistory:true,ejercicios:ejOrder.map(k=>ejMap[k])}));
+  const btn=document.getElementById('tab-workout');
+  if(btn)btn.style.display='flex';
+  goTab('workout',btn);
+}
+
 
 // ══════════════════════════════════════════════
 // STATS
@@ -1673,9 +2149,9 @@ function _setupChartLongPress(canvasId,entries){
       const entry=entries[pts[0].index];
       if(!entry)return;
       if(confirm('Ver sesión del '+formatFecha(entry.fecha)+'?')){
-        const qEl=document.getElementById('hist-search');
+        const qEl=document.getElementById('search-q');
         if(qEl){qEl.value=formatFecha(entry.fecha);}
-        showScreen('historial');
+        goTab('historial',document.getElementById('tab-historial'));
         loadHistorial();
       }
     },600);
@@ -2644,12 +3120,12 @@ function wkInit(){
     sessionStorage.removeItem('gymy_preload_workout');
     try{
       const pw=JSON.parse(preloadData);
-      wkCurTipo=pw.tipo||'Fuerza';
+      wkExs=[];wkEid=0;wkCurTipo=pw.tipo||'Fuerza';
       pw.ejercicios.forEach(e=>{
         const id=wkEid++;
         const sets=(e.sets&&e.sets.length)
-          ?e.sets.map(s=>({kg:s.kg!=null?s.kg:60,reps:s.reps||10,done:false,pre:true}))
-          :[{kg:e.kg!=null?e.kg:60,reps:e.reps||10,done:false,pre:true}];
+          ?e.sets.map(s=>({kg:s.kg!=null?s.kg:0,reps:s.reps||0,done:false,pre:true}))
+          :[{kg:e.kg!=null?e.kg:0,reps:e.reps||0,done:false,pre:true}];
         wkExs.push({id,em:e.em||'💪',equipo:e.equipo||null,n:e.n,m:e.m||e.n.toUpperCase(),sets});
       });
       wkActivate();
@@ -2829,7 +3305,7 @@ function bodyHeatmapSVGHtml(seriesMap){
   const d='rgba(128,128,128,.16)',n='rgba(128,128,128,.10)';
   const c=id=>rs[id]?(_heatColor(rs[id]/maxS)||d):d;
   const t=id=>`<title>${IL[id]||id}${rs[id]?': '+rs[id]+' series':''}</title>`;
-  return`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 180" style="width:100%;max-width:160px;display:block;margin:0 auto">
+  return`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 180" style="width:auto;height:100%;display:block;margin:0 auto">
   <circle cx="30" cy="14" r="10" fill="${n}" stroke="rgba(128,128,128,.25)" stroke-width=".5"/>
   <rect x="26.5" y="23" width="7" height="6" fill="${n}" rx="2"/>
   <ellipse cx="15" cy="38" rx="10" ry="7" fill="${c('fdl')}">${t('fdl')}</ellipse>
@@ -3367,7 +3843,9 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js').catch(()=>{});
 }
 </script>
-<script src="/import.js"></script>
+<script src="/js/import-parse.js"></script>
+<script src="/js/import-match.js"></script>
+<script src="/js/import.js"></script>
 
 <!-- Modal selector ejercicio stats -->
 <div class="modal-overlay" id="modal-stats-ej" style="align-items:flex-end;justify-content:center">
@@ -3381,30 +3859,5 @@ if('serviceWorker' in navigator){
     <div id="stats-modal-body" style="overflow-y:auto;padding:4px 0 16px"></div>
   </div>
 </div>
-
-<!-- JS modules — strict load order -->
-<script src="/js/config.js"></script>
-<script src="/js/utils.js"></script>
-<script src="/js/api.js"></script>
-<script src="/js/auth.js"></script>
-<script src="/js/nav.js"></script>
-<script src="/js/coach.js"></script>
-<script src="/js/dashboard.js"></script>
-<script src="/js/history-card.js"></script>
-<script src="/js/history-detail.js"></script>
-<script src="/js/history.js"></script>
-<script src="/js/stats.js"></script>
-<script src="/js/catalog.js"></script>
-<script src="/js/settings.js"></script>
-<script src="/js/profile.js"></script>
-<script src="/js/modals.js"></script>
-<script src="/js/workout-state.js"></script>
-<script src="/js/workout-selector.js"></script>
-<script src="/js/workout-card.js"></script>
-<script src="/js/workout.js"></script>
-<script src="/js/import-parse.js"></script>
-<script src="/js/import-match.js"></script>
-<script src="/js/import.js"></script>
-<script src="/js/app.js"></script>
 </body>
 </html>
