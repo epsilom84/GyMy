@@ -1163,16 +1163,23 @@ async function coachAnalisis(forzar){
 
   body.innerHTML=
     '<div style="padding:32px 20px 28px">'
-    +'<div style="text-align:center;margin-bottom:20px">'
-    +'<div style="font-size:36px;margin-bottom:10px">🔬</div>'
+    +'<div style="text-align:center;margin-bottom:22px">'
+    +'<div style="font-size:36px;margin-bottom:12px">🔬</div>'
     +'<div id="_ap_label" style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">Preparando análisis...</div>'
-    +'<div id="_ap_sub" style="font-size:11px;color:var(--text2);opacity:.7">Paso 1 de 3</div>'
+    +'<div id="_ap_sub" style="font-size:11px;color:var(--text2)">Paso 1 de 3</div>'
     +'</div>'
-    +'<div style="background:var(--bg3);border-radius:99px;height:6px;overflow:hidden">'
-    +'<div id="_ap_bar" style="height:100%;border-radius:99px;background:var(--accent);width:0%;transition:width .4s ease"></div>'
+    +'<div style="background:var(--bg3);border-radius:99px;height:8px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.15)">'
+    +'<div id="_ap_bar" style="height:100%;border-radius:99px;background:var(--accent);width:4%;transition:width .5s cubic-bezier(.4,0,.2,1)"></div>'
     +'</div>'
-    +'<div id="_ap_pct" style="text-align:right;font-size:10px;color:var(--text2);margin-top:4px;opacity:.6">0%</div>'
+    +'<div style="display:flex;justify-content:space-between;margin-top:6px">'
+    +'<div style="font-size:10px;color:var(--text2);opacity:.5">0%</div>'
+    +'<div id="_ap_pct" style="font-size:10px;color:var(--accent);font-weight:700">4%</div>'
+    +'</div>'
     +'</div>';
+
+  // Yield to browser so it can paint the initial bar before any update
+  await new Promise(r=>requestAnimationFrame(r));
+  await new Promise(r=>requestAnimationFrame(r));
 
   function _apSet(pct,label,sub){
     const bar=document.getElementById('_ap_bar');
@@ -1180,23 +1187,23 @@ async function coachAnalisis(forzar){
     const slbl=document.getElementById('_ap_sub');
     const pctEl=document.getElementById('_ap_pct');
     if(bar)bar.style.width=pct+'%';
-    if(lbl)lbl.textContent=label;
-    if(slbl)slbl.textContent=sub;
+    if(lbl&&label)lbl.textContent=label;
+    if(slbl&&sub!==undefined)slbl.textContent=sub;
     if(pctEl)pctEl.textContent=pct+'%';
   }
 
   let _apTimer=null;
   function _apAnimate(from,to,ms){
     if(_apTimer)clearInterval(_apTimer);
-    const steps=20,inc=(to-from)/steps,interval=ms/steps;
+    const steps=30,inc=(to-from)/steps,interval=ms/steps;
     let cur=from;
     _apTimer=setInterval(()=>{
-      cur+=inc;
-      if(cur>=to){cur=to;clearInterval(_apTimer);}
+      cur=Math.min(cur+inc,to);
       const bar=document.getElementById('_ap_bar');
       const pctEl=document.getElementById('_ap_pct');
       if(bar)bar.style.width=Math.round(cur)+'%';
       if(pctEl)pctEl.textContent=Math.round(cur)+'%';
+      if(cur>=to)clearInterval(_apTimer);
     },interval);
   }
 
@@ -1260,27 +1267,52 @@ async function coachAnalisis(forzar){
   // Distribución grupos musculares
   const grupoResumen=fs.porGrupo.slice(0,8).map(g=>`${g.grupo_muscular}(${g.total_series}s,${g.sesiones_presentes}ses)`).join(' · ')||'sin datos';
 
-  // Tipos de entrenamiento con duración y calorías
+  // ── Estimaciones de referencia por tipo ──
+  const _DUR_EST={Fuerza:60,Cardio:45,HIIT:35,Yoga:50,Pilates:50,
+    Pecho:55,Espalda:55,Piernas:65,Hombros:50,Brazos:45,Core:40,Otro:55};
+  const _KCAL_MIN={Fuerza:6,Cardio:9,HIIT:11,Yoga:4,Pilates:5,
+    Pecho:6,Espalda:6,Piernas:7,Hombros:6,Brazos:5,Core:6,Otro:6.5};
+
+  // Calcular minutos/kcal reales + estimados para sesiones sin registro
+  let _minEst=0,_kcalEst=0;
+  fs.porTipo.forEach(t=>{
+    const n=parseInt(t.n),durR=parseFloat(t.avg_min)||0,kcalR=parseFloat(t.avg_kcal)||0;
+    const durE=_DUR_EST[t.tipo]||55,kcalE=(_KCAL_MIN[t.tipo]||6.5);
+    if(!durR)_minEst+=n*durE;
+    if(!kcalR)_kcalEst+=n*(durR||durE)*kcalE;
+  });
+  const totalMinReal=s.totalMinutos||0;
+  const totalKcalReal=s.totalCalorias||0;
+  const totalMinComb=totalMinReal+_minEst;
+  const totalKcalComb=totalKcalReal+Math.round(_kcalEst);
+  const hayEstDur=_minEst>0,hayEstKcal=_kcalEst>0;
+  const horasT=Math.floor(totalMinComb/60),minsT=Math.round(totalMinComb%60);
+  const avgMinSesion=s.total>0?Math.round(totalMinComb/s.total):0;
+  const avgKcalSesion=s.total>0?Math.round(totalKcalComb/s.total):0;
+
+  // Tipos con dur/kcal reales o estimados
   const tiposCompleto=fs.porTipo.map(t=>{
-    const dur=t.avg_min>0?` ${t.avg_min}min/ses`:'';
-    const kcal=t.avg_kcal>0?` ${t.avg_kcal}kcal/ses`:'';
-    return `${t.tipo}: ${t.n}ses(${t.pct}%)${dur}${kcal}`;
+    const durR=parseFloat(t.avg_min)||0,kcalR=parseFloat(t.avg_kcal)||0;
+    const durE=_DUR_EST[t.tipo]||55,kcalE=(_KCAL_MIN[t.tipo]||6.5)*(durR||durE);
+    const durStr=durR>0?`${t.avg_min}min`:`~${durE}min`;
+    const kcalStr=kcalR>0?`${t.avg_kcal}kcal`:`~${Math.round(kcalE)}kcal`;
+    const nota=(!durR||!kcalR)?'(est)':'';
+    return `${t.tipo}: ${t.n}ses(${t.pct}%) ${durStr}/ses ${kcalStr}/ses${nota}`;
   }).join('\n')||'—';
 
-  // Calorías y tiempo por tipo: eficiencia calórica
-  const eficienciaKcal=fs.porTipo.filter(t=>t.avg_min>0&&t.avg_kcal>0)
-    .map(t=>`${t.tipo}: ${(t.avg_kcal/t.avg_min).toFixed(1)} kcal/min`).join(' · ')||'—';
+  // Eficiencia calórica por tipo (real o estimada)
+  const eficienciaKcal=fs.porTipo.map(t=>{
+    const durR=parseFloat(t.avg_min)||0,kcalR=parseFloat(t.avg_kcal)||0;
+    const dur=durR||((_DUR_EST[t.tipo])||55);
+    const kcal=kcalR||Math.round((_KCAL_MIN[t.tipo]||6.5)*dur);
+    return `${t.tipo}: ${(kcal/dur).toFixed(1)}kcal/min${(!durR||!kcalR)?'(est)':''}`;
+  }).join(' · ')||'—';
 
-  // Calorías globales y tiempo: totales por mes con tendencia
-  const mesesConCal=meses.filter(m=>parseInt(m.calorias)>0);
-  const avgKcalMes=mesesConCal.length
-    ?Math.round(mesesConCal.reduce((a,m)=>a+parseInt(m.calorias),0)/mesesConCal.length):0;
-  const mesesConMin=meses.filter(m=>parseInt(m.minutos)>0);
-  const avgMinMes=mesesConMin.length
-    ?Math.round(mesesConMin.reduce((a,m)=>a+parseInt(m.minutos),0)/mesesConMin.length):0;
-
-  // Ratio tiempo/sesión global
-  const avgMinSesion=s.total>0?Math.round((s.totalMinutos||0)/s.total):0;
+  // Promedios mensuales (combinando reales y estimados)
+  const avgKcalMes=mesesActivos.length
+    ?Math.round(totalKcalComb/mesesActivos.length):0;
+  const avgMinMes=mesesActivos.length
+    ?Math.round(totalMinComb/mesesActivos.length):0;
 
   // Top ejercicios frecuencia
   const topFreq=fs.topEjercicios.slice(0,12).map(e=>{
@@ -1301,8 +1333,8 @@ HISTORIAL COMPLETO: desde ${fs.primeraFecha||'desconocido'} hasta hoy (${mesesTo
 
 ── MÉTRICAS GLOBALES (historial completo) ──
 · Sesiones totales: ${s.total}
-· Horas totales entrenadas: ${horas}h ${mins}min
-· Calorías totales quemadas: ${s.totalCalorias||0} kcal
+· Horas totales entrenadas: ${horasT}h ${minsT}min${hayEstDur?' (est. parcial)':''}
+· Calorías totales quemadas: ${totalKcalComb} kcal${hayEstKcal?' (est. parcial)':''}
 · Valoración media global: ${s.mediaValoracion||0}/5
 · Racha actual: ${s.racha} días consecutivos
 · Consistencia mensual histórica: ${consistencia}% (${mesesActivos.length}/${mesesTotalesHistorial} meses activos)
@@ -1312,15 +1344,16 @@ HISTORIAL COMPLETO: desde ${fs.primeraFecha||'desconocido'} hasta hoy (${mesesTo
 · Peor mes: ${peorMes.mes||'—'} (${peorMes.sesiones||0} sesiones)
 · Día favorito de entrenamiento: ${diaTop?`${DIAS_ES[parseInt(diaTop.dow)%7]}(${diaTop.n}x)`:'—'}
 
-── TIEMPO DE ENTRENAMIENTO ──
-· Horas totales: ${horas}h ${mins}min
-· Duración media por sesión: ${avgMinSesion||'—'} min/sesión
-· Minutos medios por mes (con datos): ${avgMinMes||'—'} min/mes
-· Horas medias mensuales: ${avgMinMes?Math.round(avgMinMes/60*10)/10:'—'} h/mes
+── TIEMPO DE ENTRENAMIENTO${hayEstDur?' (reales + estimados)':''} ──
+· Horas totales: ${horasT}h ${minsT}min${hayEstDur?' ('+Math.floor(_minEst/60)+'h estimadas para ses. sin registro)':''}
+· Duración media por sesión: ${avgMinSesion} min/sesión${hayEstDur?' (est)':''}
+· Minutos medios por mes: ${avgMinMes} min/mes
+· Horas medias mensuales: ${Math.round(avgMinMes/60*10)/10} h/mes
 
-── CALORÍAS ──
-· Calorías totales quemadas: ${s.totalCalorias||0} kcal
-· Calorías medias por mes (con datos): ${avgKcalMes||'—'} kcal/mes
+── CALORÍAS${hayEstKcal?' (reales + estimados)':''} ──
+· Calorías totales: ${totalKcalComb} kcal${hayEstKcal?' ('+Math.round(_kcalEst)+' estimadas para ses. sin registro)':''}
+· Calorías medias por sesión: ${avgKcalSesion} kcal/sesión${hayEstKcal?' (est)':''}
+· Calorías medias por mes: ${avgKcalMes} kcal/mes
 · Eficiencia calórica por tipo: ${eficienciaKcal}
 
 ── TIPOS DE ENTRENAMIENTO con duración y calorías (histórico) ──
@@ -1344,6 +1377,7 @@ ${evolucionMensual}`;
   const prompt=`Eres Coach Sasha, doctora en ciencias del deporte y entrenadora de élite. Tono: científico, directo y con la ironía española que te caracteriza. Usa terminología real: RPE, RM, DOMS, mesociclo, deload, hipertrofia, etc.
 
 Analiza el HISTORIAL COMPLETO de entrenamiento de este atleta. Tienes datos de TODOS sus entrenos desde el inicio. Aprovéchalo para identificar tendencias a largo plazo, no solo lo reciente.
+NOTA: los valores marcados con "(est)" son estimaciones basadas en promedios científicos por tipo de sesión cuando el usuario no registró el dato real. Úsalos con normalidad en el análisis, mencionando brevemente que son estimaciones donde corresponda.
 
 ${ctx}
 
