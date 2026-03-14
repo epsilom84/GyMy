@@ -142,14 +142,22 @@ async function _fetchAllHistory(){
     const{data}=await getSesiones({limit:1000});
     if(!data.ok)return null;
     const sesiones=data.sesiones||[];
+    // Estimar duración y calorías para sesiones sin datos guardados
+    let _pw=70;try{const _pd=JSON.parse(localStorage.getItem(_uk('profile_data'))||'{}');_pw=parseFloat(_pd.peso_corporal)||70;}catch(e){}
+    sesiones.forEach(s=>{
+      if(!s.duracion_min&&(s.ejercicios||[]).length>0)
+        s._durEst=Math.min(180,Math.max(15,5+(s.ejercicios||[]).reduce((a,e)=>a+(e.series||1)*3+1,0)));
+      if(!s.calorias&&(s.duracion_min||s._durEst))
+        s._calEst=Math.round(5*_pw*((s.duracion_min||s._durEst)/60));
+    });
     // Por tipo
     const byTipo={};
     sesiones.forEach(s=>{
       const t=s.tipo||'Sin tipo';
       if(!byTipo[t])byTipo[t]={count:0,minutos:0,calorias:0};
       byTipo[t].count++;
-      byTipo[t].minutos+=s.duracion_min||0;
-      byTipo[t].calorias+=s.calorias||0;
+      byTipo[t].minutos+=s.duracion_min||s._durEst||0;
+      byTipo[t].calorias+=s.calorias||s._calEst||0;
     });
     // Por mes (últimos 12)
     const byMonth={};
@@ -158,8 +166,8 @@ async function _fetchAllHistory(){
       if(!m)return;
       if(!byMonth[m])byMonth[m]={count:0,minutos:0,calorias:0};
       byMonth[m].count++;
-      byMonth[m].minutos+=s.duracion_min||0;
-      byMonth[m].calorias+=s.calorias||0;
+      byMonth[m].minutos+=s.duracion_min||s._durEst||0;
+      byMonth[m].calorias+=s.calorias||s._calEst||0;
     });
     // Frecuencia de ejercicios en todo el historial
     const ejFreq={};
@@ -199,10 +207,17 @@ function _coachCtxStr(s,nombre,hist){
     if(parts.length)perfil='\n- Perfil físico: '+parts.join(', ');
   }catch(e){}
 
-  // Últimas 5 sesiones
+  // Últimas 5 sesiones (con estimación si falta duracion_min o calorias)
+  let _pw2=70;try{const _pd=JSON.parse(localStorage.getItem(_uk('profile_data'))||'{}');_pw2=parseFloat(_pd.peso_corporal)||70;}catch(e){}
   const recDetail=(s.recientes||[]).slice(0,5).map(r=>{
-    const dur=r.duracion_min?r.duracion_min+' min':'—';
-    const cal=r.calorias?r.calorias+' kcal':'—';
+    const ejs=r.ejercicios||[];
+    const durReal=r.duracion_min;
+    const durEst=!durReal&&ejs.length>0?Math.min(180,Math.max(15,5+ejs.reduce((a,e)=>a+(e.series||1)*3+1,0))):0;
+    const durMin=durReal||durEst;
+    const calReal=r.calorias;
+    const calEst=!calReal&&durMin?Math.round(5*_pw2*(durMin/60)):0;
+    const dur=durReal?durReal+' min':durEst?'~'+durEst+' min':'—';
+    const cal=calReal?calReal+' kcal':calEst?'~'+calEst+' kcal':'—';
     const ejs=(r.ejercicios||[]).slice(0,5).map(e=>e.nombre).join(', ')||'—';
     return`  ${(r.fecha||'').slice(0,10)} | ${r.tipo||'?'} | ${dur} | ${cal} | val:${r.valoracion||'—'} | ${ejs}`;
   }).join('\n')||'  sin datos';
@@ -253,7 +268,8 @@ ${progDetail}${extra}`;
 }
 
 async function coachPlan(forzar){
-  document.getElementById('coach-plan-title').textContent='🏋️‍♀️ Plan de Sasha';
+  const _titleEl=document.getElementById('coach-plan-title');
+  if(_titleEl)_titleEl.textContent='🏋️‍♀️ Plan de Sasha';
   openModal('modal-coach-plan');
   const body=document.getElementById('coach-plan-body');
 
@@ -308,7 +324,8 @@ INSTRUCCIONES:
 }
 
 async function coachAnalisis(forzar){
-  document.getElementById('coach-plan-title').textContent='📊 Análisis de Sasha';
+  const _titleEl=document.getElementById('coach-plan-title');
+  if(_titleEl)_titleEl.textContent='📊 Análisis de Sasha';
   openModal('modal-coach-plan');
   const body=document.getElementById('coach-plan-body');
 
