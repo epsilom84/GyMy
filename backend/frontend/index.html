@@ -85,8 +85,8 @@
         <div class="coach-body">
           <div class="coach-name">COACH SASHA</div>
           <div class="coach-bubble" id="coach-phrase"> </div>
-          <div class="coach-hint" style="display:flex;align-items:center;gap:8px;margin-top:6px">
-            <span>Mantén pulsado para</span>
+          <div class="coach-hint" style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap">
+            <button onclick="event.stopPropagation();coachAnalisis()" style="background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font-b)">🔍 Analizar</button>
             <button onclick="event.stopPropagation();coachPlan()" style="background:var(--accent);color:#000;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font-b)">✨ Crear plan</button>
           </div>
         </div>
@@ -691,7 +691,7 @@ function _clearUserCaches(){
   // Claves localStorage privadas del usuario (prefijadas con userId)
   const u=getUser();
   if(u){
-    ['offline_queue','historial_local','profile_data','coach_plan','plantillas','workout_live','rest_secs'].forEach(k=>{
+    ['offline_queue','historial_local','profile_data','coach_plan','coach_analisis','plantillas','workout_live','rest_secs'].forEach(k=>{
       localStorage.removeItem('gymy_'+u.id+'_'+k);
     });
   }
@@ -1069,6 +1069,7 @@ function _coachLpCancel(){
 const COACH_PLAN_TTL=12*60*60*1000; // 12h
 async function coachPlan(forzar){
   openModal('modal-coach-plan');
+  document.querySelector('#modal-coach-plan .modal-title').textContent='Plan de entrenamiento';
   const body=document.getElementById('coach-plan-body');
 
   // Mostrar plan cacheado si existe y es reciente
@@ -1142,6 +1143,86 @@ function _coachPlanShow(body,text,fromCache){
     const info=document.createElement('div');
     info.style.cssText='font-size:11px;color:var(--text2);text-align:right;margin-bottom:6px;opacity:.7';
     info.innerHTML='Plan guardado · <span style="color:var(--accent);cursor:pointer" onclick="coachPlan(true)">Regenerar</span>';
+    body.appendChild(info);
+  }
+  body.appendChild(div);
+}
+
+const COACH_ANALISIS_TTL=6*60*60*1000; // 6h
+async function coachAnalisis(forzar){
+  openModal('modal-coach-plan');
+  document.querySelector('#modal-coach-plan .modal-title').textContent='Análisis de Sasha';
+  const body=document.getElementById('coach-plan-body');
+
+  if(!forzar){
+    try{
+      const cached=JSON.parse(localStorage.getItem(_uk('coach_analisis'))||'null');
+      if(cached&&cached.text&&(Date.now()-cached.ts)<COACH_ANALISIS_TTL){
+        _coachAnalisisShow(body,cached.text,true);
+        return;
+      }
+    }catch(e){}
+  }
+
+  body.innerHTML='<div style="text-align:center;padding:36px 16px;color:var(--text2)">'
+    +'<div style="font-size:36px;margin-bottom:12px">🔍</div>'
+    +'<div style="font-size:13px">Sasha está analizando tus entrenos...</div></div>';
+
+  const s=_coachStats;
+  const u=JSON.parse(localStorage.getItem('gymy_user')||'{}');
+  const nombre=u.username||'el usuario';
+  const top=(s?.mejorEjercicio||[]).slice(0,8);
+  const ultTipos=(s?.recientes||[]).slice(0,10).map(r=>r.tipo).filter(Boolean);
+  const horas=Math.floor((s?.totalMinutos||0)/60);
+
+  const ctx=s
+    ?`- Nombre: ${nombre}
+- Sesiones totales: ${s.total}
+- Horas de entreno: ${horas}h
+- Racha actual: ${s.racha} días
+- Sesiones esta semana: ${s.ultimasSemana}
+- Calorías totales: ${s.totalCalorias||0} kcal
+- Valoración media: ${s.mediaValoracion||'—'}/5
+- Ejercicios con mayor peso: ${top.length?top.map(e=>`${e.nombre} (${e.max_peso}kg, ${e.veces} veces)`).join(' | '):'sin datos'}
+- Últimos tipos de entrenamiento: ${ultTipos.length?ultTipos.join(', '):'sin datos'}`
+    :'Sin historial disponible aún.';
+
+  const prompt=`Eres Coach Sasha, entrenadora personal con tono directo, irónico y genuinamente motivador.
+Analiza los datos de entrenamiento del usuario e identifica patrones, puntos fuertes y áreas de mejora.
+
+DATOS DEL USUARIO:
+${ctx}
+
+INSTRUCCIONES:
+- Identifica qué está haciendo bien (2-3 puntos concretos)
+- Señala qué grupos musculares puede estar descuidando o desequilibrios visibles
+- Da 2-3 sugerencias específicas y accionables para mejorar
+- Usa el tono habitual de Sasha: directo, irónico pero que quiere que el usuario mejore
+- Texto plano con emojis, sin markdown pesado
+- Sé concisa: que quepa en una pantalla de móvil`;
+
+  try{
+    const{data}=await apiCall('POST','/ai/import',{prompt});
+    if(!data.ok) throw new Error(data.error||'Error de IA');
+    try{localStorage.setItem(_uk('coach_analisis'),JSON.stringify({text:data.text,ts:Date.now()}));}catch(e){}
+    _coachAnalisisShow(body,data.text,false);
+  }catch(err){
+    body.innerHTML='<div style="text-align:center;padding:20px 16px">'
+      +'<div style="font-size:32px;margin-bottom:10px">⚠️</div>'
+      +'<div style="color:var(--danger);font-size:13px;font-weight:600;margin-bottom:8px">Error al analizar</div>'
+      +'<div style="color:var(--text2);font-size:12px;background:var(--bg2);border-radius:8px;padding:10px 12px;text-align:left;word-break:break-word">'+err.message+'</div>'
+      +'</div>';
+  }
+}
+function _coachAnalisisShow(body,text,fromCache){
+  const div=document.createElement('div');
+  div.className='coach-plan-text';
+  div.textContent=text;
+  body.innerHTML='';
+  if(fromCache){
+    const info=document.createElement('div');
+    info.style.cssText='font-size:11px;color:var(--text2);text-align:right;margin-bottom:6px;opacity:.7';
+    info.innerHTML='Análisis guardado · <span style="color:var(--accent);cursor:pointer" onclick="coachAnalisis(true)">Regenerar</span>';
     body.appendChild(info);
   }
   body.appendChild(div);
