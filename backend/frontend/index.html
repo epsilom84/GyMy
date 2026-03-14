@@ -184,15 +184,10 @@
       </div>
       <!-- Músculo view -->
       <div id="stats-musculos-view" style="display:none">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:0">
-        <div class="card" style="margin-bottom:0;padding:8px">
-          <div class="card-title" style="font-size:10px;margin-bottom:4px">Calor muscular</div>
-          <div id="body-heatmap-container" style="padding:0"></div>
-          <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:2px;font-size:9px;color:var(--text2)">
-            <span>Poco</span>
-            <div style="width:40px;height:4px;border-radius:4px;background:linear-gradient(to right,#66bb6a,#ffd740,#ff9800,#ef5350)"></div>
-            <span>Máx</span>
-          </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:0;align-items:start">
+        <div class="card" style="margin-bottom:0;padding:8px;text-align:center">
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">Calor muscular</div>
+          <div id="body-heatmap-container"></div>
           <!--
             <defs>
               <!-- Gaussian blur for soft heat blobs -->
@@ -356,8 +351,8 @@
           -->
         </div>
         <div class="card" style="margin-bottom:0;padding:8px">
-          <div class="card-title" style="font-size:10px;margin-bottom:4px">Distribución <span style="font-weight:400;color:var(--text2)">(series)</span></div>
-          <div style="position:relative;height:100px"><canvas id="chart-mus-donut"></canvas></div>
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">Distribución (series)</div>
+          <div style="position:relative;height:125px"><canvas id="chart-mus-donut"></canvas></div>
         </div>
         </div>
       </div>
@@ -2997,7 +2992,7 @@ function bodyHeatmapSVGHtml(seriesMap){
   const d='rgba(128,128,128,.16)',n='rgba(128,128,128,.10)';
   const c=id=>rs[id]?(_heatColor(rs[id]/maxS)||d):d;
   const t=id=>`<title>${IL[id]||id}${rs[id]?': '+rs[id]+' series':''}</title>`;
-  return`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 180" style="width:100%;max-width:90px;display:block;margin:0 auto">
+  return`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 180" style="width:100%;max-width:80px;display:block;margin:0 auto">
   <circle cx="30" cy="14" r="10" fill="${n}" stroke="rgba(128,128,128,.25)" stroke-width=".5"/>
   <rect x="26.5" y="23" width="7" height="6" fill="${n}" rx="2"/>
   <ellipse cx="15" cy="38" rx="10" ry="7" fill="${c('fdl')}">${t('fdl')}</ellipse>
