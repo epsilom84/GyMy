@@ -13,6 +13,17 @@
 /* ── CHARTS ── */
 .chart-container{position:relative;height:230px;margin-bottom:10px;}
 
+/* ── MÚSCULO VIEW ── */
+.stats-mus-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0;align-items:start;}
+.stats-mus-heatmap-card{margin-bottom:0;padding:10px;text-align:center;}
+.stats-mus-donut-card{margin-bottom:0;padding:10px;}
+.stats-mus-donut-wrap{position:relative;height:160px;}
+/* En móvil (<420px) apila vertical para que las tarjetas respiren */
+@media(max-width:420px){
+  .stats-mus-grid{grid-template-columns:1fr;}
+  .stats-mus-donut-wrap{height:200px;}
+}
+
 /* ── STAT HIGHLIGHTS ── */
 .stat-highlight{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
 .stat-hl{background:var(--bg3);border-radius:12px;padding:14px;}
