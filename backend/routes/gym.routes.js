@@ -509,7 +509,7 @@ router.get('/ejercicios/historial', async (req, res) => {
 
 // ── POST /api/ai/import — proxy to Anthropic API ──────────────────
 router.post('/ai/import', [
-  body('prompt').notEmpty().withMessage('prompt required').isLength({ max: 6000 }).withMessage('El texto no puede superar 6000 caracteres'),
+  body('prompt').notEmpty().withMessage('prompt required').isLength({ max: 10000 }).withMessage('El texto no puede superar 10000 caracteres'),
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ ok: false, error: errors.array()[0].msg });
@@ -528,7 +528,7 @@ router.post('/ai/import', [
     const client = new Anthropic({ apiKey });
     const message = await client.messages.create({
       model,
-      max_tokens: 2000,
+      max_tokens: 3000,
       messages: [{ role: 'user', content: prompt }]
     });
 
