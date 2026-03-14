@@ -54,7 +54,7 @@ function initApp(){
   cargarHistorialLocal();
   loadCatalogo().then(()=>console.log('[Catálogo] Cargado:',Object.keys(_catalogoCache||{}).length,'grupos'));
   loadPlantillas().then(()=>console.log('[Plantillas] Cargadas:',(_plantillasCache||[]).length,'ejercicios'));
-  const _pd=JSON.parse(localStorage.getItem('gymy_profile_data')||'{}');
+  const _pd=JSON.parse(localStorage.getItem(_uk('profile_data'))||'{}');
   window._wkUserPerfil={edad:parseInt(_pd.edad)||null,genero:_pd.genero||null,peso:parseFloat(_pd.peso)||null};
   apiCall('GET','/auth/me').then(r=>{if(r.data&&r.data.ok)window._wkUserPerfil=r.data.usuario;}).catch(()=>{});
   const wtab=document.getElementById('tab-workout');
@@ -83,6 +83,58 @@ window.onload=()=>{
   window.addEventListener('online',()=>{updateOfflineBadge();syncOffline();});
   window.addEventListener('offline',()=>updateOfflineBadge());
 };
+
+// ── Cargar historial local (precarga workout desde Postgres) ──
+async function cargarHistorialLocal(){
+  try{
+    const res=await apiCall('GET','/sesiones?limit=100&page=1');
+    if(!res.data?.ok||!res.data.sesiones)return;
+    const sesiones=res.data.sesiones;
+    // Agrupar ejercicios por nombre y sesión
+    const byNombreSession={};
+    for(const sesion of sesiones){
+      // Intentar usar ejercicios embebidos, o fetch individual como fallback
+      let ejercicios=sesion.ejercicios||[];
+      if(!ejercicios.length&&sesion.id){
+        try{
+          const det=await apiCall('GET','/sesiones/'+sesion.id);
+          ejercicios=det.data?.sesion?.ejercicios||[];
+        }catch(e){}
+      }
+      // Group sets by nombre within this session
+      // series||1: supports old format (1 row, series=N) and new format (1 row per set, series=1)
+      const byNombre={};
+      ejercicios.forEach(e=>{
+        if(!byNombre[e.nombre])byNombre[e.nombre]=[];
+        // Usar sets_data (datos reales por serie) si está disponible
+        if(e.sets_data){
+          try{
+            const sd=typeof e.sets_data==='string'?JSON.parse(e.sets_data):e.sets_data;
+            sd.forEach(s=>byNombre[e.nombre].push({kg:s.kg!=null?s.kg:(s.peso_kg||0),reps:s.reps||0}));
+            return;
+          }catch(x){}
+        }
+        // Fallback: formato antiguo (peso_kg y reps son el máximo de todas las series)
+        const n=e.series||1;
+        for(let i=0;i<n;i++) byNombre[e.nombre].push({kg:e.peso_kg||0,reps:e.reps||0});
+      });
+      Object.entries(byNombre).forEach(([nombre,sets])=>{
+        if(!byNombreSession[nombre])byNombreSession[nombre]=[];
+        byNombreSession[nombre].push({nombre,sets,ts:new Date(sesion.fecha).getTime()||0});
+      });
+    }
+    // Build flat array sorted by ts
+    const h=[];
+    Object.values(byNombreSession).forEach(entries=>{
+      entries.sort((a,b)=>a.ts-b.ts).forEach(e=>h.push(e));
+    });
+    if(h.length>500)h.splice(0,h.length-500);
+    localStorage.setItem(_uk('historial_local'),JSON.stringify(h));
+    console.log('[GyMy] Historial local cargado:',h.length,'entradas');
+  }catch(e){
+    console.warn('[GyMy] No se pudo cargar historial local:',e.message);
+  }
+}
 
 // Service Worker
 if('serviceWorker' in navigator){
