@@ -1,7 +1,6 @@
 /* ── COACH SASHA ── */
-.coach-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start;position:relative;overflow:hidden;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;cursor:default;}
+.coach-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start;position:relative;overflow:hidden;}
 .coach-card::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(108,71,255,.08),rgba(232,255,71,.04));pointer-events:none;}
-.coach-card.pressing{transform:scale(.985);transition:transform .1s;box-shadow:0 0 0 2px var(--accent),0 0 16px rgba(108,71,255,.3);}
 .coach-avatar-wrap{flex-shrink:0;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--accent));display:flex;align-items:center;justify-content:center;font-size:28px;line-height:1;box-shadow:0 0 16px rgba(108,71,255,.35);}
 .coach-body{flex:1;min-width:0;}
 .coach-name{font-family:var(--font-d);font-size:15px;color:var(--accent);letter-spacing:1.5px;margin-bottom:5px;}
