@@ -32,7 +32,8 @@ async function initDB() {
         reset_token      TEXT,
         reset_token_exp  TIMESTAMPTZ,
         created_at       TIMESTAMPTZ DEFAULT NOW(),
-        last_login       TIMESTAMPTZ
+        last_login       TIMESTAMPTZ,
+        nivel_usuario    INT DEFAULT 2
       );
     `);
     await client.query(`

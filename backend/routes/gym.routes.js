@@ -514,6 +514,9 @@ router.post('/ai/import', [
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ ok: false, error: errors.array()[0].msg });
   try {
+    if ((req.user.nivel_usuario || 2) === 2)
+      return res.status(403).json({ ok: false, error: 'Función de IA no disponible en tu plan' });
+
     const { prompt } = req.body;
 
     const apiKey = process.env.ANTHROPIC_API_KEY;

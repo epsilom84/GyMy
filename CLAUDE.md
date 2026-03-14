@@ -41,24 +41,42 @@ gymy/
     │   └── gym.routes.js      ← /api/catalogo/* (PÚBLICO, antes de verifyToken) + /api/* (JWT)
     └── frontend/
         ├── index.html         ← HTML estructural + carga de scripts/CSS
-        ├── api.js             ← Cliente HTTP: apiCall(method, endpoint, body)
-        ├── import.js          ← Lógica de importación de historial
         ├── sw.js              ← Service Worker (PWA)
         ├── manifest.json      ← Web App Manifest (PWA)
         ├── css/               ← Estilos separados por responsabilidad
         │   ├── base.css       ← Reset, variables CSS, tipografía, temas
         │   ├── components.css ← Botones, cards, modales, chips, toasts, skeletons
-        │   └── layout.css     ← Navbar, pages, FABs, grid
+        │   ├── layout.css     ← Navbar, pages, FABs, grid
+        │   ├── auth.css       ← Pantalla login/register
+        │   ├── dashboard.css  ← Dashboard y tarjetas resumen
+        │   ├── history.css    ← Historial, tarjetas de sesión, swipe
+        │   ├── workout.css    ← Workout activo, timer, dots, steppers
+        │   ├── stats.css      ← Gráficas de progresión
+        │   └── profile.css    ← Perfil, catálogo, plantillas
         ├── js/                ← Módulos JS por pantalla/dominio
-        │   ├── app.js         ← Init, navegación (goTab), globals, helpers (formatFecha, showToast…)
-        │   ├── auth.js        ← Login, register, logout, refresh token
-        │   ├── store.js       ← Estado global, cachés (_catalogoCache, _plantillasCache, _uk)
-        │   ├── dashboard.js   ← Dashboard, stats resumen, sesiones recientes
-        │   ├── workout.js     ← Workout activo, timer, series, PR detector
-        │   ├── historial.js   ← Historial, filtros, swipe-to-delete, export
-        │   ├── stats.js       ← Progresión por ejercicio, gráficas
-        │   ├── perfil.js      ← Perfil usuario, catálogo BD, plantillas personales, temas
-        │   └── coach.js       ← Coach Sasha, caché del plan, proxy IA
+        │   ├── api.js             ← Cliente HTTP: apiCall(method, endpoint, body)
+        │   ├── config.js          ← Constantes globales (GRUPO_COLORS, TIPOS, EJ_ICONOS…)
+        │   ├── utils.js           ← Helpers puros (formatFecha, tipoIcon, ejIconHtml…)
+        │   ├── modals.js          ← openModal, closeModal, showConfirm
+        │   ├── nav.js             ← goTab, navegación entre pantallas
+        │   ├── app.js             ← Init, registro SW, showToast, haptic, autoTheme
+        │   ├── auth.js            ← Login, register, logout, _clearUserCaches()
+        │   ├── settings.js        ← Estado global: cachés, _uk(), invalidatePlantillas()
+        │   ├── dashboard.js       ← Dashboard, stats resumen, renderRecientes()
+        │   ├── workout-state.js   ← Estado del workout activo (wkState, wkGetDB…)
+        │   ├── workout-selector.js← Selector de ejercicios del catálogo
+        │   ├── workout-card.js    ← HTML de tarjeta ejercicio activo, dots, steppers
+        │   ├── workout.js         ← Orquestación workout: timer, PR detector, guardar
+        │   ├── history-card.js    ← sessionCard HTML, lookup grupo, swipe-to-delete
+        │   ├── history-detail.js  ← Modal detalle sesión, borrar, repetir workout
+        │   ├── history.js         ← loadHistorial, filtros, paginación, exportar CSV
+        │   ├── stats.js           ← Progresión por ejercicio, gráficas Chart.js
+        │   ├── catalog.js         ← Catálogo BD en perfil, plantillas personales
+        │   ├── profile.js         ← Perfil usuario, temas, configuración
+        │   ├── coach.js           ← Coach Sasha: caché plan, llamada a IA
+        │   ├── import-parse.js    ← GRUPOS_KEYWORDS, detectarGrupo, parsearCSV
+        │   ├── import-match.js    ← Similitud bigramas, _resolverCombinaciones
+        │   └── import.js          ← Entry point importación, preview, runImport
         └── assets/
             ├── icon.svg                    ← Icono PWA (mancuerna SVG)
             ├── musculos.svg               ← Ilustración cuerpo humano (empty states)
@@ -70,7 +88,7 @@ gymy/
 
 ### Objetivo de arquitectura escalable
 
-El frontend está migrando de un único `index.html` monolítico (~3500 líneas) a una estructura modular. **Cada nueva funcionalidad se crea en el archivo correspondiente**, nunca añadiéndola al montón en `index.html`. La migración es incremental: no hay que reescribir todo de golpe, pero todo código nuevo sigue la estructura modular.
+El frontend ha migrado de un `index.html` monolítico a una estructura modular con ~23 archivos JS y 9 CSS. **Cada nueva funcionalidad se crea en el archivo correspondiente**, nunca añadiéndola directamente a `index.html`.
 
 **Principios:**
 - Un archivo por responsabilidad — una pantalla o dominio por módulo JS
@@ -233,20 +251,38 @@ El frontend es una SPA sin framework, organizada en módulos JS y CSS independie
 | Archivo | Responsabilidad |
 |---|---|
 | `index.html` | Solo HTML estructural + `<link>` CSS + `<script>` en orden al final del `<body>` |
-| `api.js` | Cliente HTTP (`apiCall`) y gestión de tokens |
-| `js/store.js` | Estado global compartido: cachés, `_uk()`, `invalidatePlantillas()` |
-| `js/app.js` | Inicialización, `goTab()`, helpers de UI (`showToast`, `formatFecha`, `haptic`) |
+| `js/api.js` | Cliente HTTP (`apiCall`) y gestión de tokens |
+| `js/config.js` | Constantes globales: `GRUPO_COLORS`, `TIPOS`, `EJ_ICONOS`, SVGs de equipo |
+| `js/utils.js` | Helpers puros: `formatFecha`, `tipoIcon`, `ejIconHtml`, `equipoSVGHtml`, `normTipo` |
+| `js/modals.js` | `openModal`, `closeModal`, `showConfirm` |
+| `js/nav.js` | `goTab()`, `_TAB_ORDER`, transiciones slide entre pantallas |
+| `js/app.js` | Init, `showToast`, `haptic`, `autoThemeByHour`, registro SW |
 | `js/auth.js` | Login, register, logout, `_clearUserCaches()` |
+| `js/settings.js` | Estado global compartido: cachés, `_uk()`, `invalidatePlantillas()` |
 | `js/dashboard.js` | Pantalla dashboard, stats resumen, `renderRecientes()` |
-| `js/workout.js` | Workout activo completo: timer, series, PR detector, preload |
-| `js/historial.js` | Historial, filtros, swipe-to-delete, exportar CSV |
+| `js/workout-state.js` | Estado del workout activo: `wkState`, `wkGetDB`, `wkGetDBAsync` |
+| `js/workout-selector.js` | Selector de ejercicios del catálogo durante el workout |
+| `js/workout-card.js` | `wkCardHTML`, `wkToggleDone`, `wkAddSet`, dots y steppers |
+| `js/workout.js` | Orquestación: timer con ring SVG, PR detector, guardar sesión |
+| `js/history-card.js` | Lookup ejercicio→grupo, `sessionCard` HTML, `_initSwipeDelete` |
+| `js/history-detail.js` | `openDetalle`, `borrarSesionConfirm`, `repetirWorkout` |
+| `js/history.js` | `loadHistorial`, filtros tipo/grupo/subgrupo, paginación, exportar CSV |
 | `js/stats.js` | Progresión por ejercicio, gráficas Chart.js |
-| `js/perfil.js` | Perfil usuario, catálogo BD, plantillas personales, temas |
+| `js/catalog.js` | Catálogo BD en perfil, plantillas personales |
+| `js/profile.js` | Datos personales, temas visuales, configuración |
 | `js/coach.js` | Coach Sasha: caché del plan, llamada a IA |
-| `import.js` | Importación de historial CSV/Excel/IA (mantiene su nombre actual) |
+| `js/import-parse.js` | `GRUPOS_KEYWORDS`, `detectarGrupo`, `parsearCSV`, `_agruparSeries` |
+| `js/import-match.js` | Similitud bigramas Jaccard, `_resolverCombinaciones` (modal) |
+| `js/import.js` | Entry point importación: leer archivo, preview, `runImport` |
 | `css/base.css` | Variables CSS (`--bg`, `--accent`…), reset, tipografía, temas dark/light |
 | `css/components.css` | Botones, cards, modales, chips, toasts, skeletons, swipe |
 | `css/layout.css` | Navbar, páginas `.page`, FABs, grid de ejercicios |
+| `css/auth.css` | Pantalla login/register |
+| `css/dashboard.css` | Dashboard y tarjetas resumen |
+| `css/history.css` | Historial, tarjetas sesión, swipe-delete, detalle |
+| `css/workout.css` | Workout activo, ring SVG, dots, steppers |
+| `css/stats.css` | Gráficas de progresión |
+| `css/profile.css` | Perfil, catálogo, plantillas personales |
 
 **Cómo añadir funcionalidad nueva:**
 1. Si pertenece a una pantalla existente → editar el módulo JS correspondiente
@@ -380,17 +416,25 @@ autoThemeByHour()  // Se llama en window.onload, antes de applyTheme()
                    // Si el usuario selecciona un tema manualmente se guarda en localStorage y prevalece
 ```
 
-### Importación de historial (import.js)
+### Importación de historial (import-parse.js + import-match.js + import.js)
 
 Funciones principales:
 ```js
+// import-parse.js
+parsearCSV(rawText)                 // Autodetecta separador y formato → [sesiones]
+detectarGrupo(nombre)               // Keyword-matching + consulta catálogo → grupo muscular
+detectarTipoSesion(ejercicios)      // Grupo más frecuente → tipo sesión
+
+// import-match.js
+_simSilabas(a, b)                   // Similitud Jaccard de bigramas entre dos nombres
+_resolverCombinaciones(sesiones)    // Promise → Map | null (modal de combinaciones)
+
+// import.js
 importHistorialCSV(event)           // Entry point desde <input type="file">
 openImportPreview(rawText,filename) // Muestra modal de preview con barra de progreso
-parsearCSV(rawText)                 // Autodetecta separador y formato → [sesiones]
-runImport()                         // Orquesta los 3 pasos: resolver + auto-crear + guardar
-_resolverCombinaciones(sesiones)    // Promise → Map | null (modal de combinaciones)
 _autoCrearEjercicios(sesiones)      // POST /api/catalogo para ejercicios nuevos (subgrupo: null)
-runAIImport(text)                   // Importación vía IA (POST /api/ai/import)
+runImport()                         // Orquesta los 3 pasos: resolver + auto-crear + guardar
+runAIImport()                       // Alias de runImport() (IA ya procesó el texto)
 ```
 
 **Umbral similitud**: ≥ 80% → preselección automática (`✓ Sugerido`).

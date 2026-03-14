@@ -1,0 +1,53 @@
+/* ── SESSION LIST ── */
+.session-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg3);border-radius:13px;margin-bottom:7px;cursor:pointer;border:1px solid transparent;transition:.18s;position:relative;overflow:hidden;}
+.session-item::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--s-color,var(--accent));opacity:.7;border-radius:3px 0 0 3px;}
+.session-item:hover{border-color:var(--border);transform:translateX(3px);}
+.session-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;}
+.session-info{flex:1;min-width:0;}
+.session-tipo{font-weight:600;font-size:14px;}
+.session-meta{font-size:12px;color:var(--text2);margin-top:2px;}
+.session-stars{font-size:11px;color:var(--accent);margin-top:2px;}
+
+/* ── SESSION TYPE ICON BACKGROUNDS ── */
+.tipo-Fuerza{background:rgba(232,255,71,.12);box-shadow:0 0 0 1px rgba(232,255,71,.15);}
+.tipo-Cardio{background:rgba(255,80,80,.12);box-shadow:0 0 0 1px rgba(255,80,80,.18);}
+.tipo-HIIT{background:rgba(255,165,0,.12);box-shadow:0 0 0 1px rgba(255,165,0,.18);}
+.tipo-Yoga{background:rgba(71,255,178,.1);}
+.tipo-Otro,.tipo-Pecho,.tipo-Espalda,.tipo-Piernas,.tipo-Hombros,.tipo-Brazos,.tipo-Core{background:rgba(108,71,255,.12);box-shadow:0 0 0 1px rgba(108,71,255,.18);}
+
+/* ── SESSION EXERCISE ROWS ── */
+.session-ej-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border-radius:11px;margin-bottom:6px;}
+.session-ej-row .session-info{flex:1;min-width:0;}
+
+/* ── EJ ACCORDION (detalle sesión) ── */
+.ej-group{margin-bottom:6px;}
+.ej-group .session-ej-row{margin-bottom:0;transition:.15s;}
+.ej-group.expanded .session-ej-row{border-radius:11px 11px 0 0;}
+.ej-expand-arrow{font-size:13px;color:var(--text2);transition:transform .22s;flex-shrink:0;padding:4px;}
+.ej-group.expanded .ej-expand-arrow{transform:rotate(180deg);}
+.ej-sets-collapse{max-height:0;overflow:hidden;transition:max-height .28s ease;background:var(--bg3);border-radius:0 0 11px 11px;border-top:1px solid transparent;}
+.ej-group.expanded .ej-sets-collapse{max-height:800px;border-top-color:var(--border);}
+.ej-set-row{display:flex;align-items:center;gap:12px;padding:8px 14px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04);}
+.ej-set-row:last-child{border-bottom:none;}
+.ej-set-num{width:20px;text-align:center;font-size:11px;color:var(--text2);font-weight:700;background:var(--bg2);border-radius:50%;height:20px;line-height:20px;flex-shrink:0;}
+.ej-set-weight{font-weight:700;min-width:46px;color:var(--accent);}
+.ej-set-reps{color:var(--text2);font-size:12px;}
+
+/* ── DETAIL GRID ── */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px;}
+.detail-cell{background:var(--bg3);border-radius:11px;padding:13px;}
+.detail-cell-label{font-size:10px;color:var(--text2);text-transform:uppercase;margin-bottom:3px;}
+.detail-cell-val{font-weight:600;font-size:15px;}
+
+/* ── SESSION FORM (edición) ── */
+.ej-head{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:7px;padding:0 3px;margin-bottom:6px;}
+.ej-head span{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;}
+.ej-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:7px;margin-bottom:6px;align-items:center;}
+.ej-row input{padding:9px 11px;font-size:13px;}
+.btn-remove{background:transparent;border:1px solid var(--border);border-radius:8px;width:30px;height:34px;cursor:pointer;color:var(--text2);font-size:14px;}
+.btn-remove:hover{border-color:var(--accent2);color:var(--accent2);}
+
+/* ── SWIPE-TO-DELETE ── */
+.swipe-wrap{position:relative;overflow:hidden;border-radius:13px;margin-bottom:7px;}
+.swipe-del-bg{position:absolute;right:0;top:0;bottom:0;width:76px;background:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;border-radius:0 13px 13px 0;pointer-events:none;}
+.swipe-wrap .session-item{margin-bottom:0;border-radius:13px;transition:transform .18s ease;touch-action:pan-y;will-change:transform;user-select:none;}
