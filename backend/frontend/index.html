@@ -396,7 +396,7 @@
       <div class="modal-title" id="md-tipo">Sesión</div>
       <button class="close-btn" onclick="closeModal('modal-detalle')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
     </div>
-    <div id="md-content"></div>
+    <div id="md-content" style="padding-bottom:max(16px,env(safe-area-inset-bottom))"></div>
   </div>
 </div>
 
@@ -1906,6 +1906,49 @@ async function openDetalle(id){
   openModal('modal-detalle');
 }
 
+function borrarSesionConfirm(id){
+  closeModal('modal-detalle');
+  showConfirm('¿Eliminar sesión?','Esta acción no se puede deshacer.','Eliminar',async()=>{
+    const{data}=await eliminarSesion(id);
+    if(data.ok){showToast('Sesión eliminada','info');loadDashboard();loadHistorial();}
+    else showToast(data.error,'error');
+  });
+}
+
+async function repetirWorkout(id){
+  closeModal('modal-detalle');
+  const{data}=await getSesion(id);
+  if(!data.ok){showToast('Error al cargar sesión','error');return;}
+  const s=data.sesion;
+  const catFlat={};
+  if(_catalogoCache){
+    for(const[grupo,ejs]of Object.entries(_catalogoCache)){
+      for(const ej of ejs){if(ej.n)catFlat[ej.n.toLowerCase().trim()]={em:ej.em,equipo:ej.equipo||null,m:grupo};}
+    }
+  }
+  const ejMap={},ejOrder=[];
+  (s.ejercicios||[]).forEach(e=>{
+    const key=e.nombre.toLowerCase().trim();
+    if(!ejMap[key]){
+      const cat=catFlat[key]||{};
+      ejMap[key]={em:cat.em||'💪',equipo:cat.equipo||null,n:e.nombre,m:cat.m||e.nombre.toUpperCase(),sets:[]};
+      ejOrder.push(key);
+    }
+    let sets=null;
+    if(e.sets_data){try{sets=JSON.parse(e.sets_data);}catch(x){}}
+    if(sets?.length){
+      sets.forEach(st=>ejMap[key].sets.push({kg:st.kg!=null?st.kg:(st.peso_kg!=null?st.peso_kg:0),reps:st.reps||0}));
+    }else{
+      const n=e.series||1;
+      for(let i=0;i<n;i++)ejMap[key].sets.push({kg:e.peso_kg||0,reps:e.reps||0});
+    }
+  });
+  sessionStorage.setItem('gymy_preload_workout',JSON.stringify({tipo:s.tipo,fromHistory:true,ejercicios:ejOrder.map(k=>ejMap[k])}));
+  const btn=document.getElementById('tab-workout');
+  if(btn)btn.style.display='flex';
+  goTab('workout',btn);
+}
+
 
 // ══════════════════════════════════════════════
 // STATS
@@ -3077,12 +3120,12 @@ function wkInit(){
     sessionStorage.removeItem('gymy_preload_workout');
     try{
       const pw=JSON.parse(preloadData);
-      wkCurTipo=pw.tipo||'Fuerza';
+      wkExs=[];wkEid=0;wkCurTipo=pw.tipo||'Fuerza';
       pw.ejercicios.forEach(e=>{
         const id=wkEid++;
         const sets=(e.sets&&e.sets.length)
-          ?e.sets.map(s=>({kg:s.kg!=null?s.kg:60,reps:s.reps||10,done:false,pre:true}))
-          :[{kg:e.kg!=null?e.kg:60,reps:e.reps||10,done:false,pre:true}];
+          ?e.sets.map(s=>({kg:s.kg!=null?s.kg:0,reps:s.reps||0,done:false,pre:true}))
+          :[{kg:e.kg!=null?e.kg:0,reps:e.reps||0,done:false,pre:true}];
         wkExs.push({id,em:e.em||'💪',equipo:e.equipo||null,n:e.n,m:e.m||e.n.toUpperCase(),sets});
       });
       wkActivate();
