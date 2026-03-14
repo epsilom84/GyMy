@@ -195,6 +195,7 @@ function wkCancelStart(){
 
 // ── Repetir workout desde historial ──
 function repetirWorkout(sesionId){
+  closeModal('modal-detalle');
   getSesion(sesionId).then(({data})=>{
     if(!data.ok)return;
     const s=data.sesion;
