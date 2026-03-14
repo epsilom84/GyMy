@@ -14,7 +14,7 @@ async function wkRenderTipoGrid(){
     grid.innerHTML='<div style="text-align:center;color:var(--text2);font-size:13px;grid-column:1/-1;padding:20px 0">Sin ejercicios disponibles</div>';
     return;
   }
-  const hist=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]');
+  const hist=JSON.parse(localStorage.getItem(_uk('historial_local'))||'[]');
   const nameToGrupo={};
   grupos.forEach(g=>db[g].forEach(e=>{nameToGrupo[e.n]=g;}));
   const freq={};
@@ -72,7 +72,7 @@ function _wkEjCard(e,showGroup){
 }
 
 function wkRenderEjList(list,showGroup){
-  const hist=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]');
+  const hist=JSON.parse(localStorage.getItem(_uk('historial_local'))||'[]');
   const freq={};
   hist.forEach(e=>{freq[e.nombre]=(freq[e.nombre]||0)+1;});
   const sorted=[...list].sort((a,b)=>(freq[b.n]||0)-(freq[a.n]||0));

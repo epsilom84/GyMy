@@ -12,7 +12,7 @@ function _gaussCDF(x,mu,sg){return sg===0?(x>=mu?1:0):0.5*(1+_gaussErf((x-mu)/(s
 function _gaussPDF(x,mu,sg){return sg===0?0:Math.exp(-0.5*((x-mu)/sg)**2)/(sg*Math.sqrt(2*Math.PI));}
 
 function _wkHistVols(nombre){
-  return JSON.parse(localStorage.getItem('gymy_historial_local')||'[]')
+  return JSON.parse(localStorage.getItem(_uk('historial_local'))||'[]')
     .filter(h=>h.nombre===nombre)
     .map(h=>(h.sets||[]).reduce((a,s)=>a+(s.kg||0)*(s.reps||0),0))
     .filter(v=>v>0);
@@ -71,7 +71,7 @@ function wkRender(){
 }
 
 function wkCardHTML(ex){
-  const hist=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]').filter(h=>h.nombre===ex.n);
+  const hist=JSON.parse(localStorage.getItem(_uk('historial_local'))||'[]').filter(h=>h.nombre===ex.n);
   const prKg=hist.length?Math.max(...hist.map(h=>h.sets?Math.max(...h.sets.map(s=>s.kg)):h.kg||0)):0;
   const doneSets=ex.sets.filter(s=>s.done);
   const vol=doneSets.reduce((a,s)=>a+s.kg*s.reps,0);
@@ -166,7 +166,7 @@ function wkToggleDone(exId,si){
     ex.sets[si].kcal=calcKcalSerie(ex.sets[si].kg,ex.sets[si].reps,ex.m,restDef);
     haptic(18);
     wkStartRestTimer();
-    const hist=JSON.parse(localStorage.getItem('gymy_historial_local')||'[]').filter(h=>h.nombre===ex.n);
+    const hist=JSON.parse(localStorage.getItem(_uk('historial_local'))||'[]').filter(h=>h.nombre===ex.n);
     const prKg=hist.length?Math.max(...hist.map(h=>h.kg)):0;
     const isPR=prKg>0&&ex.sets[si].kg>prKg;
     if(isPR){haptic([30,20,30]);showToast('🏆 Nuevo PR en '+ex.n+'!','success');}

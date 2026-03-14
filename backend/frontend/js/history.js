@@ -101,7 +101,7 @@ function changePage(p){currentPage=p;loadHistorial();window.scrollTo(0,0);}
 async function eliminarTodoHistorial(){
   const{data}=await apiCall('DELETE','/sesiones');
   if(data.ok){
-    localStorage.removeItem('gymy_historial_local');
+    localStorage.removeItem(_uk('historial_local'));
     statsCache=null;currentPage=1;
     loadDashboard();loadHistorial();
     showToast('Historial eliminado','info');
