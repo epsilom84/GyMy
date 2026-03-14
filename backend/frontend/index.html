@@ -1161,10 +1161,44 @@ async function coachAnalisis(forzar){
     }catch(e){}
   }
 
-  body.innerHTML='<div style="text-align:center;padding:36px 16px;color:var(--text2)">'
-    +'<div style="font-size:38px;margin-bottom:14px">🔬</div>'
-    +'<div style="font-size:13px;font-weight:600">Sasha leyendo todo tu historial...</div>'
-    +'<div style="font-size:11px;margin-top:6px;opacity:.6">Puede tardar unos segundos</div></div>';
+  body.innerHTML=
+    '<div style="padding:32px 20px 28px">'
+    +'<div style="text-align:center;margin-bottom:20px">'
+    +'<div style="font-size:36px;margin-bottom:10px">🔬</div>'
+    +'<div id="_ap_label" style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">Preparando análisis...</div>'
+    +'<div id="_ap_sub" style="font-size:11px;color:var(--text2);opacity:.7">Paso 1 de 3</div>'
+    +'</div>'
+    +'<div style="background:var(--bg3);border-radius:99px;height:6px;overflow:hidden">'
+    +'<div id="_ap_bar" style="height:100%;border-radius:99px;background:var(--accent);width:0%;transition:width .4s ease"></div>'
+    +'</div>'
+    +'<div id="_ap_pct" style="text-align:right;font-size:10px;color:var(--text2);margin-top:4px;opacity:.6">0%</div>'
+    +'</div>';
+
+  function _apSet(pct,label,sub){
+    const bar=document.getElementById('_ap_bar');
+    const lbl=document.getElementById('_ap_label');
+    const slbl=document.getElementById('_ap_sub');
+    const pctEl=document.getElementById('_ap_pct');
+    if(bar)bar.style.width=pct+'%';
+    if(lbl)lbl.textContent=label;
+    if(slbl)slbl.textContent=sub;
+    if(pctEl)pctEl.textContent=pct+'%';
+  }
+
+  let _apTimer=null;
+  function _apAnimate(from,to,ms){
+    if(_apTimer)clearInterval(_apTimer);
+    const steps=20,inc=(to-from)/steps,interval=ms/steps;
+    let cur=from;
+    _apTimer=setInterval(()=>{
+      cur+=inc;
+      if(cur>=to){cur=to;clearInterval(_apTimer);}
+      const bar=document.getElementById('_ap_bar');
+      const pctEl=document.getElementById('_ap_pct');
+      if(bar)bar.style.width=Math.round(cur)+'%';
+      if(pctEl)pctEl.textContent=Math.round(cur)+'%';
+    },interval);
+  }
 
   const s=_coachStats;
   if(!s||!s.total){
@@ -1178,12 +1212,16 @@ async function coachAnalisis(forzar){
   const mins=(s.totalMinutos||0)%60;
   const mejorEj=s.mejorEjercicio||[];
 
+  _apSet(10,'Conectando con la base de datos...','Paso 1 de 3');
+
   // Fetch historial completo en paralelo
   let fs={mensual:[],porTipo:[],porDia:[],topEjercicios:[],porGrupo:[],primeraFecha:null};
   try{
+    _apAnimate(10,45,800);
     const{data}=await apiCall('GET','/sesiones/fullstats');
     if(data.ok)fs=data;
   }catch(e){}
+  _apSet(45,'Calculando métricas del historial...','Paso 2 de 3');
 
   // ── Métricas derivadas ──
   const meses=fs.mensual.slice().reverse(); // cronológico
@@ -1300,6 +1338,9 @@ ${topCarga}
 ── EVOLUCIÓN MENSUAL (últimos 12 meses) ──
 ${evolucionMensual}`;
 
+  _apSet(60,'Sasha leyendo tu historial completo...','Paso 3 de 3 — puede tardar unos segundos');
+  _apAnimate(60,92,8000);
+
   const prompt=`Eres Coach Sasha, doctora en ciencias del deporte y entrenadora de élite. Tono: científico, directo y con la ironía española que te caracteriza. Usa terminología real: RPE, RM, DOMS, mesociclo, deload, hipertrofia, etc.
 
 Analiza el HISTORIAL COMPLETO de entrenamiento de este atleta. Tienes datos de TODOS sus entrenos desde el inicio. Aprovéchalo para identificar tendencias a largo plazo, no solo lo reciente.
@@ -1346,9 +1387,13 @@ FASE 2 (sem 3-4): progresión con nuevos estímulos.
   try{
     const{data}=await apiCall('POST','/ai/import',{prompt});
     if(!data.ok)throw new Error(data.error||'Error de IA');
+    if(_apTimer)clearInterval(_apTimer);
+    _apSet(100,'¡Análisis completado!','');
+    await new Promise(r=>setTimeout(r,300));
     try{localStorage.setItem(_uk('coach_analisis'),JSON.stringify({text:data.text,ts:Date.now(),stats:ctx}));}catch(e){}
     _coachAnalisisShow(body,data.text,false);
   }catch(err){
+    if(_apTimer)clearInterval(_apTimer);
     body.innerHTML='<div style="text-align:center;padding:20px 16px">'
       +'<div style="font-size:32px;margin-bottom:10px">⚠️</div>'
       +'<div style="color:var(--danger);font-size:13px;font-weight:600;margin-bottom:8px">Error al analizar</div>'
