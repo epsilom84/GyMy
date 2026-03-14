@@ -136,6 +136,51 @@ function _coachLpCancel(){
 }
 
 const COACH_PLAN_TTL=12*60*60*1000; // 12h
+
+function _coachCtxStr(s,nombre){
+  if(!s)return'Sin historial disponible aún.';
+  const horas=Math.floor((s.totalMinutos||0)/60);
+  const top=(s.mejorEjercicio||[]).slice(0,8);
+  const prog=s.progreso||[];
+
+  // Perfil físico del usuario
+  let perfil='';
+  try{
+    const pd=JSON.parse(localStorage.getItem(_uk('profile_data'))||'{}');
+    const parts=[];
+    if(pd.peso_corporal)parts.push(`peso: ${pd.peso_corporal}kg`);
+    if(pd.edad)parts.push(`edad: ${pd.edad} años`);
+    if(pd.genero)parts.push(`género: ${pd.genero}`);
+    if(parts.length)perfil='\n- Perfil físico: '+parts.join(', ');
+  }catch(e){}
+
+  // Últimas sesiones con duración, calorías y ejercicios
+  const recDetail=(s.recientes||[]).slice(0,5).map(r=>{
+    const dur=r.duracion_min?r.duracion_min+' min':'sin dato';
+    const cal=r.calorias?r.calorias+' kcal':'sin dato';
+    const ejs=(r.ejercicios||[]).slice(0,5).map(e=>e.nombre).join(', ')||'—';
+    return`  ${(r.fecha||'').slice(0,10)} | ${r.tipo||'?'} | ${dur} | ${cal} | val:${r.valoracion||'—'} | ${ejs}`;
+  }).join('\n')||'  sin datos';
+
+  // Progresión semanal con minutos y calorías
+  const progDetail=prog.slice(-8).map(p=>
+    `  ${p.semana}: ${p.sesiones} sesiones, ${p.minutos||0} min, ${p.calorias||0} kcal`
+  ).join('\n')||'  sin datos';
+
+  return`- Nombre: ${nombre}
+- Sesiones totales: ${s.total}
+- Tiempo total acumulado: ${horas}h (${s.totalMinutos||0} min)
+- Racha actual: ${s.racha} días
+- Sesiones esta semana: ${s.ultimasSemana}
+- Calorías totales registradas: ${s.totalCalorias||0} kcal
+- Valoración media: ${s.mediaValoracion||'—'}/5${perfil}
+- Ejercicios con mayor marca de peso: ${top.length?top.map(e=>`${e.nombre} (${e.max_peso}kg, ${e.veces}x)`).join(' | '):'sin datos'}
+- Últimas 5 sesiones (fecha|tipo|duración|calorías|valoración|ejercicios principales):
+${recDetail}
+- Progresión últimas 8 semanas (semana|sesiones|minutos|calorías):
+${progDetail}`;
+}
+
 async function coachPlan(forzar){
   document.getElementById('coach-plan-title').textContent='🏋️‍♀️ Plan de Sasha';
   openModal('modal-coach-plan');
@@ -159,21 +204,7 @@ async function coachPlan(forzar){
   const s=_coachStats;
   const u=JSON.parse(localStorage.getItem('gymy_user')||'{}');
   const nombre=u.username||'el usuario';
-  const top=(s?.mejorEjercicio||[]).slice(0,5);
-  const ultTipos=(s?.recientes||[]).slice(0,5).map(r=>r.tipo).filter(Boolean);
-  const horas=Math.floor((s?.totalMinutos||0)/60);
-
-  const ctx=s
-    ?`- Nombre: ${nombre}
-- Sesiones totales: ${s.total}
-- Horas de entreno acumuladas: ${horas}h
-- Racha actual: ${s.racha} días
-- Sesiones esta semana: ${s.ultimasSemana}
-- Calorías quemadas en total: ${s.totalCalorias||0} kcal
-- Valoración media de sesiones: ${s.mediaValoracion||'—'}/5
-- Ejercicios con mayor marca de peso: ${top.length?top.map(e=>`${e.nombre} (${e.max_peso}kg, ${e.veces} veces)`).join(' | '):'sin datos'}
-- Tipos de entrenamientos recientes: ${ultTipos.length?[...new Set(ultTipos)].join(', '):'sin datos'}`
-    :'Sin historial disponible aún.';
+  const ctx=_coachCtxStr(s,nombre);
 
   const prompt=`Eres Coach Sasha, entrenadora personal con tono directo, irónico y genuinamente motivador.
 Analiza los datos del usuario y crea un plan de entrenamiento personalizado para la próxima semana.
@@ -226,23 +257,7 @@ async function coachAnalisis(forzar){
   const s=_coachStats;
   const u=JSON.parse(localStorage.getItem('gymy_user')||'{}');
   const nombre=u.username||'el usuario';
-  const top=(s?.mejorEjercicio||[]).slice(0,8);
-  const horas=Math.floor((s?.totalMinutos||0)/60);
-  const prog=s?.progreso||[];
-  const ultTipos=(s?.recientes||[]).slice(0,8).map(r=>r.tipo).filter(Boolean);
-
-  const ctx=s
-    ?`- Nombre: ${nombre}
-- Sesiones totales: ${s.total}
-- Horas de entreno acumuladas: ${horas}h
-- Racha actual: ${s.racha} días
-- Sesiones esta semana: ${s.ultimasSemana}
-- Calorías quemadas en total: ${s.totalCalorias||0} kcal
-- Valoración media: ${s.mediaValoracion||'—'}/5
-- Ejercicios más frecuentes con marca de peso: ${top.length?top.map(e=>`${e.nombre} (${e.max_peso}kg, ${e.veces} veces)`).join(' | '):'sin datos'}
-- Tipos de sesión recientes: ${ultTipos.length?[...new Set(ultTipos)].join(', '):'sin datos'}
-- Progresión semanal (últimas semanas): ${prog.slice(-6).map(p=>`${p.semana}: ${p.sesiones} sesiones`).join(', ')||'sin datos'}`
-    :'Sin historial disponible aún.';
+  const ctx=_coachCtxStr(s,nombre);
 
   const prompt=`Eres Coach Sasha, entrenadora personal con tono directo, irónico y genuinamente motivador.
 Analiza el historial completo del usuario y ofrece un análisis honesto y útil de su rendimiento.
