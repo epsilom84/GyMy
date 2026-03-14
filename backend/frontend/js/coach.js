@@ -137,13 +137,58 @@ function _coachLpCancel(){
 
 const COACH_PLAN_TTL=12*60*60*1000; // 12h
 
-function _coachCtxStr(s,nombre){
+async function _fetchAllHistory(){
+  try{
+    const{data}=await getSesiones({limit:1000});
+    if(!data.ok)return null;
+    const sesiones=data.sesiones||[];
+    // Por tipo
+    const byTipo={};
+    sesiones.forEach(s=>{
+      const t=s.tipo||'Sin tipo';
+      if(!byTipo[t])byTipo[t]={count:0,minutos:0,calorias:0};
+      byTipo[t].count++;
+      byTipo[t].minutos+=s.duracion_min||0;
+      byTipo[t].calorias+=s.calorias||0;
+    });
+    // Por mes (últimos 12)
+    const byMonth={};
+    sesiones.forEach(s=>{
+      const m=(s.fecha||'').slice(0,7);
+      if(!m)return;
+      if(!byMonth[m])byMonth[m]={count:0,minutos:0,calorias:0};
+      byMonth[m].count++;
+      byMonth[m].minutos+=s.duracion_min||0;
+      byMonth[m].calorias+=s.calorias||0;
+    });
+    // Frecuencia de ejercicios en todo el historial
+    const ejFreq={};
+    sesiones.forEach(s=>{
+      (s.ejercicios||[]).forEach(e=>{
+        const n=(e.nombre||'').toLowerCase().trim();
+        if(!n)return;
+        if(!ejFreq[n])ejFreq[n]={nombre:e.nombre,count:0,maxKg:0};
+        ejFreq[n].count++;
+        if((e.peso_kg||0)>ejFreq[n].maxKg)ejFreq[n].maxKg=e.peso_kg||0;
+      });
+    });
+    const topEj=Object.values(ejFreq).sort((a,b)=>b.count-a.count).slice(0,15);
+    const monthsSorted=Object.entries(byMonth).sort(([a],[b])=>a.localeCompare(b)).slice(-12);
+    return{
+      byTipo,monthsSorted,topEj,
+      primera:sesiones[sesiones.length-1]?.fecha?.slice(0,10),
+      ultima:sesiones[0]?.fecha?.slice(0,10),
+    };
+  }catch(e){return null;}
+}
+
+function _coachCtxStr(s,nombre,hist){
   if(!s)return'Sin historial disponible aún.';
   const horas=Math.floor((s.totalMinutos||0)/60);
   const top=(s.mejorEjercicio||[]).slice(0,8);
   const prog=s.progreso||[];
 
-  // Perfil físico del usuario
+  // Perfil físico
   let perfil='';
   try{
     const pd=JSON.parse(localStorage.getItem(_uk('profile_data'))||'{}');
@@ -154,18 +199,44 @@ function _coachCtxStr(s,nombre){
     if(parts.length)perfil='\n- Perfil físico: '+parts.join(', ');
   }catch(e){}
 
-  // Últimas sesiones con duración, calorías y ejercicios
+  // Últimas 5 sesiones
   const recDetail=(s.recientes||[]).slice(0,5).map(r=>{
-    const dur=r.duracion_min?r.duracion_min+' min':'sin dato';
-    const cal=r.calorias?r.calorias+' kcal':'sin dato';
+    const dur=r.duracion_min?r.duracion_min+' min':'—';
+    const cal=r.calorias?r.calorias+' kcal':'—';
     const ejs=(r.ejercicios||[]).slice(0,5).map(e=>e.nombre).join(', ')||'—';
     return`  ${(r.fecha||'').slice(0,10)} | ${r.tipo||'?'} | ${dur} | ${cal} | val:${r.valoracion||'—'} | ${ejs}`;
   }).join('\n')||'  sin datos';
 
-  // Progresión semanal con minutos y calorías
+  // Progresión semanal
   const progDetail=prog.slice(-8).map(p=>
     `  ${p.semana}: ${p.sesiones} sesiones, ${p.minutos||0} min, ${p.calorias||0} kcal`
   ).join('\n')||'  sin datos';
+
+  let extra='';
+  if(hist){
+    // Desglose por tipo (todo el historial)
+    const tipoLines=Object.entries(hist.byTipo)
+      .sort(([,a],[,b])=>b.count-a.count)
+      .map(([t,v])=>`  ${t}: ${v.count} sesiones, ${v.minutos} min, ${v.calorias} kcal`)
+      .join('\n');
+    // Desglose mensual
+    const mesLines=hist.monthsSorted.map(([m,v])=>
+      `  ${m}: ${v.count} sesiones, ${v.minutos} min, ${v.calorias} kcal`
+    ).join('\n')||'  sin datos';
+    // Ejercicios más frecuentes de todo el historial
+    const ejLines=hist.topEj.map(e=>
+      `  ${e.nombre}: ${e.count}x${e.maxKg>0?', máx '+e.maxKg+'kg':''}`
+    ).join('\n')||'  sin datos';
+
+    extra=`
+- Historial completo desde: ${hist.primera||'?'} hasta: ${hist.ultima||'?'}
+- Desglose por tipo de sesión (total historial):
+${tipoLines}
+- Evolución mensual (últimos 12 meses):
+${mesLines}
+- Ejercicios más frecuentes en todo el historial:
+${ejLines}`;
+  }
 
   return`- Nombre: ${nombre}
 - Sesiones totales: ${s.total}
@@ -175,10 +246,10 @@ function _coachCtxStr(s,nombre){
 - Calorías totales registradas: ${s.totalCalorias||0} kcal
 - Valoración media: ${s.mediaValoracion||'—'}/5${perfil}
 - Ejercicios con mayor marca de peso: ${top.length?top.map(e=>`${e.nombre} (${e.max_peso}kg, ${e.veces}x)`).join(' | '):'sin datos'}
-- Últimas 5 sesiones (fecha|tipo|duración|calorías|valoración|ejercicios principales):
+- Últimas 5 sesiones (fecha|tipo|duración|calorías|valoración|ejercicios):
 ${recDetail}
 - Progresión últimas 8 semanas (semana|sesiones|minutos|calorías):
-${progDetail}`;
+${progDetail}${extra}`;
 }
 
 async function coachPlan(forzar){
@@ -204,7 +275,8 @@ async function coachPlan(forzar){
   const s=_coachStats;
   const u=JSON.parse(localStorage.getItem('gymy_user')||'{}');
   const nombre=u.username||'el usuario';
-  const ctx=_coachCtxStr(s,nombre);
+  const hist=await _fetchAllHistory();
+  const ctx=_coachCtxStr(s,nombre,hist);
 
   const prompt=`Eres Coach Sasha, entrenadora personal con tono directo, irónico y genuinamente motivador.
 Analiza los datos del usuario y crea un plan de entrenamiento personalizado para la próxima semana.
@@ -257,7 +329,8 @@ async function coachAnalisis(forzar){
   const s=_coachStats;
   const u=JSON.parse(localStorage.getItem('gymy_user')||'{}');
   const nombre=u.username||'el usuario';
-  const ctx=_coachCtxStr(s,nombre);
+  const hist=await _fetchAllHistory();
+  const ctx=_coachCtxStr(s,nombre,hist);
 
   const prompt=`Eres Coach Sasha, entrenadora personal con tono directo, irónico y genuinamente motivador.
 Analiza el historial completo del usuario y ofrece un análisis honesto y útil de su rendimiento.
