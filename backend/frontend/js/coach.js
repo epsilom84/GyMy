@@ -210,15 +210,15 @@ function _coachCtxStr(s,nombre,hist){
   // Últimas 5 sesiones (con estimación si falta duracion_min o calorias)
   let _pw2=70;try{const _pd=JSON.parse(localStorage.getItem(_uk('profile_data'))||'{}');_pw2=parseFloat(_pd.peso_corporal)||70;}catch(e){}
   const recDetail=(s.recientes||[]).slice(0,5).map(r=>{
-    const ejs=r.ejercicios||[];
+    const ejArr=r.ejercicios||[];
     const durReal=r.duracion_min;
-    const durEst=!durReal&&ejs.length>0?Math.min(180,Math.max(15,5+ejs.reduce((a,e)=>a+(e.series||1)*3+1,0))):0;
+    const durEst=!durReal&&ejArr.length>0?Math.min(180,Math.max(15,5+ejArr.reduce((a,e)=>a+(e.series||1)*3+1,0))):0;
     const durMin=durReal||durEst;
     const calReal=r.calorias;
     const calEst=!calReal&&durMin?Math.round(5*_pw2*(durMin/60)):0;
     const dur=durReal?durReal+' min':durEst?'~'+durEst+' min':'—';
     const cal=calReal?calReal+' kcal':calEst?'~'+calEst+' kcal':'—';
-    const ejs=(r.ejercicios||[]).slice(0,5).map(e=>e.nombre).join(', ')||'—';
+    const ejs=ejArr.slice(0,5).map(e=>e.nombre).join(', ')||'—';
     return`  ${(r.fecha||'').slice(0,10)} | ${r.tipo||'?'} | ${dur} | ${cal} | val:${r.valoracion||'—'} | ${ejs}`;
   }).join('\n')||'  sin datos';
 
