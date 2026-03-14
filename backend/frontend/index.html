@@ -1163,109 +1163,117 @@ async function coachAnalisis(forzar){
 
   body.innerHTML='<div style="text-align:center;padding:36px 16px;color:var(--text2)">'
     +'<div style="font-size:38px;margin-bottom:14px">🔬</div>'
-    +'<div style="font-size:13px;font-weight:600">Sasha analizando datos...</div>'
-    +'<div style="font-size:11px;margin-top:6px;opacity:.6">Análisis científico completo</div></div>';
+    +'<div style="font-size:13px;font-weight:600">Sasha leyendo todo tu historial...</div>'
+    +'<div style="font-size:11px;margin-top:6px;opacity:.6">Puede tardar unos segundos</div></div>';
 
   const s=_coachStats;
-  const u=JSON.parse(localStorage.getItem('gymy_user')||'{}');
-  const nombre=u.username||'atleta';
-  const horas=Math.floor((s?.totalMinutos||0)/60);
-  const mins=(s?.totalMinutos||0)%60;
-  const progreso=s?.progreso||[];
-  const recientes=s?.recientes||[];
-  const mejorEj=s?.mejorEjercicio||[];
-
-  // Media sesiones/semana (sobre semanas con datos)
-  const semsConDatos=progreso.filter(w=>parseInt(w.sesiones)>0);
-  const avgPerWeek=progreso.length>0
-    ?(semsConDatos.reduce((a,w)=>a+parseInt(w.sesiones),0)/progreso.length).toFixed(1)
-    :0;
-
-  // Tendencia volumen últimas 4 vs previas 4 semanas
-  const last4=progreso.slice(-4).reduce((a,w)=>a+parseInt(w.sesiones||0),0);
-  const prev4=progreso.slice(-8,-4).reduce((a,w)=>a+parseInt(w.sesiones||0),0);
-  const tendencia=prev4===0?'período inicial sin comparativa'
-    :last4>prev4+1?'CRECIENTE (+'+((last4-prev4)/Math.max(prev4,1)*100).toFixed(0)+'%)'
-    :last4<prev4-1?'DECRECIENTE (-'+(((prev4-last4)/Math.max(prev4,1))*100).toFixed(0)+'%)'
-    :'ESTABLE';
-
-  // Duración y calorías medias
-  const sesConDur=recientes.filter(r=>r.duracion_min>0);
-  const avgDur=sesConDur.length?Math.round(sesConDur.reduce((a,r)=>a+r.duracion_min,0)/sesConDur.length):0;
-  const sesConCal=recientes.filter(r=>r.calorias>0);
-  const avgCal=sesConCal.length?Math.round(sesConCal.reduce((a,r)=>a+r.calorias,0)/sesConCal.length):0;
-
-  // Distribución grupos musculares en sesiones recientes
-  const grupoCount={};
-  recientes.forEach(ses=>{
-    const vistos=new Set();
-    (ses.ejercicios||[]).forEach(ej=>{
-      if(!_catalogoCache)return;
-      for(const[grupo,list]of Object.entries(_catalogoCache)){
-        if(list.some(e=>e.n&&e.n.toLowerCase()===ej.nombre.toLowerCase())){
-          const g=grupo.split(' ')[0].split('(')[0].trim();
-          if(!vistos.has(g)){vistos.add(g);grupoCount[g]=(grupoCount[g]||0)+1;}
-          break;
-        }
-      }
-    });
-  });
-  const grupoDistrib=Object.entries(grupoCount).sort((a,b)=>b[1]-a[1])
-    .map(([g,n])=>`${g}(${n})`).join(' · ')||'sin datos suficientes';
-
-  // Tipos de sesión recientes
-  const tipoCount={};
-  recientes.forEach(r=>{if(r.tipo)tipoCount[r.tipo]=(tipoCount[r.tipo]||0)+1;});
-  const tipoDistrib=Object.entries(tipoCount).map(([t,n])=>`${t}×${n}`).join(', ')||'—';
-
-  // Valoraciones recientes
-  const valsRecientes=recientes.filter(r=>r.valoracion>0).map(r=>r.valoracion);
-  const mediaValRec=valsRecientes.length?(valsRecientes.reduce((a,b)=>a+b,0)/valsRecientes.length).toFixed(1):'—';
-
-  // Progresión semanal detallada
-  const volSemanal=progreso.map(w=>{
-    const lbl=(w.semana||'').split('W')[1]||'?';
-    return `S${lbl}:${w.sesiones}ses/${w.minutos}min/${w.calorias}kcal`;
-  }).join(' | ');
-
-  // Top ejercicios con volumen estimado
-  const topEjs=mejorEj.slice(0,8).map(e=>`${e.nombre}: ${e.max_peso}kg max, ${e.veces}x`).join('\n');
-
-  if(!s){
+  if(!s||!s.total){
     body.innerHTML='<div style="text-align:center;padding:24px 16px;color:var(--text2)"><div style="font-size:32px;margin-bottom:10px">📭</div><div style="font-size:13px">Necesitas registrar sesiones para el análisis</div></div>';
     return;
   }
 
+  const u=JSON.parse(localStorage.getItem('gymy_user')||'{}');
+  const nombre=u.username||'atleta';
+  const horas=Math.floor((s.totalMinutos||0)/60);
+  const mins=(s.totalMinutos||0)%60;
+  const mejorEj=s.mejorEjercicio||[];
+
+  // Fetch historial completo en paralelo
+  let fs={mensual:[],porTipo:[],porDia:[],topEjercicios:[],porGrupo:[],primeraFecha:null};
+  try{
+    const{data}=await apiCall('GET','/sesiones/fullstats');
+    if(data.ok)fs=data;
+  }catch(e){}
+
+  // ── Métricas derivadas ──
+  const meses=fs.mensual.slice().reverse(); // cronológico
+  const mesesActivos=meses.filter(m=>parseInt(m.sesiones)>0);
+  const totalMesesConDatos=mesesActivos.length||1;
+  const avgMensual=(mesesActivos.reduce((a,m)=>a+parseInt(m.sesiones),0)/totalMesesConDatos).toFixed(1);
+  const avgDurMes=meses.filter(m=>parseInt(m.minutos)>0).reduce((a,m,_,arr)=>a+parseInt(m.minutos)/Math.max(parseInt(m.sesiones),1)/arr.length,0);
+
+  // Tendencia: últimos 3 meses vs 3 anteriores
+  const ult3=fs.mensual.slice(0,3).reduce((a,m)=>a+parseInt(m.sesiones),0);
+  const prev3=fs.mensual.slice(3,6).reduce((a,m)=>a+parseInt(m.sesiones),0);
+  const tendencia=prev3===0?'período inicial'
+    :ult3>prev3+1?'CRECIENTE (+'+Math.round((ult3-prev3)/Math.max(prev3,1)*100)+'% vs trimestre anterior)'
+    :ult3<prev3-1?'DECRECIENTE (-'+Math.round((prev3-ult3)/Math.max(prev3,1)*100)+'% vs trimestre anterior)'
+    :'ESTABLE';
+
+  // Consistencia: % de meses activos sobre vida del historial
+  const primerMes=fs.primeraFecha?fs.primeraFecha.slice(0,7):null;
+  const hoy=new Date().toISOString().slice(0,7);
+  let mesesTotalesHistorial=1;
+  if(primerMes){
+    const [ay,am]=primerMes.split('-').map(Number);
+    const [by,bm]=hoy.split('-').map(Number);
+    mesesTotalesHistorial=Math.max(1,(by-ay)*12+(bm-am)+1);
+  }
+  const consistencia=Math.round(mesesActivos.length/mesesTotalesHistorial*100);
+
+  // Mejor y peor mes
+  const mejorMes=mesesActivos.reduce((a,m)=>parseInt(m.sesiones)>parseInt(a.sesiones)?m:a,mesesActivos[0]||{});
+  const peorMes=mesesActivos.reduce((a,m)=>parseInt(m.sesiones)<parseInt(a.sesiones)?m:a,mesesActivos[0]||{});
+
+  // Día favorito
+  const DIAS_ES=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const diaTop=fs.porDia.length?fs.porDia.reduce((a,d)=>parseInt(d.n)>parseInt(a.n)?d:a,fs.porDia[0]):null;
+
+  // Distribución grupos musculares
+  const grupoResumen=fs.porGrupo.slice(0,8).map(g=>`${g.grupo_muscular}(${g.total_series}s,${g.sesiones_presentes}ses)`).join(' · ')||'sin datos';
+
+  // Tipos de entrenamiento completo
+  const tiposCompleto=fs.porTipo.map(t=>`${t.tipo}×${t.n}(${t.pct}%)`).join(' · ')||'—';
+
+  // Top ejercicios frecuencia
+  const topFreq=fs.topEjercicios.slice(0,12).map(e=>{
+    const carga=e.max_peso>0?` ${e.avg_peso}kg avg/${e.max_peso}kg max`:'';
+    return `${e.nombre}: ${e.veces}x${carga}`;
+  }).join('\n')||'—';
+
+  // Top por carga (de stats)
+  const topCarga=mejorEj.slice(0,8).map(e=>`${e.nombre}: ${e.max_peso}kg max, ${e.veces}x`).join('\n')||'—';
+
+  // Evolución mensual resumida (últimos 12 meses)
+  const evolucionMensual=meses.slice(-12).map(m=>
+    `${m.mes}: ${m.sesiones}ses ${m.minutos}min ${m.val_media>0?'★'+m.val_media:''}`
+  ).join(' | ')||'—';
+
   const ctx=`ATLETA: ${nombre}
-PERÍODO: últimas 8 semanas de datos
+HISTORIAL COMPLETO: desde ${fs.primeraFecha||'desconocido'} hasta hoy (${mesesTotalesHistorial} meses)
 
-── MÉTRICAS GLOBALES ──
-· Sesiones totales acumuladas: ${s.total}
-· Horas entrenadas: ${horas}h ${mins}min
+── MÉTRICAS GLOBALES (historial completo) ──
+· Sesiones totales: ${s.total}
+· Horas totales entrenadas: ${horas}h ${mins}min
 · Calorías totales quemadas: ${s.totalCalorias||0} kcal
-· Valoración media general: ${s.mediaValoracion||0}/5 · Reciente: ${mediaValRec}/5
+· Valoración media global: ${s.mediaValoracion||0}/5
 · Racha actual: ${s.racha} días consecutivos
-· Sesiones semana actual: ${s.ultimasSemana}
-· Media sesiones/semana (8 sem): ${avgPerWeek}
-· Duración media sesión: ${avgDur||'—'} min
-· Calorías medias/sesión: ${avgCal||'—'} kcal
-· Tendencia de volumen: ${tendencia}
+· Consistencia mensual histórica: ${consistencia}% (${mesesActivos.length}/${mesesTotalesHistorial} meses activos)
+· Media sesiones/mes: ${avgMensual}
+· Duración media sesión estimada: ${Math.round(avgDurMes)||'—'} min
+· Tendencia actual: ${tendencia}
+· Mejor mes: ${mejorMes.mes||'—'} (${mejorMes.sesiones||0} sesiones)
+· Peor mes: ${peorMes.mes||'—'} (${peorMes.sesiones||0} sesiones)
+· Día favorito de entrenamiento: ${diaTop?`${DIAS_ES[parseInt(diaTop.dow)%7]}(${diaTop.n}x)`:'—'}
 
-── DISTRIBUCIÓN MUSCULAR (sesiones recientes) ──
-${grupoDistrib}
+── TIPOS DE ENTRENAMIENTO (histórico completo) ──
+${tiposCompleto}
 
-── TIPOS DE ENTRENAMIENTO RECIENTES ──
-${tipoDistrib}
+── DISTRIBUCIÓN MUSCULAR HISTÓRICA (series totales registradas) ──
+${grupoResumen}
 
-── TOP EJERCICIOS POR CARGA MÁXIMA ──
-${topEjs||'Sin datos de peso registrados'}
+── TOP 12 EJERCICIOS POR FRECUENCIA ──
+${topFreq}
 
-── PROGRESIÓN SEMANAL DETALLADA (últimas 8 sem) ──
-${volSemanal||'Sin datos'}`;
+── TOP 8 EJERCICIOS POR CARGA MÁXIMA ──
+${topCarga}
 
-  const prompt=`Eres Coach Sasha, doctora en ciencias del deporte y entrenadora de élite. Tono: científico, directo y con ironía española. Usa terminología deportiva real (RPE, RM, DOMS, periodización, etc.).
+── EVOLUCIÓN MENSUAL (últimos 12 meses) ──
+${evolucionMensual}`;
 
-Realiza un ANÁLISIS CIENTÍFICO COMPLETO del siguiente atleta:
+  const prompt=`Eres Coach Sasha, doctora en ciencias del deporte y entrenadora de élite. Tono: científico, directo y con la ironía española que te caracteriza. Usa terminología real: RPE, RM, DOMS, mesociclo, deload, hipertrofia, etc.
+
+Analiza el HISTORIAL COMPLETO de entrenamiento de este atleta. Tienes datos de TODOS sus entrenos desde el inicio. Aprovéchalo para identificar tendencias a largo plazo, no solo lo reciente.
 
 ${ctx}
 
@@ -1273,34 +1281,33 @@ RESPONDE EXACTAMENTE con este formato (sin texto fuera de las etiquetas):
 
 [PUNTUACION]
 XX/100
-Una frase diagnóstico de Sasha sobre el nivel global.
+Una frase diagnóstico de Sasha sobre el nivel global basada en el historial completo.
 [/PUNTUACION]
 
 [FORTALEZAS]
-3 fortalezas concretas con datos numéricos específicos del atleta. Una por párrafo.
+3-4 fortalezas concretas con datos numéricos del historial real. Menciona cifras específicas.
 [/FORTALEZAS]
 
 [DESEQUILIBRIOS]
-2-3 desequilibrios o riesgos detectados: grupos musculares descuidados, patrones de sobreuso, déficits de variedad. Sé directa y científica.
+2-3 desequilibrios o riesgos detectados en el largo plazo: grupos musculares descuidados históricamente, patrones de sobreuso, rachas de abandono, monotonía de estímulo.
 [/DESEQUILIBRIOS]
 
 [SOBRECARGA_PROGRESIVA]
-Evalúa: ¿hay progresión de cargas adecuada? ¿volumen óptimo? ¿variedad de estímulo suficiente? Referencia los ejercicios top con datos concretos.
+¿Se observa progresión real de cargas a lo largo del tiempo? ¿El volumen y frecuencia son óptimos para el nivel del atleta? ¿Hay estancamiento? Usa los datos de ejercicios frecuentes.
 [/SOBRECARGA_PROGRESIVA]
 
 [RECUPERACION]
-Analiza: frecuencia semanal vs recuperación óptima, señales de sobreentrenamiento o infra-entrenamiento, calidad del descanso según valoraciones. Recomendaciones concretas.
+Analiza la periodización real vista en los datos mensuales: ¿hay deloads naturales? ¿sobreentrenamiento crónico? ¿subentreno? ¿cómo correlacionan las valoraciones con la frecuencia?
 [/RECUPERACION]
 
 [PLAN_4_SEMANAS]
-Plan de optimización dividido en 2 fases:
-FASE 1 (sem 1-2): cambios a introducir.
-FASE 2 (sem 3-4): progresión sobre fase 1.
-Incluye ejercicios específicos, sets×reps y frecuencia.
+Plan de optimización basado en los déficits históricos reales:
+FASE 1 (sem 1-2): correcciones prioritarias con ejercicios y volúmenes concretos.
+FASE 2 (sem 3-4): progresión con nuevos estímulos.
 [/PLAN_4_SEMANAS]
 
 [METRICAS_CLAVE]
-3 métricas numéricas concretas a trackear con valores objetivo específicos para este atleta.
+3 KPIs concretos con valores objetivo realistas para ESTE atleta basados en su historial.
 [/METRICAS_CLAVE]`;
 
   try{
