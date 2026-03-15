@@ -1,4 +1,4 @@
-const CACHE = 'gymy-v3';
+const CACHE = 'gymy-v4';
 const SHELL = [
   '/',
   '/import.js',
