@@ -15,13 +15,25 @@ const PORT = process.env.PORT || 3000;
 const FRONTEND = path.resolve(__dirname, 'frontend');
 
 app.use(express.static(FRONTEND));
+
+// CORS: lista explícita de orígenes permitidos (nunca wildcard en producción)
+const ALLOWED_ORIGINS = [
+  'https://gymy-production.up.railway.app',
+  process.env.FRONTEND_URL,
+  ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:3000', 'http://127.0.0.1:3000'] : [])
+].filter(Boolean);
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
-  methods: ['GET','POST','PUT','DELETE'],
+  origin: (origin, cb) => {
+    // Permitir requests sin origin (apps móviles, curl, same-origin)
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    log.warn({ origin }, 'CORS blocked');
+    cb(new Error('CORS not allowed'));
+  },
+  methods: ['GET','POST','PUT','PATCH','DELETE'],
   allowedHeaders: ['Content-Type','Authorization']
 }));
-app.use(express.json({ limit: '2mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 app.use('/api/auth', rateLimit({ windowMs: 15*60*1000, max: 30, message: { ok: false, error: 'Demasiadas peticiones.' } }));
 app.use('/api', rateLimit({ windowMs: 1*60*1000, max: 120, message: { ok: false, error: 'Demasiadas peticiones.' } }));

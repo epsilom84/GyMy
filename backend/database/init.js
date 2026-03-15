@@ -83,6 +83,9 @@ async function initDB() {
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS peso_corporal REAL;`);
     // Migración: flag para sesiones importadas
     await client.query(`ALTER TABLE sesiones ADD COLUMN IF NOT EXISTS importado BOOLEAN DEFAULT FALSE;`);
+    // Migración: bloqueo de cuenta por intentos fallidos de login
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_attempts INT DEFAULT 0;`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ;`);
 
     // Catálogo de ejercicios clasificados por grupo muscular
     await client.query(`
