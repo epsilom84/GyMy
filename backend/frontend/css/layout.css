@@ -1,6 +1,6 @@
 /* ── APP SHELL ── */
 #app-screen{display:none;flex-direction:column;min-height:100vh;}
-.app-body{flex:1;padding:18px;max-width:720px;margin:0 auto;width:100%;padding-bottom:var(--body-pb,100px);}
+.app-body{flex:1;padding:18px;max-width:720px;margin:0 auto;width:100%;padding-bottom:var(--body-pb,100px);position:relative;overflow-x:hidden;}
 .offline-badge{display:none;align-items:center;gap:6px;border-radius:20px;padding:4px 12px;font-size:12px;margin-bottom:12px;}
 .offline-badge.offline{background:rgba(255,71,71,.12);border:1px solid rgba(255,71,71,.25);color:var(--accent2);}
 .offline-badge.online{background:rgba(71,255,178,.1);border:1px solid rgba(71,255,178,.25);color:var(--accent3);}
@@ -31,6 +31,10 @@
 .page.active{display:block;}
 .page.slide-right{animation:slideInRight .22s ease;}
 .page.slide-left{animation:slideInLeft .22s ease;}
+/* página saliente: se superpone con absolute mientras anima la salida */
+.page.page-exit{display:block!important;position:absolute;inset:0;padding:18px;padding-bottom:var(--body-pb,100px);pointer-events:none;z-index:1;overflow:hidden;}
+.page.page-exit.slide-out-left{animation:slideOutLeft .22s ease forwards;}
+.page.page-exit.slide-out-right{animation:slideOutRight .22s ease forwards;}
 
 /* ── SIDE PANEL ── */
 .side-panel{position:fixed;top:0;right:-340px;width:310px;height:100vh;background:var(--bg2);border-left:1px solid var(--border);padding:22px 18px;z-index:400;transition:right .3s ease;overflow-y:auto;}

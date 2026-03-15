@@ -8,13 +8,35 @@ let _lastTabIdx=0;
 function goTab(name,btn){
   const newIdx=_TAB_ORDER.indexOf(name);
   const dir=newIdx>_lastTabIdx?'slide-right':'slide-left';
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active','slide-right','slide-left'));
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  const exitDir=dir==='slide-right'?'slide-out-left':'slide-out-right';
+
+  const oldPage=document.querySelector('.page.active');
   const page=document.getElementById('page-'+name);
+  if(oldPage===page)return; // ya estamos aquí
+
+  // Limpiar clases de animación sobrantes de navegaciones anteriores
+  document.querySelectorAll('.page').forEach(p=>
+    p.classList.remove('slide-right','slide-left','slide-out-left','slide-out-right','page-exit')
+  );
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+
+  // Animar salida de la página actual (queda visible como overlay absoluto)
+  if(oldPage){
+    oldPage.classList.add('page-exit',exitDir);
+    setTimeout(()=>oldPage.classList.remove('active','page-exit','slide-out-left','slide-out-right'),230);
+  }
+
+  // Ocultar el resto (no la que sale ni la que entra)
+  document.querySelectorAll('.page').forEach(p=>{
+    if(p!==oldPage&&p!==page)p.classList.remove('active');
+  });
+
+  // Animar entrada de la nueva página
   page.classList.add('active');
-  void page.offsetWidth; // force reflow so browser registers display:block before animation
+  void page.offsetWidth; // fuerza reflow para que el browser detecte display:block antes del slide
   page.classList.add(dir);
-  setTimeout(()=>page.classList.remove('slide-right','slide-left'),220);
+  setTimeout(()=>page.classList.remove('slide-right','slide-left'),230);
+
   if(newIdx>=0)_lastTabIdx=newIdx;
   btn.classList.add('active');
   // Workout FABs: visible on ALL tabs when workout is active
