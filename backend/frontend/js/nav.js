@@ -11,7 +11,9 @@ function goTab(name,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active','slide-right','slide-left'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   const page=document.getElementById('page-'+name);
-  page.classList.add('active',dir);
+  page.classList.add('active');
+  void page.offsetWidth; // force reflow so browser registers display:block before animation
+  page.classList.add(dir);
   setTimeout(()=>page.classList.remove('slide-right','slide-left'),220);
   if(newIdx>=0)_lastTabIdx=newIdx;
   btn.classList.add('active');
